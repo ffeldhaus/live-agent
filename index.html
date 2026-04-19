@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Live Avatar Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+    <!-- Load mpegts.js from CDN for the component to use if needed -->
+    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"></script>
+    <!-- Load the web component -->
+    <script src="./gemini-avatar.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Gemini Live Avatar</h1>
+        <p class="subtitle">Configure and test the Vertex AI Live Avatar component.</p>
+        
+        <div class="grid">
+            <div class="form-group full-width">
+                <label for="accessToken">Access Token (Bypass OAuth) <span class="token-mandatory">*</span></label>
+                <input type="password" id="accessToken" placeholder="Paste your gcloud access token here">
+
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <input type="checkbox" id="saveVideoToggle" style="width: auto;">
+                    <label for="saveVideoToggle" style="font-size: 0.8rem; font-weight: normal; color: #cbd5e1;">Save and download video session</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <input type="checkbox" id="debugToggle" style="width: auto;">
+                    <label for="debugToggle" style="font-size: 0.8rem; font-weight: normal; color: #cbd5e1;">Enable debug logging</label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="projectId">Project ID *</label>
+                <input type="text" id="projectId" placeholder="your-project-id">
+            </div>
+            
+            <div class="form-group">
+                <label for="location">Location *</label>
+                <input type="text" id="location" value="us-central1">
+            </div>
+            
+            <div class="form-group">
+                <label for="avatarName">Avatar Preset</label>
+                <select id="avatarName">
+                    <option value="Kira">Kira (Photorealistic) (default)</option>
+                    <option value="Ingrid">Ingrid (Photorealistic)</option>
+                    <option value="Vera">Vera (Photorealistic)</option>
+                    <option value="Jay">Jay (Photorealistic)</option>
+                    <option value="Paul">Paul (Photorealistic)</option>
+                    <option value="Sam">Sam (Photorealistic)</option>
+                    <option value="Piper">Piper (Non-photorealistic / cartoon)</option>
+                    <option value="Carmen">Carmen (Non-photorealistic / cartoon)</option>
+                    <option value="Kai">Kai (Non-photorealistic / cartoon)</option>
+                    <option value="Leo">Leo (Non-photorealistic / cartoon)</option>
+                    <option value="Ben">Ben (Non-photorealistic / cartoon)</option>
+                    <option value="AudioOnly">Audio Only</option>
+                    <option value="Custom">Custom Photo</option>
+                </select>
+            </div>
+            
+            <div id="customAvatarControls" style="display: none;" class="form-group">
+                <label>Custom Avatar Photo</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="file" id="avatarUpload" accept="image/png, image/jpeg" style="display: none;">
+                    <button class="btn" id="uploadBtn" style="flex: 1; margin-top: 0;">Upload</button>
+                    <button class="btn" id="cameraBtn" style="flex: 1; margin-top: 0;">Camera</button>
+                </div>
+                <div id="avatarPreviewContainer" style="display: none; margin-top: 10px; text-align: center;">
+                    <img id="customAvatarPreview" style="max-width: 100px; border-radius: 12px; border: 1px solid var(--glass-border);">
+                    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">9:16 aspect ratio recommended</p>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="voiceSelect">Voice</label>
+                <select id="voiceSelect">
+                    <option value="puck">Puck (Upbeat)</option>
+                    <option value="zephyr">Zephyr (Bright)</option>
+                    <option value="kore" selected>Kore (Firm) - Default</option>
+                    <option value="orus">Orus (Firm)</option>
+                    <option value="autonoe">Autonoe (Bright)</option>
+                    <option value="umbriel">Umbriel (Easy-going)</option>
+                    <option value="erinome">Erinome (Clear)</option>
+                    <option value="laomedeia">Laomedeia (Upbeat)</option>
+                    <option value="schedar">Schedar (Even)</option>
+                    <option value="achird">Achird (Friendly)</option>
+                    <option value="sadachbia">Sadachbia (Lively)</option>
+                    <option value="fenrir">Fenrir (Excitable)</option>
+                    <option value="aoede">Aoede (Breezy)</option>
+                    <option value="enceladus">Enceladus (Breathy)</option>
+                    <option value="algieba">Algieba (Smooth)</option>
+                    <option value="algenib">Algenib (Gravelly)</option>
+                    <option value="achernar">Achernar (Soft)</option>
+                    <option value="gacrux">Gacrux (Mature)</option>
+                    <option value="zubenelgenubi">Zubenelgenubi (Casual)</option>
+                    <option value="sadaltager">Sadaltager (Knowledgeable)</option>
+                    <option value="charon">Charon (Informative)</option>
+                    <option value="leda">Leda (Youthful)</option>
+                    <option value="callirrhoe">Callirrhoe (Easy-going)</option>
+                    <option value="iapetus">Iapetus (Clear)</option>
+                    <option value="despina">Despina (Smooth)</option>
+                    <option value="rasalgethi">Rasalgethi (Informative)</option>
+                    <option value="alnilam">Alnilam (Firm)</option>
+                    <option value="pulcherrima">Pulcherrima (Forward)</option>
+                    <option value="vindemiatrix">Vindemiatrix (Gentle)</option>
+                    <option value="sulafat">Sulafat (Warm)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="languageSelect">Language</label>
+                <select id="languageSelect">
+                    <option value="en-US">English (US) - Default</option>
+                    <option value="ar-EG">Arabic (Egyptian)</option>
+                    <option value="bn-BD">Bengali (Bangladesh)</option>
+                    <option value="nl-NL">Dutch (Netherlands)</option>
+                    <option value="en-IN">English (India)</option>
+                    <option value="fr-FR">French (France)</option>
+                    <option value="de-DE">German (Germany)</option>
+                    <option value="hi-IN">Hindi (India)</option>
+                    <option value="id-ID">Indonesian (Indonesia)</option>
+                    <option value="it-IT">Italian (Italy)</option>
+                    <option value="ja-JP">Japanese (Japan)</option>
+                    <option value="ko-KR">Korean (Korea)</option>
+                    <option value="mr-IN">Marathi (India)</option>
+                    <option value="pl-PL">Polish (Poland)</option>
+                    <option value="pt-BR">Portuguese (Brazil)</option>
+                    <option value="ro-RO">Romanian (Romania)</option>
+                    <option value="ru-RU">Russian (Russia)</option>
+                    <option value="es-US">Spanish (US)</option>
+                    <option value="ta-IN">Tamil (India)</option>
+                    <option value="te-IN">Telugu (India)</option>
+                    <option value="th-TH">Thai (Thailand)</option>
+                    <option value="tr-TR">Turkish (Turkey)</option>
+                    <option value="uk-UA">Ukrainian (Ukraine)</option>
+                    <option value="vi-VN">Vietnamese (Vietnam)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="size">Size</label>
+                <select id="size">
+                    <option value="300px">Standard (300px)</option>
+                    <option value="200px">Small (200px)</option>
+                    <option value="400px">Large (400px)</option>
+                    <option value="704px">Full Size (704x1280)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="position">Position</label>
+                <select id="position">
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-right" selected>Top Right</option>
+                    <option value="top-left">Top Left</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="oauthClientId">OAuth Client ID <span class="oauth-mandatory">*</span></label>
+                <input type="text" id="oauthClientId" placeholder="For Google Sign-in">
+            </div>
+            
+            <div style="display: flex; gap: 10px;" class="full-width">
+                <button class="btn" id="saveBtn" style="flex: 1; margin-top: 0;" disabled>Save Configuration</button>
+                <button class="btn" id="streamBtn" style="flex: 1; margin-top: 0;" disabled>Start</button>
+            </div>
+        </div>
+        
+        <!-- Test Interaction -->
+        <div class="dummy-content" style="margin-top: 20px;">
+            <h2 style="font-size: 1.2rem; margin-top: 0;">Test Interaction</h2>
+            <div class="form-group">
+                <label for="textInput">Send Message</label>
+                <div style="display: flex; gap: 10px; margin-top: 5px;">
+                    <input type="text" id="textInput" placeholder="Type a message to the avatar..." style="flex: 1;">
+                    <button class="btn" id="sendBtn" style="white-space: nowrap; margin-top: 0; padding: 12px 20px;">Send</button>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+
+    <!-- The Web Component instance -->
+    <gemini-avatar id="my-avatar" position="top-right" size="300px"></gemini-avatar>
+
+
+
+    <script src="./controls.js"></script>
+    
+    <!-- Custom Modal -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle">Error</h2>
+            <p class="modal-text" id="modalText">Something went wrong.</p>
+            <button class="modal-btn" id="modalCloseBtn">Close</button>
+        </div>
+    </div>
+    <!-- Camera Modal -->
+    <div class="modal-overlay" id="cameraModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 class="modal-title" style="background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Take Photo</h2>
+            <div style="position: relative; width: 100%; padding-top: 177.77%; /* 9:16 Aspect Ratio */ background: #000; border-radius: 12px; overflow: hidden;">
+                <video id="cameraVideo" autoplay playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"></video>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed #38bdf8; width: 60%; height: 60%; border-radius: 50%; pointer-events: none;"></div>
+                <p style="position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8rem; color: #38bdf8; margin: 0;">Align mouth to center circle</p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="modal-btn" id="captureBtn" style="flex: 1;">Capture</button>
+                <button class="modal-btn" id="closeCameraBtn" style="flex: 1; background: #475569;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
