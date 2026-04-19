@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceSelect = document.getElementById('voiceSelect');
     const languageSelect = document.getElementById('languageSelect');
     const sizeSelect = document.getElementById('size');
+    const downloadAvatarBtn = document.getElementById('downloadAvatarBtn');
     const positionSelect = document.getElementById('position');
     const oauthClientIdInput = document.getElementById('oauthClientId');
     
@@ -50,11 +51,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('gemini_voice')) voiceSelect.value = localStorage.getItem('gemini_voice');
     if (localStorage.getItem('gemini_language')) languageSelect.value = localStorage.getItem('gemini_language');
     
+    const savedCustomAvatar = localStorage.getItem('gemini_custom_avatar');
+    if (savedCustomAvatar) {
+        avatar.customAvatar = JSON.parse(savedCustomAvatar);
+    }
+    
     avatarNameSelect.onchange = () => {
         avatar.setPreview(avatarNameSelect.value);
         const customControls = document.getElementById('customAvatarControls');
         if (avatarNameSelect.value === 'Custom') {
             customControls.style.display = 'block';
+            if (avatar.customAvatar) {
+                customAvatarPreview.src = `data:image/png;base64,${avatar.customAvatar.image_data}`;
+                avatarPreviewContainer.style.display = 'block';
+                downloadAvatarBtn.style.display = 'inline-block';
+            }
         } else {
             customControls.style.display = 'none';
         }
@@ -64,6 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const customControls = document.getElementById('customAvatarControls');
     if (avatarNameSelect.value === 'Custom') {
         customControls.style.display = 'block';
+        if (avatar.customAvatar) {
+            customAvatarPreview.src = `data:image/png;base64,${avatar.customAvatar.image_data}`;
+            avatarPreviewContainer.style.display = 'block';
+            downloadAvatarBtn.style.display = 'inline-block';
+        }
     }
     
     const uploadBtn = document.getElementById('uploadBtn');
@@ -113,6 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 customAvatarPreview.src = dataURL;
                 avatarPreviewContainer.style.display = 'block';
+                downloadAvatarBtn.style.display = 'inline-block';
                 
                 // Hide component preview when custom is selected and loaded
                 avatar.setPreview('AudioOnly'); // This hides it
@@ -159,6 +176,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sourceY = (cameraVideo.videoHeight - sourceHeight) / 2;
         }
         
+        // Mirror the canvas to match mirrored video display
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        
         ctx.drawImage(cameraVideo, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, 720, 1280);
         
         const dataURL = canvas.toDataURL('image/png');
@@ -171,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         customAvatarPreview.src = dataURL;
         avatarPreviewContainer.style.display = 'block';
+        downloadAvatarBtn.style.display = 'inline-block';
         
         // Hide component preview
         avatar.setPreview('AudioOnly');
@@ -188,6 +210,13 @@ document.addEventListener('DOMContentLoaded', () => {
         cameraVideo.srcObject = null;
         cameraModal.classList.remove('active');
     }
+    
+    downloadAvatarBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = customAvatarPreview.src;
+        a.download = `custom_avatar_${new Date().toISOString()}.png`;
+        a.click();
+    };
     
     const savedSaveVideo = localStorage.getItem('gemini_save_video_option');
     if (savedSaveVideo !== null) {
@@ -328,6 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('gemini_avatar_name', name);
         localStorage.setItem('gemini_size', size);
         localStorage.setItem('gemini_position', pos);
+        
+        if (name === 'Custom' && avatar.customAvatar) {
+            localStorage.setItem('gemini_custom_avatar', JSON.stringify(avatar.customAvatar));
+        }
         localStorage.setItem('gemini_oauth_client_id', clientId);
         localStorage.setItem('gemini_voice', voiceSelect.value);
         localStorage.setItem('gemini_language', languageSelect.value);

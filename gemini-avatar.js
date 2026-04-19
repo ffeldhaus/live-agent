@@ -438,7 +438,7 @@ class GeminiAvatar extends HTMLElement {
     const setupMessage = {
       setup: {
         model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
-        avatar_config: this.customAvatar ? {
+        avatar_config: (modelName === 'Custom' && this.customAvatar) ? {
           customized_avatar: this.customAvatar
         } : {
           avatar_name: modelName,
