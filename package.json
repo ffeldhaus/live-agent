@@ -2,12 +2,34 @@
   "name": "gemini-avatar",
   "version": "0.1.0",
   "type": "module",
+  "main": "./dist/gemini-avatar.umd.js",
+  "module": "./dist/gemini-avatar.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/gemini-avatar.es.js",
+      "require": "./dist/gemini-avatar.umd.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src/assets"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "vite": "^5.4.21"
+    "@ffmpeg/ffmpeg": "^0.12.10",
+    "@ffmpeg/util": "^0.12.1",
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "happy-dom": "^14.12.3",
+    "husky": "^9.0.11",
+    "typescript": "^5.3.3",
+    "vite": "^5.4.21",
+    "vitest": "^1.4.0"
   },
   "dependencies": {
     "mpegts.js": "^1.7.3"

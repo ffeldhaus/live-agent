@@ -8,10 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
-    <!-- Load mpegts.js from CDN for the component to use if needed -->
-    <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"></script>
-    <!-- Load the web component -->
-    <script src="./gemini-avatar.js"></script>
+    <!-- Load the web component as module -->
+    <script type="module" src="/src/gemini-avatar.ts"></script>
 </head>
 <body>
 
@@ -27,6 +25,10 @@
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
                     <input type="checkbox" id="saveVideoToggle" style="width: auto;">
                     <label for="saveVideoToggle" style="font-size: 0.8rem; font-weight: normal; color: #cbd5e1;">Save and download video session</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <input type="checkbox" id="recordUserAudio" style="width: auto;">
+                    <label for="recordUserAudio" style="font-size: 0.8rem; font-weight: normal; color: #cbd5e1;">Include user audio in download (requires FFmpeg)</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
                     <input type="checkbox" id="debugToggle" style="width: auto;">
@@ -59,22 +61,7 @@
                     <option value="Leo">Leo (Non-photorealistic / cartoon)</option>
                     <option value="Ben">Ben (Non-photorealistic / cartoon)</option>
                     <option value="AudioOnly">Audio Only</option>
-                    <option value="Custom">Custom Photo</option>
                 </select>
-            </div>
-            
-            <div id="customAvatarControls" style="display: none;" class="form-group">
-                <label>Custom Avatar Photo</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="file" id="avatarUpload" accept="image/png, image/jpeg" style="display: none;">
-                    <button class="btn" id="uploadBtn" style="flex: 1; margin-top: 0;">Upload</button>
-                    <button class="btn" id="cameraBtn" style="flex: 1; margin-top: 0;">Camera</button>
-                </div>
-                <div id="avatarPreviewContainer" style="display: none; margin-top: 10px; text-align: center;">
-                    <img id="customAvatarPreview" style="max-width: 100px; border-radius: 12px; border: 1px solid var(--glass-border);">
-                    <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 5px;">9:16 aspect ratio recommended</p>
-                    <button class="btn" id="downloadAvatarBtn" style="margin-top: 5px; padding: 8px 15px; font-size: 0.8rem;">Download Photo</button>
-                </div>
             </div>
             
             <div class="form-group">
@@ -172,6 +159,10 @@
                 <button class="btn" id="saveBtn" style="flex: 1; margin-top: 0;" disabled>Save Configuration</button>
                 <button class="btn" id="streamBtn" style="flex: 1; margin-top: 0;" disabled>Start</button>
             </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 10px;" class="full-width">
+                <button class="btn" id="copyHtmlBtn" style="flex: 1; margin-top: 0; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">Copy Embed Code</button>
+            </div>
         </div>
         
         <!-- Test Interaction -->
@@ -192,32 +183,7 @@
     <!-- The Web Component instance -->
     <gemini-avatar id="my-avatar" position="top-right" size="300px"></gemini-avatar>
 
-
-
-    <script src="./controls.js"></script>
-    
-    <!-- Custom Modal -->
-    <div class="modal-overlay" id="customModal">
-        <div class="modal-content">
-            <h2 class="modal-title" id="modalTitle">Error</h2>
-            <p class="modal-text" id="modalText">Something went wrong.</p>
-            <button class="modal-btn" id="modalCloseBtn">Close</button>
-        </div>
-    </div>
-    <!-- Camera Modal -->
-    <div class="modal-overlay" id="cameraModal">
-        <div class="modal-content" style="max-width: 400px;">
-            <h2 class="modal-title" style="background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Take Photo</h2>
-            <div style="position: relative; width: 100%; padding-top: 177.77%; /* 9:16 Aspect Ratio */ background: #000; border-radius: 12px; overflow: hidden;">
-                <video id="cameraVideo" autoplay playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed #38bdf8; width: 60%; height: 60%; border-radius: 50%; pointer-events: none;"></div>
-                <p style="position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8rem; color: #38bdf8; margin: 0;">Align mouth to center circle</p>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="modal-btn" id="captureBtn" style="flex: 1;">Capture</button>
-                <button class="modal-btn" id="closeCameraBtn" style="flex: 1; background: #475569;">Cancel</button>
-            </div>
-        </div>
-    </div>
+    <!-- Load the demo script as module -->
+    <script type="module" src="/src/demo.ts"></script>
 </body>
 </html>

@@ -14,23 +14,29 @@ A reusable web component to embed the Gemini Live Avatar feature from Vertex AI 
 -   **Bi-directional Interaction**: Supports microphone streaming using modern `AudioWorkletNode` and text messages.
 -   **Premium UI**: Glassmorphic design, custom modals, and a dedicated audio-only animation mode.
 -   **Audio Only Mode**: Toggle to audio-only mode with a beautiful CSS ripple animation.
+-   **TypeScript**: Written in TypeScript for better maintainability and type safety.
+-   **Unit Tested**: High code coverage with Vitest.
+
+## Installation from npm
+
+```bash
+npm install gemini-avatar
+```
+
+Then import it in your project:
+
+```javascript
+import 'gemini-avatar';
+```
 
 ## Usage
 
 ### 1. Include the Component
 
-You can include the component script in your HTML:
+If not using a bundler, you can include the component script in your HTML (after building):
 
 ```html
-<script type="module" src="./gemini-avatar.js"></script>
-```
-
-By default, the component uses the browser's native `MediaSource` API to decode fragmented MP4 streams sent by Gemini 3.1+.
-
-If you need to use `mpegts.js` as a fallback (e.g., for older streams), you can include it and set `use-mpegts="true"`:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.8.0/dist/mpegts.min.js"></script>
+<script type="module" src="./dist/gemini-avatar.es.js"></script>
 ```
 
 ### 2. Add the Tag
@@ -71,30 +77,45 @@ Add the `<gemini-avatar>` tag to your page:
 
 The component exposes methods that can be called from external scripts:
 
--   `disconnect()`: Stops the current session, closes the WebSocket, and stops the microphone.
+-   `start()`: Starts the session and connects to the WebSocket.
+-   `stop()`: Stops the session and closes the connection.
+-   `mute()`: Mutes the avatar audio.
+-   `unmute()`: Unmutes the avatar audio.
 -   `sendMessage(text)`: Sends a text message to the Gemini session.
 
-In the demo application, these are mapped to the "Stop" button and "Send Message" input.
+## Publishing to npm
 
-## Observability and Debugging
+To publish the component to npm:
 
-By default, the component only logs critical system events (Setup, WebSocket connections, and errors) to the Developer Console.
-
-To enable verbose logging (including individual chunk processing and MP4 box analysis):
-1.  Set the `debug="true"` attribute on the component.
-2.  Or check the "Enable debug logging" box in the demo UI.
-
-## Testing Locally
-
-1.  Open `index.html` in a browser (or serve it using a local dev server like Vite or Live Server).
-2.  Generate an access token using gcloud:
+1.  Ensure you have built the project:
     ```bash
-    gcloud auth print-access-token
+    npm run build
     ```
-3.  Paste the token into the "Access Token" field in the demo app.
-4.  Fill in your Project ID and Location.
-5.  Click "Save Configuration".
-6.  Click "Start" to begin the session.
+2.  Login to npm if needed:
+    ```bash
+    npm login
+    ```
+3.  Publish the package:
+    ```bash
+    npm publish
+    ```
+
+The package includes the `dist` directory with the bundled files and the `src/assets` directory with the preview images.
+
+## Development
+
+1.  Install dependencies:
+    ```bash
+    npm install
+    ```
+2.  Run dev server:
+    ```bash
+    npm run dev
+    ```
+3.  Run tests:
+    ```bash
+    npm test
+    ```
 
 ## License
 

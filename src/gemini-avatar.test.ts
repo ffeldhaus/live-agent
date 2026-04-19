@@ -1,0 +1,127 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { GeminiAvatar } from './gemini-avatar';
+
+describe('GeminiAvatar', () => {
+  let element: GeminiAvatar;
+
+  beforeEach(() => {
+    // Mock global APIs if needed
+    // @ts-ignore
+    global.MediaSource = vi.fn().mockImplementation(() => ({
+      addEventListener: vi.fn(),
+      readyState: 'closed',
+      addSourceBuffer: vi.fn().mockReturnValue({
+        addEventListener: vi.fn(),
+        appendBuffer: vi.fn(),
+      }),
+    }));
+
+    // Mock URL.createObjectURL
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-url');
+
+    // Mock navigator.mediaDevices
+    // @ts-ignore
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue({
+          getTracks: () => [{ stop: vi.fn() }],
+        }),
+      },
+      configurable: true,
+    });
+
+    // Mock AudioContext
+    // @ts-ignore
+    window.AudioContext = vi.fn().mockImplementation(() => ({
+      createMediaStreamSource: vi.fn().mockReturnValue({
+        connect: vi.fn(),
+      }),
+      audioWorklet: {
+        addModule: vi.fn().mockResolvedValue(undefined),
+      },
+      createGain: vi.fn().mockReturnValue({
+        connect: vi.fn(),
+        gain: { value: 1 },
+      }),
+      destination: {},
+      currentTime: 0,
+      close: vi.fn().mockResolvedValue(undefined),
+    }));
+
+    // Mock AudioWorkletNode
+    // @ts-ignore
+    window.AudioWorkletNode = vi.fn().mockImplementation(() => ({
+      connect: vi.fn(),
+      port: {
+        onmessage: null,
+        postMessage: vi.fn(),
+      },
+    }));
+    // @ts-ignore
+    global.AudioWorkletNode = window.AudioWorkletNode;
+
+    if (!customElements.get('gemini-avatar')) {
+      customElements.define('gemini-avatar', GeminiAvatar);
+    }
+
+    element = document.createElement('gemini-avatar') as GeminiAvatar;
+    document.body.appendChild(element);
+  });
+
+  afterEach(() => {
+    document.body.removeChild(element);
+    vi.restoreAllMocks();
+  });
+
+  it('should be registered', () => {
+    expect(customElements.get('gemini-avatar')).toBeDefined();
+  });
+
+  it('should render basic structure', () => {
+    const shadowRoot = element.shadowRoot;
+    expect(shadowRoot).toBeTruthy();
+    expect(shadowRoot?.querySelector('#avatar-video')).toBeTruthy();
+    expect(shadowRoot?.querySelector('#preview-image')).toBeTruthy();
+    expect(shadowRoot?.querySelector('.controls')).toBeTruthy();
+  });
+
+  it('should update size when attribute changes', () => {
+    element.setAttribute('size', '200px');
+    expect(element.style.width).toBe('200px');
+  });
+
+  it('should update position when attribute changes', () => {
+    element.setAttribute('position', 'bottom-left');
+    expect(element.style.bottom).toBe('20px');
+    expect(element.style.left).toBe('20px');
+  });
+
+  it('should set preview image correctly', () => {
+    element.setAttribute('avatar-name', 'Kira');
+    const img = element.shadowRoot?.querySelector('#preview-image') as HTMLImageElement;
+    expect(img.src).toContain('kira.webp');
+    expect(img.style.display).toBe('block');
+  });
+
+  it('should hide preview image for AudioOnly', () => {
+    element.setAttribute('avatar-name', 'AudioOnly');
+    const img = element.shadowRoot?.querySelector('#preview-image') as HTMLImageElement;
+    expect(img.style.display).toBe('none');
+  });
+
+  it('should expose start and stop methods', () => {
+    expect(typeof element.start).toBe('function');
+    expect(typeof element.stop).toBe('function');
+  });
+
+  it('should expose mute and unmute methods', () => {
+    expect(typeof element.mute).toBe('function');
+    expect(typeof element.unmute).toBe('function');
+  });
+
+  it('should expose sendMessage method', () => {
+    expect(typeof element.sendMessage).toBe('function');
+  });
+
+  // Add more complex tests for WebSocket handling and media if possible with mocks
+});
