@@ -273,18 +273,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (avatar.isConnected) {
             avatar.stop();
             
-            isProcessingVideo = true;
-            streamBtn.textContent = 'Processing video...';
-            streamBtn.disabled = true;
-            streamBtn.style.opacity = '0.5';
-            streamBtn.style.cursor = 'not-allowed';
-            
-            // Wait a bit for streams to close and finalize
-            setTimeout(async () => {
-                const { videoBlob, audioBlob } = avatar.getSessionFiles();
-                const recordUserAudio = recordUserAudioCheckbox?.checked;
+            if (saveVideoToggle.checked) {
+                isProcessingVideo = true;
+                streamBtn.textContent = 'Processing video...';
+                streamBtn.disabled = true;
+                streamBtn.style.opacity = '0.5';
+                streamBtn.style.cursor = 'not-allowed';
                 
-                if (saveVideoToggle.checked) {
+                // Wait a bit for streams to close and finalize
+                setTimeout(async () => {
+                    const { videoBlob, audioBlob } = avatar.getSessionFiles();
+                    const recordUserAudio = recordUserAudioCheckbox?.checked;
+                    
                     if (recordUserAudio && audioBlob.size > 0) {
                         console.log('Starting FFmpeg muxing...');
                         try {
@@ -341,17 +341,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
                     }
-                }
-                
-                // Reset button state
-                isProcessingVideo = false;
-                streamBtn.textContent = 'Start';
-                streamBtn.disabled = false;
-                streamBtn.style.opacity = '1';
-                streamBtn.style.cursor = 'pointer';
-                streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                validateForm();
-            }, 1000);
+                    
+                    // Reset button state
+                    isProcessingVideo = false;
+                    streamBtn.textContent = 'Start';
+                    streamBtn.disabled = false;
+                    streamBtn.style.opacity = '1';
+                    streamBtn.style.cursor = 'pointer';
+                    streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    validateForm();
+                }, 1000);
+            }
+            // If not saving video, the 'avatar-disconnected' event listener will handle resetting the button!
         } else {
             // Apply settings
             avatar.setAttribute('project-id', projectIdInput.value);
