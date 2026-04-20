@@ -365,7 +365,6 @@ export class GeminiAvatar extends HTMLElement {
     if (this.isRecordingVideo && this.micStream) {
       this.micChunks = [];
       this.accumulatedPcmData = [];
-      this.receivedFirstVideoFrame = false;
       this.micRecorder = new MediaRecorder(this.micStream);
       this.micRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -827,6 +826,7 @@ export class GeminiAvatar extends HTMLElement {
     this.startTime = null;
     this.setupCompleteTime = null;
     this.firstFrameTime = null;
+    this.receivedFirstVideoFrame = false;
 
     const location = this.getAttribute("location") || "us-central1";
     const project = this.getAttribute("project-id");
