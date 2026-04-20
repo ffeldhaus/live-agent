@@ -349,6 +349,19 @@ export class GeminiAvatar extends HTMLElement {
   public async start() {
     this._log("Starting session...");
     
+    // Reset mic mute state based on attribute
+    const autoRequest = this.getAttribute("mic-auto-request") !== "false";
+    if (autoRequest) {
+      this.isMicMuted = false;
+      if (this.micBtn) this.micBtn.classList.remove("off");
+      if (!this.isRecording) {
+        await this.startMic();
+      }
+    } else {
+      this.isMicMuted = true;
+      if (this.micBtn) this.micBtn.classList.add("off");
+    }
+
     if (this.isRecordingVideo && this.micStream) {
       this.micChunks = [];
       this.accumulatedPcmData = [];
