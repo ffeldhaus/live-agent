@@ -284,61 +284,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { videoBlob, audioBlob } = avatar.getSessionFiles();
                 const recordUserAudio = recordUserAudioCheckbox?.checked;
                 
-                if (recordUserAudio && audioBlob.size > 0) {
-                    console.log('Starting FFmpeg muxing...');
-                    try {
-                        console.log('Loading FFmpeg...');
-                        const ffmpeg = await getFFmpeg();
-                        const { fetchFile } = await import('@ffmpeg/util');
-                        
-                        console.log('Writing files to FFmpeg FS...');
-                        await ffmpeg.writeFile('video.mp4', await fetchFile(videoBlob));
-                        await ffmpeg.writeFile('audio.pcm', await fetchFile(audioBlob));
-                        
-                        const pos = avatar.getAttribute('position') || 'top-right';
-                        const avatarOnRight = pos.includes('right');
-                        
-                        // amerge=inputs=2 will combine two mono channels into a stereo channel
-                        // The order determines which goes to Left and which to Right.
-                        // Channel 0 is Left, Channel 1 is Right.
-                        let filterComplex = '';
-                        if (avatarOnRight) {
-                            // User audio (Input 1) -> Left, Avatar audio (Input 0) -> Right
-                            filterComplex = "[1:a][0:a]amerge=inputs=2[a]";
-                        } else {
-                            // Avatar audio (Input 0) -> Left, User audio (Input 1) -> Right
-                            filterComplex = "[0:a][1:a]amerge=inputs=2[a]";
-                        }
+                if (saveVideoToggle.checked) {
+                    if (recordUserAudio && audioBlob.size > 0) {
+                        console.log('Starting FFmpeg muxing...');
+                        try {
+                            console.log('Loading FFmpeg...');
+                            const ffmpeg = await getFFmpeg();
+                            const { fetchFile } = await import('@ffmpeg/util');
+                            
+                            console.log('Writing files to FFmpeg FS...');
+                            await ffmpeg.writeFile('video.mp4', await fetchFile(videoBlob));
+                            await ffmpeg.writeFile('audio.pcm', await fetchFile(audioBlob));
+                            
+                            const pos = avatar.getAttribute('position') || 'top-right';
+                            const avatarOnRight = pos.includes('right');
+                            
+                            // amerge=inputs=2 will combine two mono channels into a stereo channel
+                            // The order determines which goes to Left and which to Right.
+                            // Channel 0 is Left, Channel 1 is Right.
+                            let filterComplex = '';
+                            if (avatarOnRight) {
+                                // User audio (Input 1) -> Left, Avatar audio (Input 0) -> Right
+                                filterComplex = "[1:a][0:a]amerge=inputs=2[a]";
+                            } else {
+                                // Avatar audio (Input 0) -> Left, User audio (Input 1) -> Right
+                                filterComplex = "[0:a][1:a]amerge=inputs=2[a]";
+                            }
 
-                        console.log('Executing FFmpeg command with filter:', filterComplex);
-                        await ffmpeg.exec([
-                            '-i', 'video.mp4', 
-                            '-f', 's16le', 
-                            '-ar', '16000', 
-                            '-ac', '1', 
-                            '-i', 'audio.pcm', 
-                            '-filter_complex', filterComplex, 
-                            '-map', '0:v', 
-                            '-map', '[a]', 
-                            '-c:v', 'copy', 
-                            '-c:a', 'aac', 
-                            'output.mp4'
-                        ]);
-                        
-                        console.log('Reading output file...');
-                        const data = await ffmpeg.readFile('output.mp4');
-                        const combinedBlob = new Blob([data], { type: 'video/mp4' });
-                        
-                        downloadBlob(combinedBlob, `avatar_session_combined_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
-                        console.log('FFmpeg muxing completed.');
-                    } catch (error) {
-                        console.error('FFmpeg error:', error);
-                        alert('Failed to combine video and audio with FFmpeg. Downloading separate files instead.');
+                            console.log('Executing FFmpeg command with filter:', filterComplex);
+                            await ffmpeg.exec([
+                                '-i', 'video.mp4', 
+                                '-f', 's16le', 
+                                '-ar', '16000', 
+                                '-ac', '1', 
+                                '-i', 'audio.pcm', 
+                                '-filter_complex', filterComplex, 
+                                '-map', '0:v', 
+                                '-map', '[a]', 
+                                '-c:v', 'copy', 
+                                '-c:a', 'aac', 
+                                'output.mp4'
+                            ]);
+                            
+                            console.log('Reading output file...');
+                            const data = await ffmpeg.readFile('output.mp4');
+                            const combinedBlob = new Blob([data], { type: 'video/mp4' });
+                            
+                            downloadBlob(combinedBlob, `avatar_session_combined_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
+                            console.log('FFmpeg muxing completed.');
+                        } catch (error) {
+                            console.error('FFmpeg error:', error);
+                            alert('Failed to combine video and audio with FFmpeg. Downloading separate files instead.');
+                            downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
+                            downloadBlob(audioBlob, `user_audio_${new Date().toISOString().replace(/:/g, '-')}.webm`);
+                        }
+                    } else {
                         downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
-                        downloadBlob(audioBlob, `user_audio_${new Date().toISOString().replace(/:/g, '-')}.webm`);
                     }
-                } else {
-                    downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
                 }
                 
                 // Reset button state
