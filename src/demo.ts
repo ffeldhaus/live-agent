@@ -20,6 +20,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const textInput = document.getElementById('textInput') as HTMLInputElement;
     const copyHtmlBtn = document.getElementById('copyHtmlBtn') as HTMLButtonElement;
     const recordUserAudioCheckbox = document.getElementById('recordUserAudio') as HTMLInputElement;
+    
+    // New controls
+    const micAutoRequestToggle = document.getElementById('micAutoRequestToggle') as HTMLInputElement;
+    const ctrlMic = document.getElementById('ctrlMic') as HTMLInputElement;
+    const ctrlCamera = document.getElementById('ctrlCamera') as HTMLInputElement;
+    const ctrlScreen = document.getElementById('ctrlScreen') as HTMLInputElement;
+    const ctrlMute = document.getElementById('ctrlMute') as HTMLInputElement;
+    const ctrlSnapshot = document.getElementById('ctrlSnapshot') as HTMLInputElement;
+    
+    // Slider
+    const audioChunkSizeSlider = document.getElementById('audioChunkSize') as HTMLInputElement;
+    const chunkSizeVal = document.getElementById('chunkSizeVal') as HTMLSpanElement;
+
+    // Stats elements
+    const statSetupDuration = document.getElementById('statSetupDuration') as HTMLSpanElement;
+    const statLatency = document.getElementById('statLatency') as HTMLSpanElement;
+    const statPacketsReceived = document.getElementById('statPacketsReceived') as HTMLSpanElement;
+    const statAudioSent = document.getElementById('statAudioSent') as HTMLSpanElement;
+    const statVideoSent = document.getElementById('statVideoSent') as HTMLSpanElement;
+    const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
+    const statFps = document.getElementById('statFps') as HTMLSpanElement;
+    const statVideoPackets = document.getElementById('statVideoPackets') as HTMLSpanElement;
+    const statTotalFrames = document.getElementById('statTotalFrames') as HTMLSpanElement;
 
     // Load from localStorage
     const savedToken = localStorage.getItem('gemini_access_token');
@@ -61,6 +84,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (recordUserAudioCheckbox) {
         recordUserAudioCheckbox.checked = localStorage.getItem('gemini_record_user_audio') === 'true';
     }
+    
+    if (micAutoRequestToggle) {
+        micAutoRequestToggle.checked = localStorage.getItem('gemini_mic_auto_request') !== 'false'; // Default true
+        avatar.setAttribute('mic-auto-request', micAutoRequestToggle.checked.toString());
+    }
+    
+    const loadCtrlState = (id: string, defaultValue: boolean) => {
+        const saved = localStorage.getItem(`gemini_ctrl_${id}`);
+        return saved !== null ? saved === 'true' : defaultValue;
+    };
+    
+    ctrlMic.checked = loadCtrlState('mic', true);
+    ctrlCamera.checked = loadCtrlState('camera', true);
+    ctrlScreen.checked = loadCtrlState('screen', true);
+    ctrlMute.checked = loadCtrlState('mute', true);
+    ctrlSnapshot.checked = loadCtrlState('snapshot', false); // Default false
+
+    if (localStorage.getItem('gemini_audio_chunk_size')) {
+        audioChunkSizeSlider.value = localStorage.getItem('gemini_audio_chunk_size')!;
+        chunkSizeVal.textContent = audioChunkSizeSlider.value;
+        avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+    }
 
     function validateForm() {
         const project = projectIdInput.value.trim();
@@ -76,6 +121,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const updateVisibleControls = () => {
+        const list = [];
+        if (ctrlMic.checked) list.push('mic');
+        if (ctrlCamera.checked) list.push('camera');
+        if (ctrlScreen.checked) list.push('screen');
+        if (ctrlMute.checked) list.push('mute');
+        if (ctrlSnapshot.checked) list.push('snapshot');
+        avatar.setAttribute('visible-controls', list.join(','));
+    };
+
+    let statsInterval: any = null;
+
+    const updateStats = () => {
+        const stats = avatar.getStats();
+        if (statSetupDuration) statSetupDuration.textContent = stats.setupDurationMs ? stats.setupDurationMs.toString() : '-';
+        if (statLatency) statLatency.textContent = stats.firstFrameLatencyMs ? stats.firstFrameLatencyMs.toString() : '-';
+        if (statPacketsReceived) statPacketsReceived.textContent = stats.packetsReceived.toString();
+        if (statAudioSent) statAudioSent.textContent = stats.audioChunksSent.toString();
+        if (statVideoSent) statVideoSent.textContent = stats.videoFramesSent.toString();
+        if (statVideoPackets) statVideoPackets.textContent = stats.videoPacketsReceived.toString();
+        if (statTotalFrames) statTotalFrames.textContent = stats.totalVideoFrames.toString();
+        if (statSessionDuration) statSessionDuration.textContent = stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-';
+        if (statFps) statFps.textContent = stats.averageFps ? stats.averageFps.toString() : '-';
+    };
+
     // Listeners
     [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
         el.addEventListener('input', validateForm);
@@ -84,17 +154,42 @@ document.addEventListener('DOMContentLoaded', () => {
     sizeSelect.onchange = () => avatar.setAttribute('size', sizeSelect.value);
     positionSelect.onchange = () => avatar.setAttribute('position', positionSelect.value);
     avatarNameSelect.onchange = () => avatar.setPreview(avatarNameSelect.value);
+    
+    if (micAutoRequestToggle) {
+        micAutoRequestToggle.onchange = () => avatar.setAttribute('mic-auto-request', micAutoRequestToggle.checked.toString());
+    }
+    
+    [ctrlMic, ctrlCamera, ctrlScreen, ctrlMute, ctrlSnapshot].forEach(el => {
+        el.onchange = updateVisibleControls;
+    });
+
+    audioChunkSizeSlider.oninput = () => {
+        chunkSizeVal.textContent = audioChunkSizeSlider.value;
+        avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+    };
 
     avatar.addEventListener('avatar-connected', () => {
         streamBtn.disabled = false;
         streamBtn.textContent = 'Stop';
         streamBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+        
+        // Start polling stats
+        statsInterval = setInterval(updateStats, 1000);
     });
 
     avatar.addEventListener('avatar-disconnected', () => {
-        streamBtn.textContent = 'Start';
-        streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-        validateForm();
+        if (!isProcessingVideo) {
+            streamBtn.textContent = 'Start';
+            streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            validateForm();
+        }
+        
+        // Stop polling stats
+        if (statsInterval) {
+            clearInterval(statsInterval);
+            statsInterval = null;
+        }
+        updateStats(); // Final update
     });
 
     saveBtn.onclick = () => {
@@ -113,6 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (recordUserAudioCheckbox) {
             localStorage.setItem('gemini_record_user_audio', recordUserAudioCheckbox.checked.toString());
         }
+        
+        localStorage.setItem('gemini_mic_auto_request', micAutoRequestToggle.checked.toString());
+        localStorage.setItem('gemini_ctrl_mic', ctrlMic.checked.toString());
+        localStorage.setItem('gemini_ctrl_camera', ctrlCamera.checked.toString());
+        localStorage.setItem('gemini_ctrl_screen', ctrlScreen.checked.toString());
+        localStorage.setItem('gemini_ctrl_mute', ctrlMute.checked.toString());
+        localStorage.setItem('gemini_ctrl_snapshot', ctrlSnapshot.checked.toString());
+        
+        localStorage.setItem('gemini_audio_chunk_size', audioChunkSizeSlider.value);
 
         if (tokenInput.value) {
             localStorage.setItem('gemini_access_token', tokenInput.value);
@@ -163,9 +267,17 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     }
 
+    let isProcessingVideo = false;
+
     streamBtn.onclick = () => {
         if (avatar.isConnected) {
             avatar.stop();
+            
+            isProcessingVideo = true;
+            streamBtn.textContent = 'Processing video...';
+            streamBtn.disabled = true;
+            streamBtn.style.opacity = '0.5';
+            streamBtn.style.cursor = 'not-allowed';
             
             // Wait a bit for streams to close and finalize
             setTimeout(async () => {
@@ -181,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         console.log('Writing files to FFmpeg FS...');
                         await ffmpeg.writeFile('video.mp4', await fetchFile(videoBlob));
-                        await ffmpeg.writeFile('audio.webm', await fetchFile(audioBlob));
+                        await ffmpeg.writeFile('audio.pcm', await fetchFile(audioBlob));
                         
                         const pos = avatar.getAttribute('position') || 'top-right';
                         const avatarOnRight = pos.includes('right');
@@ -201,7 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('Executing FFmpeg command with filter:', filterComplex);
                         await ffmpeg.exec([
                             '-i', 'video.mp4', 
-                            '-i', 'audio.webm', 
+                            '-f', 's16le', 
+                            '-ar', '16000', 
+                            '-ac', '1', 
+                            '-i', 'audio.pcm', 
                             '-filter_complex', filterComplex, 
                             '-map', '0:v', 
                             '-map', '[a]', 
@@ -225,6 +340,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
                 }
+                
+                // Reset button state
+                isProcessingVideo = false;
+                streamBtn.textContent = 'Start';
+                streamBtn.disabled = false;
+                streamBtn.style.opacity = '1';
+                streamBtn.style.cursor = 'pointer';
+                streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                validateForm();
             }, 1000);
         } else {
             // Apply settings
@@ -239,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.setAttribute('language', languageSelect.value);
             avatar.setAttribute('record-video', saveVideoToggle.checked ? 'true' : 'false');
             avatar.setAttribute('debug', debugToggle.checked ? 'true' : 'false');
+            avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
 
             if (avatarNameSelect.value === 'AudioOnly') {
                 avatar.setAttribute('output-mode', 'audio');
@@ -275,6 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const pos = positionSelect.value;
             const voice = voiceSelect.value;
             const lang = languageSelect.value;
+            const chunkSize = audioChunkSizeSlider.value;
+            
+            const visibleControls = [];
+            if (ctrlMic.checked) visibleControls.push('mic');
+            if (ctrlCamera.checked) visibleControls.push('camera');
+            if (ctrlScreen.checked) visibleControls.push('screen');
+            if (ctrlMute.checked) visibleControls.push('mute');
+            if (ctrlSnapshot.checked) visibleControls.push('snapshot');
 
             const htmlCode = `<gemini-avatar
     project-id="${project}"
@@ -284,6 +417,9 @@ document.addEventListener('DOMContentLoaded', () => {
     position="${pos}"
     voice="${voice}"
     language="${lang}"
+    mic-auto-request="${micAutoRequestToggle.checked}"
+    visible-controls="${visibleControls.join(',')}"
+    audio-chunk-size="${chunkSize}"
 ></gemini-avatar>`;
 
             navigator.clipboard.writeText(htmlCode).then(() => {
@@ -295,5 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Initial apply
+    updateVisibleControls();
     validateForm();
 });

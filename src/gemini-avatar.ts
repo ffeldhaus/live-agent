@@ -61,6 +61,20 @@ export class GeminiAvatar extends HTMLElement {
   private videoInputInterval: any = null;
   private micRecorder: MediaRecorder | null = null;
   private micChunks: Blob[] = [];
+  private accumulatedPcmData: Int16Array[] = [];
+  private isMicMuted = false;
+  private receivedFirstVideoFrame = false;
+  private silenceInterval: any = null;
+  
+  // Statistics
+  private startTime: number | null = null;
+  private setupCompleteTime: number | null = null;
+  private firstFrameTime: number | null = null;
+  private packetsReceived = 0;
+  private audioChunksSent = 0;
+  private videoFramesSent = 0;
+  private videoFramesReceived = 0;
+  
   private audioContext: AudioContext | null = null;
   private processor: AudioWorkletNode | null = null;
   private isStreamingCamera = false;
@@ -76,14 +90,20 @@ export class GeminiAvatar extends HTMLElement {
   connectedCallback() {
     this.render();
     this.loadGoogleIdentityServices();
-    this.checkMicPermission().then((state) => {
-      if (state === "granted") {
-        this.startMic();
-      } else {
-        this.isRecording = false;
-        if (this.micBtn) this.micBtn.classList.add("off");
-      }
-    });
+    const autoRequest = this.getAttribute("mic-auto-request") !== "false";
+    if (autoRequest) {
+      this.checkMicPermission().then((state) => {
+        if (state === "granted") {
+          this.startMic();
+        } else {
+          this.isRecording = false;
+          if (this.micBtn) this.micBtn.classList.add("off");
+        }
+      });
+    } else {
+      this.isMicMuted = true;
+      if (this.micBtn) this.micBtn.classList.add("off");
+    }
     this.updateSize(this.getAttribute("size") || "300px");
     this.updatePosition(this.getAttribute("position") || "top-right");
     this.setPreview(this.getAttribute("avatar-name") || "Kira");
@@ -157,12 +177,23 @@ export class GeminiAvatar extends HTMLElement {
 
     this.snapshotBtn = this.createButton("Save Frame as WebP", `<svg viewBox="0 0 24 24"><path d="M21 19H3c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h4.17l1.83-2h6l1.83 2H21c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2zm-9-2c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg>`, () => this.saveFrame());
     controls.appendChild(this.snapshotBtn);
+    
+    this.updateControlsVisibility(this.getAttribute("visible-controls") || "mic,camera,screen,mute");
 
     this.container.appendChild(controls);
     this.shadowRoot.appendChild(this.container);
 
     this.resetMediaSource();
     this.initMpegts();
+  }
+
+  private updateControlsVisibility(visibleControls: string) {
+    const list = visibleControls.split(',').map(s => s.trim());
+    if (this.micBtn) this.micBtn.style.display = list.includes('mic') ? 'flex' : 'none';
+    if (this.camBtn) this.camBtn.style.display = list.includes('camera') ? 'flex' : 'none';
+    if (this.screenBtn) this.screenBtn.style.display = list.includes('screen') ? 'flex' : 'none';
+    if (this.muteBtn) this.muteBtn.style.display = list.includes('mute') ? 'flex' : 'none';
+    if (this.snapshotBtn) this.snapshotBtn.style.display = list.includes('snapshot') ? 'flex' : 'none';
   }
 
   private createButton(title: string, iconSVG: string, onClick: () => void): HTMLButtonElement {
@@ -237,6 +268,9 @@ export class GeminiAvatar extends HTMLElement {
       "voice",
       "language",
       "output-mode",
+      "mic-auto-request",
+      "visible-controls",
+      "audio-chunk-size",
     ];
   }
 
@@ -262,6 +296,14 @@ export class GeminiAvatar extends HTMLElement {
         break;
       case "avatar-name":
         this.setPreview(newValue);
+        break;
+      case "visible-controls":
+        this.updateControlsVisibility(newValue);
+        break;
+      case "mic-auto-request":
+        if (newValue === "true" && !this.isRecording) {
+          this.startMic();
+        }
         break;
     }
   }
@@ -309,14 +351,34 @@ export class GeminiAvatar extends HTMLElement {
     
     if (this.isRecordingVideo && this.micStream) {
       this.micChunks = [];
+      this.accumulatedPcmData = [];
+      this.receivedFirstVideoFrame = false;
       this.micRecorder = new MediaRecorder(this.micStream);
       this.micRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           this.micChunks.push(e.data);
         }
       };
-      this.micRecorder.start();
-      this._log("Microphone recording started");
+      // Removed immediate start, will start on setupComplete
+    }
+    
+    if (!this.accessToken) {
+      const clientId = this.getAttribute("oauth-client-id");
+      if (clientId) {
+        this._log("No access token available. Attempting to acquire via OAuth...");
+        // @ts-ignore
+        if (window.google?.accounts?.oauth2?.initTokenClient) {
+          if (!this.tokenClient) {
+            this.initGoogleAuth();
+          }
+          this._log("Requesting access token with prompt...");
+          this.tokenClient.requestAccessToken({ prompt: "select_account" });
+          return; // Wait for callback to call tryConnect
+        } else {
+          this._log("Google Identity Services not loaded yet or failed to load.", null, true);
+          return;
+        }
+      }
     }
     
     await this.tryConnect();
@@ -324,6 +386,11 @@ export class GeminiAvatar extends HTMLElement {
 
   public stop() {
     this._log("Stopping session...");
+    if (this.silenceInterval) {
+      clearInterval(this.silenceInterval);
+      this.silenceInterval = null;
+      this._log("Silence padding stopped");
+    }
     if (this.micRecorder && this.micRecorder.state !== 'inactive') {
       this.micRecorder.stop();
       this._log("Microphone recording stopped");
@@ -366,8 +433,45 @@ export class GeminiAvatar extends HTMLElement {
 
   public getSessionFiles() {
     const videoBlob = new Blob(this.recordedChunks, { type: "video/mp4" });
-    const audioBlob = new Blob(this.micChunks, { type: "audio/webm" });
+    
+    const totalLength = this.accumulatedPcmData.reduce((acc, chunk) => acc + chunk.length, 0);
+    const result = new Int16Array(totalLength);
+    let offset = 0;
+    for (const chunk of this.accumulatedPcmData) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    const audioBlob = new Blob([result.buffer], { type: "application/octet-stream" });
     return { videoBlob, audioBlob };
+  }
+
+  public getStats() {
+    const now = new Date().getTime();
+    const setupDurationMs = this.setupCompleteTime && this.startTime ? this.setupCompleteTime - this.startTime : null;
+    const firstFrameLatencyMs = this.firstFrameTime && this.setupCompleteTime ? this.firstFrameTime - this.setupCompleteTime : null;
+    const sessionDurationMs = this.setupCompleteTime ? now - this.setupCompleteTime : null;
+    
+    // Get actual frames from video element if supported
+    const totalFrames = this.videoEl && 'getVideoPlaybackQuality' in this.videoEl
+      ? (this.videoEl as any).getVideoPlaybackQuality().totalVideoFrames
+      : 0;
+
+    const averageFps = sessionDurationMs && sessionDurationMs > 0 && totalFrames > 0
+      ? (totalFrames / (sessionDurationMs / 1000))
+      : null;
+
+    return {
+      setupDurationMs,
+      firstFrameLatencyMs,
+      packetsReceived: this.packetsReceived,
+      audioChunksSent: this.audioChunksSent,
+      videoFramesSent: this.videoFramesSent,
+      videoPacketsReceived: this.videoFramesReceived,
+      totalVideoFrames: totalFrames,
+      sessionDurationMs,
+      averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
+    };
   }
 
   public get isConnected(): boolean {
@@ -388,14 +492,22 @@ export class GeminiAvatar extends HTMLElement {
   private async startMic() {
     try {
       this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      if (this.silenceInterval) {
+        clearInterval(this.silenceInterval);
+        this.silenceInterval = null;
+        this._log("Silence padding stopped (Mic started)");
+      }
+
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const source = this.audioContext.createMediaStreamSource(this.micStream);
 
+      const bufferSize = parseInt(this.getAttribute("audio-chunk-size") || "2048");
       const workletCode = `
         class AudioProcessor extends AudioWorkletProcessor {
           constructor() {
             super();
-            this.buffer = new Float32Array(2048);
+            this.buffer = new Float32Array(${bufferSize});
             this.offset = 0;
           }
           process(inputs, outputs, parameters) {
@@ -406,7 +518,7 @@ export class GeminiAvatar extends HTMLElement {
                 this.buffer[this.offset++] = inputChannel[i];
                 if (this.offset >= this.buffer.length) {
                   this.port.postMessage(this.buffer);
-                  this.buffer = new Float32Array(2048);
+                  this.buffer = new Float32Array(${bufferSize});
                   this.offset = 0;
                 }
               }
@@ -429,11 +541,23 @@ export class GeminiAvatar extends HTMLElement {
       this.processor.port.onmessage = (e) => {
         const inputData = e.data;
         const pcmData = this.float32ToInt16(inputData);
+        
+        if (this.isMicMuted) {
+          pcmData.fill(0); // Silence pad
+        }
+        
         const base64Data = this.arrayBufferToBase64(pcmData.buffer);
 
         if (this.isSetupComplete && this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const message = { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: base64Data } } };
-          this.ws.send(JSON.stringify(message));
+          if (this.receivedFirstVideoFrame) {
+            const message = { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: base64Data } } };
+            this.ws.send(JSON.stringify(message));
+            
+            if (this.isRecordingVideo) {
+              this.accumulatedPcmData.push(pcmData);
+            }
+            this.audioChunksSent++;
+          }
         }
       };
 
@@ -462,10 +586,12 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   private toggleMic() {
-    if (this.isRecording) {
-      this.stopMic();
-    } else {
+    if (!this.isRecording) {
       this.startMic();
+    } else {
+      this.isMicMuted = !this.isMicMuted;
+      if (this.micBtn) this.micBtn.classList.toggle("off", this.isMicMuted);
+      this._log(this.isMicMuted ? "Microphone muted" : "Microphone unmuted");
     }
   }
 
@@ -493,6 +619,7 @@ export class GeminiAvatar extends HTMLElement {
         if (this.isSetupComplete && this.ws && this.ws.readyState === WebSocket.OPEN) {
           const message = { realtimeInput: { video: { mimeType: "image/jpeg", data: base64Data } } };
           this.ws.send(JSON.stringify(message));
+          this.videoFramesSent++;
         }
       }
     }, 1000);
@@ -587,24 +714,36 @@ export class GeminiAvatar extends HTMLElement {
 
   private initGoogleAuth() {
     const clientId = this.getAttribute("oauth-client-id");
-    if (!clientId) return;
+    this._log("initGoogleAuth called", { clientId });
+    if (!clientId) {
+      this._log("No oauth-client-id attribute found.");
+      return;
+    }
 
-    // @ts-ignore
-    this.tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: "https://www.googleapis.com/auth/cloud-platform",
-      callback: (response: any) => {
-        if (response.error !== undefined) {
-          console.error("OAuth Error:", response);
-          return;
-        }
-        this.accessToken = response.access_token;
-        this.tryConnect();
-      },
-    });
+    try {
+      // @ts-ignore
+      this.tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: "https://www.googleapis.com/auth/cloud-platform",
+        callback: (response: any) => {
+          this._log("OAuth callback received", { error: response.error });
+          if (response.error !== undefined) {
+            console.error("OAuth Error:", response);
+            return;
+          }
+          this._log("Access token acquired");
+          this.accessToken = response.access_token;
+          this.tryConnect();
+        },
+      });
 
-    // @ts-ignore
-    this.tokenClient.requestAccessToken({ prompt: "none" });
+      this._log("Requesting silent token...");
+      // @ts-ignore
+      this.tokenClient.requestAccessToken({ prompt: "none" });
+    } catch (e: any) {
+      console.error("Failed to init Google Auth:", e);
+      this._log("Failed to init Google Auth", { error: e.message }, true);
+    }
   }
 
   private resetMediaSource() {
@@ -667,6 +806,14 @@ export class GeminiAvatar extends HTMLElement {
     if (this.ws) return;
 
     this.resetMediaSource();
+    
+    this.packetsReceived = 0;
+    this.audioChunksSent = 0;
+    this.videoFramesSent = 0;
+    this.videoFramesReceived = 0;
+    this.startTime = null;
+    this.setupCompleteTime = null;
+    this.firstFrameTime = null;
 
     const location = this.getAttribute("location") || "us-central1";
     const project = this.getAttribute("project-id");
@@ -682,6 +829,7 @@ export class GeminiAvatar extends HTMLElement {
     this._log("Connecting to WebSocket...", { url }, true);
 
     try {
+      this.startTime = new Date().getTime();
       this.ws = new WebSocket(url);
 
       this.ws.onopen = () => {
@@ -755,6 +903,7 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   private handleMessage(event: MessageEvent) {
+    this.packetsReceived++;
     this.messageQueue.push(event.data);
     this.processQueue();
   }
@@ -797,6 +946,12 @@ export class GeminiAvatar extends HTMLElement {
     if (response.setupComplete) {
       this._log("Setup complete received", response.setupComplete, true);
       this.isSetupComplete = true;
+      this.setupCompleteTime = new Date().getTime();
+      
+      if (this.micRecorder && this.micRecorder.state === 'inactive') {
+        this.micRecorder.start();
+        this._log("Microphone recording started (Setup Complete)");
+      }
     }
 
     if (response.serverContent && response.serverContent.modelTurn) {
@@ -869,6 +1024,19 @@ export class GeminiAvatar extends HTMLElement {
 
   private async handleVideoDataChunk(base64Data: string, mimeType: string) {
     try {
+      this._log("handleVideoDataChunk called", { isRecordingVideo: this.isRecordingVideo, size: base64Data.length });
+      
+      if (!this.receivedFirstVideoFrame) {
+        this.receivedFirstVideoFrame = true;
+        this._log("First video frame received (JSON)!");
+        this.firstFrameTime = new Date().getTime();
+        
+        if (!this.micStream && this.isRecordingVideo) {
+          this.startSilencePadding();
+        }
+      }
+      this.videoFramesReceived++;
+
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
@@ -890,6 +1058,18 @@ export class GeminiAvatar extends HTMLElement {
 
   private async handleVideoChunk(blob: Blob) {
     if (this.isRecordingVideo) this.recordedChunks.push(blob);
+    
+    if (!this.receivedFirstVideoFrame) {
+      this.receivedFirstVideoFrame = true;
+      this._log("First video frame received (raw)!");
+      this.firstFrameTime = new Date().getTime();
+      
+      if (!this.micStream && this.isRecordingVideo) {
+        this.startSilencePadding();
+      }
+    }
+    this.videoFramesReceived++;
+
     const arrayBuffer = await blob.arrayBuffer();
     if (this.sourceBuffer) {
       this.videoChunkQueue.push(arrayBuffer);
@@ -914,6 +1094,20 @@ export class GeminiAvatar extends HTMLElement {
     const len = bytes.byteLength;
     for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
     return window.btoa(binary);
+  }
+
+  private startSilencePadding() {
+    this._log("Starting silence padding...");
+    const sampleRate = 16000;
+    const bufferSize = 2048;
+    const intervalMs = (bufferSize / sampleRate) * 1000;
+    
+    this.silenceInterval = setInterval(() => {
+      if (this.isRecordingVideo) {
+        const pcmData = new Int16Array(bufferSize);
+        this.accumulatedPcmData.push(pcmData);
+      }
+    }, intervalMs);
   }
 
   private processVideoQueue() {

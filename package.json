@@ -17,6 +17,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:demo": "vite build --config vite.demo.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky"
@@ -25,6 +26,7 @@
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.1",
     "@vitejs/plugin-basic-ssl": "^1.1.0",
+    "@vitest/coverage-v8": "^1.6.1",
     "happy-dom": "^14.12.3",
     "husky": "^9.0.11",
     "typescript": "^5.3.3",

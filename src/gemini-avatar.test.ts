@@ -123,5 +123,47 @@ describe('GeminiAvatar', () => {
     expect(typeof element.sendMessage).toBe('function');
   });
 
-  // Add more complex tests for WebSocket handling and media if possible with mocks
+  it('should return stats with default values', () => {
+    const stats = element.getStats();
+    expect(stats.packetsReceived).toBe(0);
+    expect(stats.audioChunksSent).toBe(0);
+    expect(stats.videoFramesSent).toBe(0);
+    expect(stats.setupDurationMs).toBeNull();
+  });
+
+  it('should update stats correctly', () => {
+    const anyEl = element as any;
+    anyEl.startTime = 1000;
+    anyEl.setupCompleteTime = 2000;
+    anyEl.firstFrameTime = 2500;
+    anyEl.packetsReceived = 10;
+    anyEl.audioChunksSent = 5;
+    anyEl.videoFramesReceived = 24;
+    
+    anyEl.videoEl = document.createElement('video');
+    anyEl.videoEl.getVideoPlaybackQuality = vi.fn().mockReturnValue({ totalVideoFrames: 48 });
+
+    const stats = element.getStats();
+    expect(stats.setupDurationMs).toBe(1000);
+    expect(stats.firstFrameLatencyMs).toBe(500);
+    expect(stats.packetsReceived).toBe(10);
+    expect(stats.audioChunksSent).toBe(5);
+    expect(stats.totalVideoFrames).toBe(48);
+  });
+
+  it('should show/hide controls based on visible-controls attribute', () => {
+    element.setAttribute('visible-controls', 'mic,mute');
+    
+    const micBtn = element.shadowRoot?.querySelector('button:nth-child(1)') as HTMLButtonElement;
+    const camBtn = element.shadowRoot?.querySelector('button:nth-child(2)') as HTMLButtonElement;
+    const screenBtn = element.shadowRoot?.querySelector('button:nth-child(3)') as HTMLButtonElement;
+    const muteBtn = element.shadowRoot?.querySelector('button:nth-child(4)') as HTMLButtonElement;
+    const snapshotBtn = element.shadowRoot?.querySelector('button:nth-child(5)') as HTMLButtonElement;
+
+    expect(micBtn.style.display).toBe('flex');
+    expect(camBtn.style.display).toBe('none');
+    expect(screenBtn.style.display).toBe('none');
+    expect(muteBtn.style.display).toBe('flex');
+    expect(snapshotBtn.style.display).toBe('none');
+  });
 });
