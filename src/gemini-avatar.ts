@@ -450,7 +450,7 @@ export class GeminiAvatar extends HTMLElement {
     const now = new Date().getTime();
     const setupDurationMs = this.setupCompleteTime && this.startTime ? this.setupCompleteTime - this.startTime : null;
     const firstFrameLatencyMs = this.firstFrameTime && this.setupCompleteTime ? this.firstFrameTime - this.setupCompleteTime : null;
-    const sessionDurationMs = this.setupCompleteTime ? now - this.setupCompleteTime : null;
+    const sessionDurationMs = this.firstFrameTime ? now - this.firstFrameTime : null;
     
     // Get actual frames from video element if supported
     const totalFrames = this.videoEl && 'getVideoPlaybackQuality' in this.videoEl
