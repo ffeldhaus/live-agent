@@ -166,4 +166,24 @@ describe('GeminiAvatar', () => {
     expect(muteBtn.style.display).toBe('flex');
     expect(snapshotBtn.style.display).toBe('none');
   });
+
+  it('should call mediaManager.startMic and client.connect on start', async () => {
+    const anyEl = element as any;
+    anyEl.mediaManager = {
+        startMic: vi.fn().mockResolvedValue(true),
+        setRecordingVideo: vi.fn(),
+        setupMicRecorder: vi.fn(),
+        stopMic: vi.fn(),
+        stopVideoStreaming: vi.fn()
+    };
+    anyEl.tryConnect = vi.fn().mockResolvedValue(undefined);
+
+    element.setAttribute('access-token', 'test-token');
+    element.setAttribute('project-id', 'test-project');
+    
+    await element.start();
+    
+    expect(anyEl.mediaManager.startMic).toHaveBeenCalled();
+    expect(anyEl.tryConnect).toHaveBeenCalled();
+  });
 });

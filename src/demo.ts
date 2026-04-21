@@ -1,4 +1,9 @@
-import { GeminiAvatar, AVATAR_PRESETS, VOICE_PRESETS } from './gemini-avatar';
+import { GeminiAvatar } from './gemini-avatar';
+import { AVATAR_PRESETS, VOICE_PRESETS } from './constants';
+import { qaScenarios } from './walkthrough-data';
+import { generateContent, updateBackground, applyTheme, applyAvatarTheme, downloadBlob } from './demo-helpers';
+import { handleImageGeneration, handleCameraCapture, handleUpload } from './demo-handlers';
+import { setupWalkthrough } from './demo-walkthrough';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Demo script started');
@@ -97,9 +102,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // New Custom Avatar Name
     const customAvatarName = document.getElementById('customAvatarName') as HTMLInputElement;
+    const newCustomAvatarBtn = document.getElementById('newCustomAvatarBtn') as HTMLButtonElement;
 
     // Map to store custom avatars (name -> dataUrl)
     const customAvatars: Record<string, string> = {};
+
+    // Reactive State Store
+    const appState = {
+        projectId: '',
+        location: 'us-central1',
+        accessToken: '',
+        oauthClientId: '',
+        avatarName: 'Kira',
+        voice: 'kore',
+        language: 'en-US',
+        size: '300px',
+        position: 'top-right',
+        saveVideo: false,
+        debug: false,
+        recordUserAudio: false,
+        micAutoRequest: true,
+        ctrlMic: true,
+        ctrlCamera: true,
+        ctrlScreen: true,
+        ctrlMute: true,
+        ctrlSnapshot: false,
+        audioChunkSize: '2048',
+        systemInstruction: '',
+        defaultGreeting: '',
+        imagePrompt: '',
+        enableChromaKey: false,
+        chromaKeyColor: 'green',
+        backgroundColor: 'white',
+        enableTranscript: false,
+        enableChatInput: false,
+        renderTranscriptOutside: false,
+        enableGrounding: false,
+        customAvatarName: ''
+    };
+
+    const store = new Proxy(appState as any, {
+        set(target: any, property: string, value: any) {
+            target[property] = value;
+            // Trigger UI updates and validation!
+            if (typeof validateForm === 'function') validateForm();
+            return true;
+        }
+    });
 
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
@@ -164,7 +213,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('gemini_avatar_name')) {
         const name = localStorage.getItem('gemini_avatar_name')!;
         avatarNameSelect.value = name;
-        applyAvatarTheme(name);
+        applyAvatarTheme(name, avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
+        
+        const preset = (AVATAR_PRESETS as any)[name];
+        if (preset && preset.defaultGreeting) {
+            defaultGreetingInput.value = preset.defaultGreeting;
+        }
+    } else {
+        avatarNameSelect.value = 'Kira';
+        applyAvatarTheme('Kira', avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
+        
+        const preset = (AVATAR_PRESETS as any)['Kira'];
+        if (preset && preset.defaultGreeting) {
+            defaultGreetingInput.value = preset.defaultGreeting;
+        }
     }
     
     if (localStorage.getItem('gemini_size')) {
@@ -239,13 +301,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function validateForm() {
-        const project = projectIdInput.value.trim();
-        const loc = locationInput.value.trim() || 'us-central1';
-        const token = tokenInput.value.trim();
-        const oauth = oauthClientIdInput.value.trim();
+        const project = store.projectId.trim();
+        const loc = store.location.trim();
+        const token = store.accessToken.trim();
+        const oauth = store.oauthClientId.trim();
 
         const isValid = project.length > 0 && loc.length > 0 && (token.length > 0 || oauth.length > 0);
-        if (saveBtn) saveBtn.disabled = !isValid;
 
         if (!avatar.isConnected && streamBtn) {
             streamBtn.disabled = !isValid;
@@ -257,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (luckyGreetingBtn) luckyGreetingBtn.disabled = !isLuckyValid;
         
         // Custom Avatar validation!
-        const customName = customAvatarName ? customAvatarName.value.trim() : '';
+        const customName = store.customAvatarName.trim();
         const isCustomValid = customName.length > 0;
         
         const isValidForCustom = isLuckyValid && isCustomValid;
@@ -270,6 +331,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (luckyImageBtn) luckyImageBtn.disabled = !isLuckyValid;
         
         // Update tooltips
+        const missingGeneral = [];
+        if (project.length === 0) missingGeneral.push('Project ID');
+        if (loc.length === 0) missingGeneral.push('Location');
+        if (token.length === 0 && oauth.length === 0) missingGeneral.push('Access Token or OAuth Client ID');
+        
+        const generalMissingStr = missingGeneral.length > 0 ? ` (Missing: ${missingGeneral.join(', ')})` : '';
+
         const missingLucky = [];
         if (project.length === 0) missingLucky.push('Project ID');
         if (loc.length === 0) missingLucky.push('Location');
@@ -281,13 +349,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const luckyMissingStr = missingLucky.length > 0 ? ` (Missing: ${missingLucky.join(', ')})` : '';
         const customMissingStr = missingCustom.length > 0 ? ` (Missing: ${missingCustom.join(', ')})` : '';
         
-        if (luckyPersonaBtn) luckyPersonaBtn.title = "Generate a random persona." + luckyMissingStr;
-        if (luckyGreetingBtn) luckyGreetingBtn.title = "Generate a default greeting." + luckyMissingStr;
+        if (saveBtn) saveBtn.setAttribute('data-tooltip', "Save configuration to local storage." + generalMissingStr);
+        if (streamBtn) {
+            if (avatar.isConnected) {
+                streamBtn.setAttribute('data-tooltip', "Stop the avatar session.");
+            } else {
+                streamBtn.setAttribute('data-tooltip', "Start the avatar session." + generalMissingStr);
+            }
+        }
+
+        if (luckyPersonaBtn) luckyPersonaBtn.setAttribute('data-tooltip', "Generate a random persona." + luckyMissingStr);
+        if (luckyGreetingBtn) luckyGreetingBtn.setAttribute('data-tooltip', "Generate a default greeting." + luckyMissingStr);
         
-        if (cameraBtn) cameraBtn.title = "Take a photo with your camera to create a custom avatar." + customMissingStr;
-        if (uploadBtn) uploadBtn.title = "Upload an image to create a custom avatar." + customMissingStr;
-        if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + luckyMissingStr;
-        if (generateImageBtn) generateImageBtn.title = "Generate an avatar image from prompt." + customMissingStr;
+        if (cameraBtn) cameraBtn.setAttribute('data-tooltip', "Take a photo with your camera to create a custom avatar." + customMissingStr);
+        if (uploadBtn) uploadBtn.setAttribute('data-tooltip', "Upload an image to create a custom avatar." + customMissingStr);
+        if (luckyImageBtn) luckyImageBtn.setAttribute('data-tooltip', "Generate a prompt for the avatar image." + luckyMissingStr);
+        if (generateImageBtn) generateImageBtn.setAttribute('data-tooltip', "Generate an avatar image from prompt." + customMissingStr);
     }
 
     const updateVisibleControls = () => {
@@ -334,139 +411,130 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // REST API Helper
-    async function generateContent(model: string, prompt: string, inlineData?: { mimeType: string, data: string }) {
-        const project = projectIdInput.value;
-        let location = locationInput.value || 'us-central1';
-        // Force global for specific models!
-        if (model === 'gemini-3-flash-preview' || model === 'gemini-3.1-flash-image-preview') {
-            location = 'global';
-        }
-        const token = tokenInput.value;
-        
-        if (!project || !token) {
-            throw new Error('Project ID and Access Token are required for AI generation features.');
-        }
-        
-        const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
-        const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
-        
-        const parts: any[] = [{ text: prompt }];
-        if (inlineData) {
-            parts.push({ inlineData });
-        }
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{ role: 'user', parts }]
-            })
-        });
-        
-        if (!response.ok) {
-            const err = await response.text();
-            console.error(`API Error (${model}):`, err);
-            throw new Error(`API Error: ${response.statusText}`);
-        }
-        
-        return await response.json();
-    }
-
-    // Background Color Adaptation
-    function updateBackground(imageUrl: string) {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 100;
-            canvas.height = 100;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(img, 0, 0, 100, 100);
-                
-                // Read pixels from the bottom half (indicative of Avatar color)
-                const imgData = ctx.getImageData(0, 50, 100, 50);
-                const data = imgData.data;
-                
-                // Count color frequencies
-                const colors: Record<string, number> = {};
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i+1];
-                    const b = data[i+2];
-                    
-                    if (data[i+3] < 128) continue; // Ignore transparent
-                    
-                    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-                    colors[hex] = (colors[hex] || 0) + 1;
-                }
-                
-                // Sort by frequency
-                const sortedColors = Object.entries(colors).sort((a, b) => b[1] - a[1]);
-                
-                if (sortedColors.length > 0) {
-                    const color1 = sortedColors[0][0];
-                    const color2 = sortedColors[1] ? sortedColors[1][0] : color1;
-                    const color3 = sortedColors[2] ? sortedColors[2][0] : color2;
-                    const color4 = sortedColors[3] ? sortedColors[3][0] : color3;
-                    
-                    console.log('Dominant colors detected (bottom half):', color1, color2, color3, color4);
-                    
-                    applyTheme([color1, color2, color3, color4], '15s');
-                }
-            }
-        };
-        img.src = imageUrl;
-    }
-
-    function applyTheme(colors: string[], speed: string) {
-        const body = document.body;
-        body.classList.add('animated-bg');
-        body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
-        body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
-        body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
-        body.style.setProperty('--c4', colors[3] ? colors[3] + '44' : colors[0] + '44');
-        body.style.setProperty('--speed', speed);
-    }
-
-    function applyAvatarTheme(avatarName: string) {
-        const preset = (AVATAR_PRESETS as any)[avatarName];
-        if (preset && preset.palette) {
-            // Map mood to animation speed
-            let speed = '15s';
-            if (preset.mood.includes('Breezy') || preset.mood.includes('Vibrant')) speed = '10s';
-            if (preset.mood.includes('Calm') || preset.mood.includes('Gentle')) speed = '25s';
-            
-            applyTheme(preset.palette, speed);
-            avatar.setPreview(avatarName);
-        } else if (customAvatars[avatarName]) {
-            if (customAvatarName) customAvatarName.value = avatarName;
-            if (generatedImg) generatedImg.src = customAvatars[avatarName];
-            if (generatedImageContainer) generatedImageContainer.style.display = 'block';
-            avatar.setAttribute('custom-avatar-url', customAvatars[avatarName]);
-            updateBackground(customAvatars[avatarName]);
-        } else {
-            avatar.setPreview(avatarName);
-            const pr = (AVATAR_PRESETS as any)[avatarName];
-            if (pr && pr.image) {
-                updateBackground(pr.image);
-            }
-        }
-    }
 
     // Listeners
-    [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
-        el?.addEventListener('input', validateForm);
+    projectIdInput.addEventListener('input', () => store.projectId = projectIdInput.value);
+    locationInput.addEventListener('input', () => store.location = locationInput.value);
+    tokenInput.addEventListener('input', () => store.accessToken = tokenInput.value);
+    oauthClientIdInput.addEventListener('input', () => store.oauthClientId = oauthClientIdInput.value);
+
+    if (saveBtn) {
+        saveBtn.onclick = () => {
+            localStorage.setItem('gemini_project_id', projectIdInput.value);
+            localStorage.setItem('gemini_location', locationInput.value);
+            localStorage.setItem('gemini_avatar_name', avatarNameSelect.value);
+            localStorage.setItem('gemini_size', sizeSelect.value);
+            localStorage.setItem('gemini_position', positionSelect.value);
+            localStorage.setItem('gemini_oauth_client_id', oauthClientIdInput.value);
+            localStorage.setItem('gemini_voice', voiceSelect.value);
+            localStorage.setItem('gemini_language', languageSelect.value);
+            
+            const token = tokenInput.value;
+            if (token) {
+                localStorage.setItem('gemini_access_token', token);
+                localStorage.setItem('gemini_token_time', new Date().getTime().toString());
+            } else {
+                localStorage.removeItem('gemini_access_token');
+                localStorage.removeItem('gemini_token_time');
+            }
+            
+            localStorage.setItem('gemini_save_video', saveVideoToggle.checked.toString());
+            localStorage.setItem('gemini_debug', debugToggle.checked.toString());
+            if (recordUserAudioCheckbox) {
+                localStorage.setItem('gemini_record_user_audio', recordUserAudioCheckbox.checked.toString());
+            }
+            if (micAutoRequestToggle) {
+                localStorage.setItem('gemini_mic_auto_request', micAutoRequestToggle.checked.toString());
+            }
+            
+            localStorage.setItem('gemini_ctrl_mic', ctrlMic.checked.toString());
+            localStorage.setItem('gemini_ctrl_camera', ctrlCamera.checked.toString());
+            localStorage.setItem('gemini_ctrl_screen', ctrlScreen.checked.toString());
+            localStorage.setItem('gemini_ctrl_mute', ctrlMute.checked.toString());
+            localStorage.setItem('gemini_ctrl_snapshot', ctrlSnapshot.checked.toString());
+            
+            localStorage.setItem('gemini_audio_chunk_size', audioChunkSizeSlider.value);
+            localStorage.setItem('gemini_system_instruction', systemInstructionInput.value);
+            localStorage.setItem('gemini_default_greeting', defaultGreetingInput.value);
+            localStorage.setItem('gemini_image_prompt', imagePromptInput.value);
+            
+            localStorage.setItem('gemini_enable_chroma_key', enableChromaKey.checked.toString());
+            localStorage.setItem('gemini_chroma_key_color', chromaKeyColor.value);
+            localStorage.setItem('gemini_background_color', backgroundColor.value);
+            
+            localStorage.setItem('gemini_enable_transcript', enableTranscript.checked.toString());
+            localStorage.setItem('gemini_enable_chat_input', enableChatInput.checked.toString());
+            localStorage.setItem('gemini_enable_transcript_outside', renderOutsideToggle.checked.toString());
+            if (enableGrounding) {
+                localStorage.setItem('gemini_enable_grounding', enableGrounding.checked.toString());
+            }
+            
+            localStorage.setItem('gemini_custom_avatars', JSON.stringify(customAvatars));
+            
+            alert('Configuration saved.');
+        };
+    }
+
+    avatar.addEventListener('avatar-disconnected', () => {
+        if (streamBtn) {
+            streamBtn.textContent = 'Start';
+            streamBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+            streamBtn.disabled = false;
+        }
+        if (statsInterval) {
+            clearInterval(statsInterval);
+            statsInterval = null;
+        }
+        validateForm();
     });
+
+    function pollValidation() {
+        validateForm();
+        setTimeout(pollValidation, 500);
+    }
+    pollValidation();
     
     if (customAvatarName) {
         customAvatarName.addEventListener('input', () => {
-            validateForm();
+            store.customAvatarName = customAvatarName.value;
+            
+            const newName = customAvatarName.value.trim();
+            const oldName = avatarNameSelect.value;
+            const hasImage = generatedImageContainer && generatedImageContainer.style.display !== 'none';
+            
+            // Show/hide New Custom Avatar button
+            if (newCustomAvatarBtn) {
+                newCustomAvatarBtn.style.display = (newName && hasImage) ? 'inline-block' : 'none';
+            }
+            
+            // Rename custom avatar if conditions are met
+            if (newName && oldName && customAvatars[oldName] && newName !== oldName && hasImage) {
+                const imageData = customAvatars[oldName];
+                delete customAvatars[oldName];
+                customAvatars[newName] = imageData;
+                
+                // Update dropdown option
+                for (let i = 0; i < avatarNameSelect.options.length; i++) {
+                    if (avatarNameSelect.options[i].value === oldName) {
+                        avatarNameSelect.options[i].value = newName;
+                        avatarNameSelect.options[i].textContent = newName;
+                        break;
+                    }
+                }
+                avatarNameSelect.value = newName;
+            }
         });
+    }
+
+    if (newCustomAvatarBtn) {
+        newCustomAvatarBtn.onclick = () => {
+            if (customAvatarName) customAvatarName.value = '';
+            if (generatedImg) generatedImg.src = '';
+            if (generatedImageContainer) generatedImageContainer.style.display = 'none';
+            newCustomAvatarBtn.style.display = 'none';
+            validateForm();
+        };
     }
 
     if (sizeSelect) sizeSelect.onchange = () => avatar.setAttribute('size', sizeSelect.value);
@@ -475,7 +543,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (avatarNameSelect) {
         avatarNameSelect.onchange = () => {
             const val = avatarNameSelect.value;
-            applyAvatarTheme(val);
+            applyAvatarTheme(val, avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
+            
+            const preset = (AVATAR_PRESETS as any)[val];
+            if (preset && preset.defaultGreeting) {
+                defaultGreetingInput.value = preset.defaultGreeting;
+            } else if (val === 'Custom') {
+                defaultGreetingInput.value = 'Hi';
+            }
         };
     }
     
@@ -522,13 +597,17 @@ document.addEventListener('DOMContentLoaded', () => {
         luckyPersonaBtn.onclick = async () => {
             const name = avatarNameSelect.value;
             const voice = voiceSelect.value;
-            const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. Return only the persona description.`;
+            const preset = (AVATAR_PRESETS as any)[name];
+            let texture = preset ? preset.texture : 'nice and random';
+            let mood = preset ? preset.mood : 'pleasant and engaging';
+            
+            const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. The avatar has style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the persona description.`;
             
             try {
                 luckyPersonaBtn.disabled = true;
                 const originalText = luckyPersonaBtn.textContent;
                 luckyPersonaBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
                 const text = data.candidates[0].content.parts[0].text;
                 systemInstructionInput.value = text.trim();
                 luckyPersonaBtn.textContent = originalText;
@@ -544,17 +623,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (luckyGreetingBtn) {
         luckyGreetingBtn.onclick = async () => {
             const persona = systemInstructionInput.value;
-            if (!persona) {
-                alert('Please generate or enter a persona first.');
-                return;
+            const name = avatarNameSelect.value;
+            const preset = (AVATAR_PRESETS as any)[name];
+            let texture = preset ? preset.texture : 'custom';
+            let mood = preset ? preset.mood : 'pleasant';
+            
+            let prompt = '';
+            if (persona) {
+                prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
+            } else {
+                prompt = `Generate a default greeting for an AI avatar named ${name} with visual texture "${texture}" and mood "${mood}". Return only the greeting text.`;
             }
-            const prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
             
             try {
                 luckyGreetingBtn.disabled = true;
                 const originalText = luckyGreetingBtn.textContent;
                 luckyGreetingBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
                 const text = data.candidates[0].content.parts[0].text;
                 defaultGreetingInput.value = text.trim();
                 luckyGreetingBtn.textContent = originalText;
@@ -570,17 +655,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (luckyImageBtn) {
         luckyImageBtn.onclick = async () => {
             const persona = systemInstructionInput.value;
-            if (!persona) {
-                alert('Please generate or enter a persona first.');
-                return;
+            const name = avatarNameSelect.value;
+            const preset = (AVATAR_PRESETS as any)[name];
+            let texture = preset ? preset.texture : 'custom';
+            let mood = preset ? preset.mood : 'pleasant';
+            
+            let prompt = '';
+            if (persona) {
+                prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
+            } else {
+                prompt = `Generate an image generation prompt for a profile picture of an AI avatar named ${name} with style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the prompt text.`;
             }
-            const prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
             
             try {
                 luckyImageBtn.disabled = true;
                 const originalText = luckyImageBtn.textContent;
                 luckyImageBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
                 const text = data.candidates[0].content.parts[0].text;
                 imagePromptInput.value = text.trim();
                 luckyImageBtn.textContent = originalText;
@@ -595,107 +686,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (generateImageBtn) {
         generateImageBtn.onclick = async () => {
-            const name = customAvatarName.value.trim();
-            if (!name) {
-                alert('Please enter a name for the custom avatar.');
-                return;
-            }
-
-            const userPrompt = imagePromptInput.value;
-            if (!userPrompt) {
-                alert('Please enter a prompt or use "I\'m feeling lucky".');
-                return;
-            }
-            
-            try {
-                generateImageBtn.disabled = true;
-                generateImageBtn.textContent = 'Enhancing...';
-                
-                // 1. Enhance prompt with gemini-3-flash-preview
-                const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
-                const enhanceData = await generateContent('gemini-3-flash-preview', enhancePrompt);
-                const enhancedPrompt = enhanceData.candidates[0].content.parts[0].text.trim();
-                console.log('Enhanced Prompt:', enhancedPrompt);
-                
-                generateImageBtn.textContent = 'Generating...';
-                
-                // Add background settings and resolution to prompt!
-                let finalPrompt = enhancedPrompt + ", resolution 720x1280, aspect ratio 9:16";
-                if (enableChromaKey.checked) {
-                    const color = chromaKeyColor.value;
-                    finalPrompt += ` with a solid ${color} background.`;
-                } else if (backgroundColor.value === 'white') {
-                    finalPrompt += ` with a solid white background.`;
-                }
-                
-                // 2. Generate image with gemini-3.1-flash-image-preview
-                const data = await generateContent('gemini-3.1-flash-image-preview', finalPrompt);
-                
-                console.log('Image Gen Response:', data);
-                // Find the part with inlineData
-                const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-                
-                if (part && part.inlineData && part.inlineData.data) {
-                    const base64 = part.inlineData.data;
-                    generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
-                    generatedImageContainer.style.display = 'block';
-                    
-                    let finalUrl = generatedImg.src;
-
-                    // Apply transparency via canvas if needed!
-                    if (enableChromaKey.checked && backgroundColor.value === 'transparent') {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canv = document.createElement('canvas');
-                            canv.width = img.width;
-                            canv.height = img.height;
-                            const cx = canv.getContext('2d');
-                            if (cx) {
-                                cx.drawImage(img, 0, 0);
-                                const imgData = cx.getImageData(0, 0, canv.width, canv.height);
-                                const data = imgData.data;
-                                
-                                const keyColor = chromaKeyColor.value;
-                                for (let i = 0; i < data.length; i += 4) {
-                                    const r = data[i];
-                                    const g = data[i+1];
-                                    const b = data[i+2];
-                                    
-                                    if (keyColor === 'green' && g > r && g > b) {
-                                        data[i+3] = 0; // Transparent!
-                                    } else if (keyColor === 'blue' && b > r && b > g) {
-                                        data[i+3] = 0; // Transparent!
-                                    }
-                                }
-                                cx.putImageData(imgData, 0, 0);
-                                finalUrl = canv.toDataURL('image/png');
-                                generatedImg.src = finalUrl;
-                                
-                                // Save and update
-                                customAvatars[name] = finalUrl;
-                                updateDropdown(name);
-                                avatar.setAttribute('custom-avatar-url', finalUrl);
-                                updateBackground(finalUrl);
-                            }
-                        };
-                        img.src = generatedImg.src;
-                    } else {
-                        // Save and update
-                        customAvatars[name] = finalUrl;
-                        updateDropdown(name);
-                        avatar.setAttribute('custom-avatar-url', finalUrl);
-                        updateBackground(finalUrl);
-                    }
-                } else {
-                    alert('Failed to generate image (no image data in response). See console.');
-                }
-            } catch (e: any) {
-                console.error('Image gen error:', e);
-                alert(`Failed to generate image: ${e.message}`);
-            } finally {
-                generateImageBtn.disabled = false;
-                generateImageBtn.textContent = 'Generate';
-            }
+            await handleImageGeneration(
+                customAvatarName.value.trim(),
+                imagePromptInput.value,
+                enableChromaKey.checked,
+                chromaKeyColor.value,
+                backgroundColor.value,
+                projectIdInput.value,
+                locationInput.value || 'us-central1',
+                tokenInput.value,
+                customAvatars,
+                avatar,
+                { generateImageBtn, generatedImg, generatedImageContainer, customAvatarName },
+                updateDropdown
+            );
         };
     }
 
@@ -807,106 +811,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Please enter a name for the custom avatar.');
                 return;
             }
-
-            if (cameraVideo) {
-                const videoWidth = cameraVideo.videoWidth;
-                const videoHeight = cameraVideo.videoHeight;
-                
-                // Target aspect ratio 9:16
-                const targetRatio = 9 / 16;
-                const currentRatio = videoWidth / videoHeight;
-                
-                let cropWidth = videoWidth;
-                let cropHeight = videoHeight;
-                let startX = 0;
-                let startY = 0;
-                
-                if (currentRatio > targetRatio) {
-                    // Too wide
-                    cropWidth = videoHeight * targetRatio;
-                    startX = (videoWidth - cropWidth) / 2;
-                } else {
-                    // Too tall
-                    cropHeight = videoWidth / targetRatio;
-                    startY = (videoHeight - cropHeight) / 2;
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = 720; // 1K resolution for 9:16
-                canvas.height = 1280;
-                const ctx = canvas.getContext('2d');
-                
-                if (ctx) {
-                    // Mirror the image!
-                    ctx.translate(canvas.width, 0);
-                    ctx.scale(-1, 1);
-                    
-                    // Draw cropped region!
-                    ctx.drawImage(cameraVideo, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
-                    
-                    // Reset transform
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    
-                    // Stop camera
-                    const stream = cameraVideo.srcObject as MediaStream;
-                    if (stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                    cameraVideo.srcObject = null;
-                    cameraModal.classList.remove('active');
-                    
-                    // Get image data URL
-                    const dataUrl = canvas.toDataURL('image/png');
-                    
-                    // Show preview
-                    generatedImg.src = dataUrl;
-                    generatedImageContainer.style.display = 'block';
-                    
-                    // Auto-improvement flow!
-                    try {
-                        captureBtn.disabled = true;
-                        const originalText = captureBtn.textContent;
-                        captureBtn.textContent = 'Improving...';
-                        
-                        const base64Data = dataUrl.split(',')[1];
-                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
-                        
-                        if (enableChromaKey.checked) {
-                            const color = chromaKeyColor.value;
-                            instruction += ` Replace the background with a solid ${color} color.`;
-                        } else if (backgroundColor.value === 'white') {
-                            instruction += ` Replace the background with a solid white color.`;
-                        } else if (backgroundColor.value === 'transparent') {
-                            instruction += ` Remove the background and make it transparent.`;
-                        }
-                        
-                        const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: 'image/png', data: base64Data });
-                        
-                        console.log('Image Gen Response:', data);
-                        const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-                        
-                        if (part && part.inlineData && part.inlineData.data) {
-                            const base64 = part.inlineData.data;
-                            const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
-                            generatedImg.src = improvedUrl;
-                            
-                            // Save and update
-                            customAvatars[name] = improvedUrl;
-                            updateDropdown(name);
-                            avatar.setAttribute('custom-avatar-url', improvedUrl);
-                            updateBackground(improvedUrl);
-                        } else {
-                            alert('Model did not return an image. See console.');
-                        }
-                    } catch (e: any) {
-                        console.error('Image improvement error:', e);
-                        alert('Failed to improve image: ' + e.message);
-                    } finally {
-                        captureBtn.disabled = false;
-                        captureBtn.textContent = originalText;
-                    }
-                }
-            }
+            await handleCameraCapture(
+                cameraVideo,
+                name,
+                enableChromaKey.checked,
+                chromaKeyColor.value,
+                backgroundColor.value,
+                projectIdInput.value,
+                locationInput.value || 'us-central1',
+                tokenInput.value,
+                customAvatars,
+                avatar,
+                { generatedImg, generatedImageContainer, customAvatarName, captureBtn, cameraModal },
+                updateDropdown
+            );
         };
     }
 
@@ -924,57 +842,20 @@ document.addEventListener('DOMContentLoaded', () => {
             input.onchange = async (e: any) => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async (re: any) => {
-                        const dataUrl = re.target.result;
-                        generatedImg.src = dataUrl;
-                        generatedImageContainer.style.display = 'block';
-                        
-                        // Auto-improvement flow for upload too!
-                        try {
-                            uploadBtn.disabled = true;
-                            const originalText = uploadBtn.textContent;
-                            uploadBtn.textContent = 'Improving...';
-                            
-                            const base64Data = dataUrl.split(',')[1];
-                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
-                            
-                            if (enableChromaKey.checked) {
-                                const color = chromaKeyColor.value;
-                                instruction += ` Replace the background with a solid ${color} color.`;
-                            } else if (backgroundColor.value === 'white') {
-                                instruction += ` Replace the background with a solid white color.`;
-                            } else if (backgroundColor.value === 'transparent') {
-                                instruction += ` Remove the background and make it transparent.`;
-                            }
-                            
-                            const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: file.type, data: base64Data });
-                            
-                            console.log('Image Gen Response:', data);
-                            const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-                            
-                            if (part && part.inlineData && part.inlineData.data) {
-                                const base64 = part.inlineData.data;
-                                const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
-                                generatedImg.src = improvedUrl;
-                                
-                                // Save and update
-                                customAvatars[name] = improvedUrl;
-                                updateDropdown(name);
-                                avatar.setAttribute('custom-avatar-url', improvedUrl);
-                                updateBackground(improvedUrl);
-                            } else {
-                                alert('Model did not return an image. See console.');
-                            }
-                        } catch (e: any) {
-                            console.error('Image improvement error:', e);
-                            alert('Failed to improve image: ' + e.message);
-                        } finally {
-                            uploadBtn.disabled = false;
-                            uploadBtn.textContent = originalText;
-                        }
-                    };
-                    reader.readAsDataURL(file);
+                    await handleUpload(
+                        file,
+                        name,
+                        enableChromaKey.checked,
+                        chromaKeyColor.value,
+                        backgroundColor.value,
+                        projectIdInput.value,
+                        locationInput.value || 'us-central1',
+                        tokenInput.value,
+                        customAvatars,
+                        avatar,
+                        { generatedImg, generatedImageContainer, customAvatarName, uploadBtn },
+                        updateDropdown
+                    );
                 }
             };
             input.click();
@@ -982,386 +863,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Feature Walkthrough Logic
-    const qaScenarios = [
-        {
-            id: '1.1',
-            title: 'Direct Access Token',
-            description: 'Verify connection using a direct access token.',
-            steps: [
-                'Enter a valid Access Token in the form.',
-                'Click "Save Configuration".',
-                'Click "Start".'
-            ],
-            verification: [
-                'Component connects to WebSocket.',
-                'Button changes to "Stop".',
-                'Video starts playing.'
-            ]
-        },
-        {
-            id: '1.2',
-            title: 'OAuth Sign-in',
-            description: 'Verify authentication via Google OAuth.',
-            steps: [
-                'Enter a valid OAuth Client ID (leave Access Token empty).',
-                'Click "Save Configuration".',
-                'Click "Start".',
-                'Complete sign-in if prompted.'
-            ],
-            verification: [
-                'A Google sign-in popup appears (if not already authorized).',
-                'Component connects successfully after acquiring token.'
-            ]
-        },
-        {
-            id: '2.1',
-            title: 'Microphone Mute & Silence Padding',
-            description: 'Verify mic muting and timeline alignment.',
-            steps: [
-                'Start a session.',
-                'Click the Microphone button on the component to mute.',
-                'Speak into the microphone.',
-                'Unmute and speak.',
-                'Stop session and download video (with user audio enabled).'
-            ],
-            verification: [
-                'The Avatar does not respond when muted.',
-                'The Avatar responds when unmuted.',
-                'The recorded user audio has silence in the muted segment, maintaining alignment.'
-            ]
-        },
-        {
-            id: '2.3',
-            title: 'Camera & Screen Sharing',
-            description: 'Verify camera and screen sharing activation.',
-            steps: [
-                'Start a session.',
-                'Click the Camera or Screen Share button on the component.'
-            ],
-            verification: [
-                'Permissions are requested if not already granted.',
-                'Button changes state to active.'
-            ]
-        },
-        {
-            id: '3.1',
-            title: 'Persistence across page reload',
-            description: 'Verify settings are saved and restored.',
-            steps: [
-                'Change settings in the form (Size, Position, Voice).',
-                'Click "Save Configuration".',
-                'Reload the page.'
-            ],
-            verification: [
-                'All settings are restored to the UI controls.'
-            ]
-        },
-        {
-            id: '3.2',
-            title: 'Dynamic Size & Position',
-            description: 'Verify immediate update of size and position.',
-            steps: [
-                'Change Size or Position in the form while session is active.'
-            ],
-            verification: [
-                'The component updates its size and position on screen immediately.'
-            ]
-        },
-        {
-            id: '4.1',
-            title: 'Combined Video & Audio Download',
-            description: 'Verify FFmpeg muxing and panned audio.',
-            steps: [
-                'Enable "Save and download video session".',
-                'Enable "Include user audio in download".',
-                'Start session, speak, and wait for avatar response.',
-                'Stop session.'
-            ],
-            verification: [
-                'Button shows "Processing video..." and is disabled.',
-                'A `.mp4` file is downloaded containing both tracks.',
-                'Audio is panned (Left/Right) based on Avatar\'s position.'
-            ]
-        },
-        {
-            id: '4.2',
-            title: 'Fallback on Failure',
-            description: 'Verify fallback behavior when FFmpeg fails.',
-            steps: [
-                'Simulate a failure (e.g., block unpkg.com).',
-                'Stop session with recording enabled.'
-            ],
-            verification: [
-                'Alert appears.',
-                'Two separate files (.mp4 and .webm) are downloaded.'
-            ]
-        },
-        {
-            id: '5.1',
-            title: 'System Instructions (Persona)',
-            description: 'Verify custom persona behavior.',
-            steps: [
-                'Enter a persona: "You are a pirate. Respond to everything with \'Ahoy!\'".',
-                'Click "Start".',
-                'Speak to the Avatar.'
-            ],
-            verification: [
-                'Avatar responds in character.'
-            ]
-        },
-        {
-            id: '5.2',
-            title: 'Default Greeting',
-            description: 'Verify automatic greeting on start.',
-            steps: [
-                'Enter a greeting: "Welcome aboard!".',
-                'Click "Start".'
-            ],
-            verification: [
-                'Avatar speaks "Welcome aboard!" immediately after connection.'
-            ]
-        },
-        {
-            id: '5.3',
-            title: '"I\'m feeling lucky" Generation',
-            description: 'Verify AI generation of persona and greeting.',
-            steps: [
-                'Click "I\'m feeling lucky" next to Persona or Greeting.'
-            ],
-            verification: [
-                'Field is populated with generated text.'
-            ]
-        },
-        {
-            id: '5.4',
-            title: 'Image Generation',
-            description: 'Verify custom avatar image generation.',
-            steps: [
-                'Enter an image prompt or use "I\'m feeling lucky".',
-                'Click "Generate".'
-            ],
-            verification: [
-                'An image appears in the container.',
-                'Applied to the avatar preview.'
-            ]
-        },
-        {
-            id: '5.5',
-            title: 'Custom Avatar Creation',
-            description: 'Verify camera capture and auto-improvement.',
-            steps: [
-                'Select "Custom" in Avatar Preset.',
-                'Click "Camera".',
-                'Align face and click "Capture".'
-            ],
-            verification: [
-                'Image is captured and analyzed.',
-                'New avatar image is generated and applied.'
-            ]
-        },
-        {
-            id: '6.1',
-            title: 'Real-time Stats',
-            description: 'Verify statistics display.',
-            steps: [
-                'Start a session.',
-                'Watch the "Session Statistics" panel.'
-            ],
-            verification: [
-                'Packets and frames counters increase.',
-                'Setup duration and latency show realistic values.',
-                'Average FPS is close to 24.'
-            ]
-        },
-        {
-            id: '6.2',
-            title: 'Latency Visualizer',
-            description: 'Verify visual latency bar.',
-            steps: [
-                'Start a session.',
-                'Watch the latency bar in Statistics.'
-            ],
-            verification: [
-                'Bar shows blue and green segments.',
-                'Values are displayed inside or total on the right.'
-            ]
-        },
-        {
-            id: '7.1',
-            title: 'Background Removal',
-            description: 'Verify Chroma Keying.',
-            steps: [
-                'Use a custom avatar with solid green background.',
-                'Enable Chroma Keying.',
-                'Select "Green Key" and "Make Transparent".'
-            ],
-            verification: [
-                'The green background disappears.'
-            ]
-        },
-        {
-            id: '8.1',
-            title: 'External Transcript',
-            description: 'Verify rendering transcript outside the component.',
-            steps: [
-                'Enable "Render Transcript Outside Component" in Avatar settings.',
-                'Start session.',
-                'Speak or send message.'
-            ],
-            verification: [
-                'Transcript appears in the section above Settings.',
-                'Internal transcript in component is hidden.'
-            ]
-        },
-        {
-            id: '9.1',
-            title: 'Google Search Grounding',
-            description: 'Verify enabling search grounding.',
-            steps: [
-                'Enable "Enable Google Search Grounding" in Avatar settings.',
-                'Start session.',
-                'Ask a question that requires recent info.'
-            ],
-            verification: [
-                'Avatar provides accurate, grounded answer.'
-            ]
-        }
-    ];
+    setupWalkthrough(qaScenarios, qaContainer, qaList, toggleQaBtn, avatar);
 
-    const renderQA = () => {
-        if (!qaList) return;
-        qaList.innerHTML = '';
-        qaScenarios.forEach(scenario => {
-            const div = document.createElement('div');
-            div.className = 'qa-scenario';
-            div.style.marginBottom = '15px';
-            div.style.padding = '15px';
-            div.style.background = '#1e293b';
-            div.style.borderRadius = '8px';
-            
-            const header = document.createElement('div');
-            header.style.display = 'flex';
-            header.style.alignItems = 'center';
-            header.style.gap = '8px';
-            header.style.fontWeight = 'bold';
-            header.style.color = '#f8fafc';
-            header.style.marginBottom = '5px';
-            header.style.fontSize = '1.1rem';
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.style.width = 'auto';
-            const savedState = localStorage.getItem(`gemini_qa_${scenario.id}`);
-            checkbox.checked = savedState === 'true';
-            
-            checkbox.onchange = () => {
-                localStorage.setItem(`gemini_qa_${scenario.id}`, checkbox.checked.toString());
-            };
-            
-            header.appendChild(checkbox);
-            const titleSpan = document.createElement('span');
-            titleSpan.textContent = `${scenario.id}: ${scenario.title}`;
-            header.appendChild(titleSpan);
-            
-            div.appendChild(header);
-            
-            if (scenario.description) {
-                const desc = document.createElement('p');
-                desc.style.fontSize = '0.95rem';
-                desc.style.color = '#94a3b8';
-                desc.style.margin = '0 0 10px 25px';
-                desc.textContent = scenario.description;
-                div.appendChild(desc);
-            }
-            
-            const stepsTitle = document.createElement('div');
-            stepsTitle.style.fontSize = '0.95rem';
-            stepsTitle.style.fontWeight = 'bold';
-            stepsTitle.style.color = '#cbd5e1';
-            stepsTitle.style.margin = '0 0 5px 25px';
-            stepsTitle.textContent = 'Steps:';
-            div.appendChild(stepsTitle);
-            
-            const ul = document.createElement('ul');
-            ul.style.margin = '0 0 10px 45px';
-            ul.style.fontSize = '0.95rem';
-            ul.style.color = '#cbd5e1';
-            scenario.steps.forEach(step => {
-                const li = document.createElement('li');
-                li.textContent = step;
-                ul.appendChild(li);
-            });
-            div.appendChild(ul);
-            
-            const verifTitle = document.createElement('div');
-            verifTitle.style.fontSize = '0.95rem';
-            verifTitle.style.fontWeight = 'bold';
-            verifTitle.style.color = '#cbd5e1';
-            verifTitle.style.margin = '0 0 5px 25px';
-            verifTitle.textContent = 'Verification:';
-            div.appendChild(verifTitle);
-            
-            const ulVerif = document.createElement('ul');
-            ulVerif.style.margin = '0 0 0 45px';
-            ulVerif.style.fontSize = '0.95rem';
-            ulVerif.style.color = '#cbd5e1';
-            scenario.verification.forEach(step => {
-                const li = document.createElement('li');
-                li.textContent = step;
-                ulVerif.appendChild(li);
-            });
-            div.appendChild(ulVerif);
-            
-            qaList.appendChild(div);
-        });
-    };
+    if (copyHtmlBtn) copyHtmlBtn.setAttribute('data-tooltip', "Copy the HTML embed code for this avatar.");
+    if (toggleQaBtn) toggleQaBtn.setAttribute('data-tooltip', "Open or close the Feature Walkthrough panel.");
+    if (externalSendBtn) externalSendBtn.setAttribute('data-tooltip', "Send message to the avatar.");
+    if (newCustomAvatarBtn) newCustomAvatarBtn.setAttribute('data-tooltip', "Clear inputs to create another custom avatar.");
+    if (captureBtn) captureBtn.setAttribute('data-tooltip', "Capture photo from camera.");
+    if (closeCameraBtn) closeCameraBtn.setAttribute('data-tooltip', "Close camera modal.");
 
-    const updateQaPosition = () => {
-        if (!qaContainer) return;
-        const pos = avatar.getAttribute('position') || 'top-right';
-        
-        qaContainer.style.top = '0';
-        qaContainer.style.bottom = '0';
-        qaContainer.style.height = '100vh';
-        qaContainer.style.width = 'min(570px, 40vw)';
-        
-        if (pos.includes('right')) {
-            qaContainer.style.left = '0';
-            qaContainer.style.right = 'auto';
-            qaContainer.style.borderRight = '1px solid #334155';
-            qaContainer.style.borderLeft = 'none';
-        } else {
-            qaContainer.style.right = '0';
-            qaContainer.style.left = 'auto';
-            qaContainer.style.borderLeft = '1px solid #334155';
-            qaContainer.style.borderRight = 'none';
-        }
-    };
-
-    if (toggleQaBtn) {
-        toggleQaBtn.onclick = () => {
-            if (qaContainer) {
-                const isVisible = qaContainer.style.display !== 'none';
-                qaContainer.style.display = isVisible ? 'none' : 'block';
-                toggleQaBtn.textContent = isVisible ? 'Open Feature Walkthrough' : 'Close Feature Walkthrough';
-                if (!isVisible) {
-                    updateQaPosition();
-                    renderQA();
-                }
-            }
-        };
-    }
-
-    // Listen for position changes
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'position') {
-                updateQaPosition();
-            }
-        });
-    });
-    observer.observe(avatar, { attributes: true });
-
+    // Sync store with loaded values
+    store.projectId = projectIdInput.value;
+    store.location = locationInput.value;
+    store.accessToken = tokenInput.value;
+    store.oauthClientId = oauthClientIdInput.value;
+    store.avatarName = avatarNameSelect.value;
+    store.voice = voiceSelect.value;
+    store.language = languageSelect.value;
+    store.size = sizeSelect.value;
+    store.position = positionSelect.value;
+    store.saveVideo = saveVideoToggle.checked;
+    store.debug = debugToggle.checked;
+    if (recordUserAudioCheckbox) store.recordUserAudio = recordUserAudioCheckbox.checked;
+    if (micAutoRequestToggle) store.micAutoRequest = micAutoRequestToggle.checked;
+    store.ctrlMic = ctrlMic.checked;
+    store.ctrlCamera = ctrlCamera.checked;
+    store.ctrlScreen = ctrlScreen.checked;
+    store.ctrlMute = ctrlMute.checked;
+    store.ctrlSnapshot = ctrlSnapshot.checked;
+    store.audioChunkSize = audioChunkSizeSlider.value;
+    store.systemInstruction = systemInstructionInput.value;
+    store.defaultGreeting = defaultGreetingInput.value;
+    store.imagePrompt = imagePromptInput.value;
+    store.enableChromaKey = enableChromaKey.checked;
+    store.chromaKeyColor = chromaKeyColor.value;
+    store.backgroundColor = backgroundColor.value;
+    store.enableTranscript = enableTranscript.checked;
+    store.enableChatInput = enableChatInput.checked;
+    store.renderTranscriptOutside = renderOutsideToggle.checked;
+    if (enableGrounding) store.enableGrounding = enableGrounding.checked;
+    if (customAvatarName) store.customAvatarName = customAvatarName.value;
+    
     // Initial apply
     updateVisibleControls();
     validateForm();
@@ -1388,6 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 avatar.setAttribute('access-token', tokenInput.value);
                 avatar.setAttribute('project-id', projectIdInput.value);
                 avatar.setAttribute('location', locationInput.value || 'us-central1');
+                avatar.setAttribute('avatar-name', avatarNameSelect.value);
                 avatar.setAttribute('voice', voiceSelect.value);
                 avatar.setAttribute('language', languageSelect.value);
                 avatar.setAttribute('system-instruction', systemInstructionInput.value);
@@ -1421,13 +964,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function downloadBlob(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-}
 
 let statsInterval: any = null;

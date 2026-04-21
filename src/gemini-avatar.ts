@@ -1,178 +1,27 @@
-import mpegts from 'mpegts.js';
 // @ts-ignore
 import styles from './styles/gemini-avatar.css?inline';
-
-// Asset URLs
-export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string, palette: string[], texture: string, mood: string }> = {
-  Hana: { 
-    id: 'Hana', 
-    displayName: 'Hana', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/hana.png', import.meta.url).href,
-    palette: ['#2a3b52', '#8fa4b4', '#b53d3d'],
-    texture: 'Soft studio gradient, matte fabric',
-    mood: 'Studious, calm, disciplined'
-  },
-  Ben: { 
-    id: 'Ben', 
-    displayName: 'Ben', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/ben.png', import.meta.url).href,
-    palette: ['#344e52', '#5b6b4e', '#d4a38a'],
-    texture: 'Deep mesh gradient, diffused light',
-    mood: 'Friendly, modern, approachable'
-  },
-  Carmen: { 
-    id: 'Carmen', 
-    displayName: 'Carmen', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/carmen.png', import.meta.url).href,
-    palette: ['#2d5a9e', '#4a614d', '#c29a75'],
-    texture: 'Blurred classroom, cork & slate textures',
-    mood: 'Wise, nurturing, academic'
-  },
-  Ingrid: { 
-    id: 'Ingrid', 
-    displayName: 'Ingrid', 
-    style: 'photorealistic', 
-    image: new URL('./assets/ingrid.png', import.meta.url).href,
-    palette: ['#1e2a4a', '#d1d5db', '#a82e2e'],
-    texture: 'Hard stone background, sharp suit lines',
-    mood: 'Formal, authoritative, precise'
-  },
-  Jay: { 
-    id: 'Jay', 
-    displayName: 'Jay', 
-    style: 'photorealistic', 
-    image: new URL('./assets/jay.png', import.meta.url).href,
-    palette: ['#3f444d', '#d9c8b2', '#93c5fd'],
-    texture: 'Corporate office blur, clean professional lines',
-    mood: 'Executive, reliable, corporate'
-  },
-  Kai: { 
-    id: 'Kai', 
-    displayName: 'Kai', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/kai.png', import.meta.url).href,
-    palette: ['#ca8a04', '#7dd3fc', '#4d7c0f'],
-    texture: 'Overexposed bokeh, sunny park vibe',
-    mood: 'Breezy, youthful, optimistic'
-  },
-  Kira: { 
-    id: 'Kira', 
-    displayName: 'Kira', 
-    style: 'photorealistic', 
-    image: new URL('./assets/kira.png', import.meta.url).href,
-    palette: ['#254a65', '#9ca3af', '#fde68a'],
-    texture: 'Industrial neutral, soft directional light',
-    mood: 'Practical, grounded, industrious'
-  },
-  Leo: { 
-    id: 'Leo', 
-    displayName: 'Leo', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/leo.png', import.meta.url).href,
-    palette: ['#78350f', '#4338ca', '#facc15'],
-    texture: 'Rustic, paint-splattered denim, warm clay',
-    mood: 'Creative, artisanal, vintage'
-  },
-  Paul: { 
-    id: 'Paul', 
-    displayName: 'Paul', 
-    style: 'photorealistic', 
-    image: new URL('./assets/paul.png', import.meta.url).href,
-    palette: ['#334155', '#f8fafc', '#1e3a8a'],
-    texture: 'Classic studio vignette, high-contrast formal',
-    mood: 'Traditional, senior, dignified'
-  },
-  Piper: { 
-    id: 'Piper', 
-    displayName: 'Piper', 
-    style: 'non-photorealistic', 
-    image: new URL('./assets/piper.png', import.meta.url).href,
-    palette: ['#0d9488', '#f59e0b', '#166534'],
-    texture: 'Impressionist studio blur, floral & denim',
-    mood: 'Artistic, vibrant, soulful'
-  },
-  Sam: { 
-    id: 'Sam', 
-    displayName: 'Sam', 
-    style: 'photorealistic', 
-    image: new URL('./assets/sam.png', import.meta.url).href,
-    palette: ['#92400e', '#14532d', '#bfdbfe'],
-    texture: 'Blurred library shelves, warm textures',
-    mood: 'Intellectual, smart-casual, cozy'
-  },
-  Vera: { 
-    id: 'Vera', 
-    displayName: 'Vera', 
-    style: 'photorealistic', 
-    image: new URL('./assets/vera.png', import.meta.url).href,
-    palette: ['#000000', '#94a3b8', '#1e293b'],
-    texture: 'Solid depth, metallic shimmer, luxury velvet',
-    mood: 'Elegant, sophisticated, musical'
-  },
-};
-
-export const VOICE_PRESETS: Record<string, { id: string, displayName: string, description: string }> = {
-  kore: { id: 'kore', displayName: 'Kore', description: 'Firm' },
-  orus: { id: 'orus', displayName: 'Orus', description: 'Firm' },
-  autonoe: { id: 'autonoe', displayName: 'Autonoe', description: 'Bright' },
-  umbriel: { id: 'umbriel', displayName: 'Umbriel', description: 'Easy-going' },
-  erinome: { id: 'erinome', displayName: 'Erinome', description: 'Clear' },
-  laomedeia: { id: 'laomedeia', displayName: 'Laomedeia', description: 'Upbeat' },
-  schedar: { id: 'schedar', displayName: 'Schedar', description: 'Even' },
-  achird: { id: 'achird', displayName: 'Achird', description: 'Friendly' },
-  sadachbia: { id: 'sadachbia', displayName: 'Sadachbia', description: 'Lively' },
-  fenrir: { id: 'fenrir', displayName: 'Fenrir', description: 'Excitable' },
-  aoede: { id: 'aoede', displayName: 'Aoede', description: 'Breezy' },
-  enceladus: { id: 'enceladus', displayName: 'Enceladus', description: 'Breathy' },
-  algieba: { id: 'algieba', displayName: 'Algieba', description: 'Smooth' },
-  algenib: { id: 'algenib', displayName: 'Algenib', description: 'Gravelly' },
-  achernar: { id: 'achernar', displayName: 'Achernar', description: 'Soft' },
-  gacrux: { id: 'gacrux', displayName: 'Gacrux', description: 'Mature' },
-  zubenelgenubi: { id: 'zubenelgenubi', displayName: 'Zubenelgenubi', description: 'Casual' },
-  sadaltager: { id: 'sadaltager', displayName: 'Sadaltager', description: 'Knowledgeable' },
-  charon: { id: 'charon', displayName: 'Charon', description: 'Informative' },
-  leda: { id: 'leda', displayName: 'Leda', description: 'Youthful' },
-  callirrhoe: { id: 'callirrhoe', displayName: 'Callirrhoe', description: 'Easy-going' },
-  iapetus: { id: 'iapetus', displayName: 'Iapetus', description: 'Clear' },
-  despina: { id: 'despina', displayName: 'Despina', description: 'Smooth' },
-  rasalgethi: { id: 'rasalgethi', displayName: 'Rasalgethi', description: 'Informative' },
-  alnilam: { id: 'alnilam', displayName: 'Alnilam', description: 'Firm' },
-  pulcherrima: { id: 'pulcherrima', displayName: 'Pulcherrima', description: 'Forward' },
-  vindemiatrix: { id: 'vindemiatrix', displayName: 'Vindemiatrix', description: 'Gentle' },
-  sulafat: { id: 'sulafat', displayName: 'Sulafat', description: 'Warm' },
-  puck: { id: 'puck', displayName: 'Puck', description: 'Upbeat' },
-  zephyr: { id: 'zephyr', displayName: 'Zephyr', description: 'Bright' },
-};
+import { AVATAR_PRESETS } from './constants';
+import { GeminiLiveClient } from './gemini-live-client';
+import { MediaManager } from './media-manager';
 
 export class GeminiAvatar extends HTMLElement {
-  private accessToken: string | null = null;
-  private ws: WebSocket | null = null;
-  private player: any = null; // For mpegts.js
-  private mpegtsPlayer: any = null;
-  private customVideoLoader: any = null;
-  private receivedBytes = 0;
-  private feedVideoData: ((arrayBuffer: ArrayBuffer) => void) | null = null;
+  private client: GeminiLiveClient | null = null;
+  private mediaManager: MediaManager | null = null;
+  private tokenClient: any = null;
 
-  private mediaSource: MediaSource | null = null;
-  private sourceBuffer: SourceBuffer | null = null;
-  private videoChunkQueue: ArrayBuffer[] = [];
-  private messageQueue: any[] = [];
-  private processingQueue = false;
-  private isSetupComplete = false;
-  private playbackAudioContext: AudioContext | null = null;
-  private audioGainNode: GainNode | null = null;
-  private nextPlaybackTime = 0;
-  private recordedChunks: Blob[] = [];
+  private accessToken: string | null = null;
 
   // State
   private isRecordingVideo = false;
-  private isMuted = true;
+  private isMuted = false;
   private isPlaying = false;
   private isRecording = false; // For mic
-
+  private isMicMuted = false;
+  private selectedAudioDeviceId = '';
+  private selectedVideoDeviceId = '';
+  private receivedFirstVideoFrame = false;
+  private chromaKeyLoopId: number | null = null;
+  
   // UI Elements
   private container!: HTMLDivElement;
   private videoEl!: HTMLVideoElement;
@@ -185,26 +34,11 @@ export class GeminiAvatar extends HTMLElement {
   private snapshotBtn!: HTMLButtonElement;
   private settingsBtn!: HTMLButtonElement;
   private settingsModal!: HTMLDivElement;
-
-  // Media streams
-  private micStream: MediaStream | null = null;
-  private audioWorkletNode: AudioWorkletNode | null = null;
-  private videoInputStream: MediaStream | null = null;
-  private videoInputInterval: any = null;
-  private micRecorder: MediaRecorder | null = null;
-  private micChunks: Blob[] = [];
-  private accumulatedPcmData: Int16Array[] = [];
-  private isMicMuted = false;
-  private selectedAudioDeviceId = '';
-  private selectedVideoDeviceId = '';
-  private receivedFirstVideoFrame = false;
-  private silenceInterval: any = null;
   private displayCanvas: HTMLCanvasElement | null = null;
-  private chromaKeyLoopId: number | null = null;
   private transcriptArea: HTMLDivElement | null = null;
   private chatContainer: HTMLDivElement | null = null;
   private chatInput: HTMLInputElement | null = null;
-  
+
   // Statistics
   private startTime: number | null = null;
   private setupCompleteTime: number | null = null;
@@ -214,8 +48,6 @@ export class GeminiAvatar extends HTMLElement {
   private videoFramesSent = 0;
   private videoFramesReceived = 0;
   
-  private audioContext: AudioContext | null = null;
-  private processor: AudioWorkletNode | null = null;
   private isStreamingCamera = false;
   private isStreamingScreen = false;
 
@@ -233,7 +65,10 @@ export class GeminiAvatar extends HTMLElement {
     if (autoRequest) {
       this.checkMicPermission().then((state) => {
         if (state === "granted") {
-          this.startMic();
+          const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
+          this.mediaManager?.startMic(audioChunkSize).then(started => {
+              if (started) this.isRecording = true;
+          });
         } else {
           this.isRecording = false;
           if (this.micBtn) this.micBtn.classList.add("off");
@@ -267,7 +102,7 @@ export class GeminiAvatar extends HTMLElement {
     this.videoEl.id = "avatar-video";
     this.videoEl.autoplay = true;
     this.videoEl.playsInline = true;
-    this.videoEl.muted = true; // Mute to allow autoplay
+    this.videoEl.muted = false; // Unmuted by default
 
     this.displayCanvas = document.createElement("canvas");
     this.displayCanvas.id = "avatar-canvas";
@@ -341,7 +176,6 @@ export class GeminiAvatar extends HTMLElement {
     controls.appendChild(this.screenBtn);
 
     this.muteBtn = this.createButton("Toggle Mute", `<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.26 2.5-4.03z"/></svg>`, () => this.toggleMute());
-    this.muteBtn.classList.add("off");
     controls.appendChild(this.muteBtn);
 
     this.snapshotBtn = this.createButton("Save Frame as WebP", `<svg viewBox="0 0 24 24"><path d="M21 19H3c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h4.17l1.83-2h6l1.83 2H21c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2zm-9-2c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg>`, () => this.saveFrame());
@@ -372,8 +206,18 @@ export class GeminiAvatar extends HTMLElement {
     this.container.appendChild(controls);
     this.shadowRoot.appendChild(this.container);
 
-    this.resetMediaSource();
-    this.initMpegts();
+    this.mediaManager = new MediaManager(this.videoEl);
+    this.mediaManager.onAudioChunk = (base64) => this.client?.sendAudio(base64);
+    this.mediaManager.onVideoFrame = (base64) => this.client?.sendVideo(base64);
+    this.mediaManager.onFirstFrame = () => {
+        this.receivedFirstVideoFrame = true;
+        this.firstFrameTime = new Date().getTime();
+        this.previewImg.style.display = 'none';
+    };
+    this.mediaManager.onLog = (msg, data, imp) => this._log(msg, data, imp);
+    
+    const useMpegts = this.getAttribute("use-mpegts") === "true";
+    this.mediaManager.init(useMpegts);
   }
 
   private updateControlsVisibility(visibleControls: string) {
@@ -435,41 +279,6 @@ export class GeminiAvatar extends HTMLElement {
       }
   }
 
-  private initMpegts() {
-    const useMpegts = this.getAttribute("use-mpegts") === "true";
-    if (useMpegts) {
-      this._log("Initializing mpegts.js player");
-      const avatarInstance = this;
-      this.mpegtsPlayer = mpegts.createPlayer(
-        {
-          type: "mpegts",
-          isLive: true,
-          url: "custom",
-        },
-        {
-          customLoader: function (url: any, config: any) {
-            this.open = (url: any, range: any) => {};
-            this.close = () => {};
-            avatarInstance.customVideoLoader = this;
-          },
-        },
-      );
-
-      this.mpegtsPlayer.attachMediaElement(this.videoEl);
-      this.mpegtsPlayer.on("error", (type: any, detail: any, info: any) => {
-        this._log("mpegts error", { type, detail, info });
-      });
-      this.mpegtsPlayer.load();
-
-      this.receivedBytes = 0;
-      this.feedVideoData = (arrayBuffer: ArrayBuffer) => {
-        if (this.customVideoLoader && this.customVideoLoader.onData) {
-          this.customVideoLoader.onData(arrayBuffer, this.receivedBytes);
-          this.receivedBytes += arrayBuffer.byteLength;
-        }
-      };
-    }
-  }
 
   private _log(message: string, data: any = null, isImportant = false) {
     const debug = this.getAttribute("debug") === "true";
@@ -546,7 +355,10 @@ export class GeminiAvatar extends HTMLElement {
         break;
       case "mic-auto-request":
         if (newValue === "true" && !this.isRecording) {
-          this.startMic();
+          const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
+          this.mediaManager?.startMic(audioChunkSize).then(started => {
+              if (started) this.isRecording = true;
+          });
         }
         break;
       case "enable-transcript":
@@ -635,24 +447,19 @@ export class GeminiAvatar extends HTMLElement {
       this.isMicMuted = false;
       if (this.micBtn) this.micBtn.classList.remove("off");
       if (!this.isRecording) {
-        await this.startMic();
+        const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
+        const started = await this.mediaManager?.startMic(audioChunkSize);
+        if (started) {
+            this.isRecording = true;
+        }
       }
     } else {
       this.isMicMuted = true;
       if (this.micBtn) this.micBtn.classList.add("off");
     }
 
-    if (this.isRecordingVideo && this.micStream) {
-      this.micChunks = [];
-      this.accumulatedPcmData = [];
-      this.micRecorder = new MediaRecorder(this.micStream);
-      this.micRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          this.micChunks.push(e.data);
-        }
-      };
-      // Removed immediate start, will start on setupComplete
-    }
+    this.mediaManager?.setRecordingVideo(this.isRecordingVideo);
+    this.mediaManager?.setupMicRecorder();
     
     if (!this.accessToken) {
       const clientId = this.getAttribute("oauth-client-id");
@@ -720,17 +527,20 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   public sendMessage(text: string) {
-    this.sendText(text);
+    this.client?.sendText(text);
     this.appendTranscript('User', text);
   }
 
   public getSessionFiles() {
-    const videoBlob = new Blob(this.recordedChunks, { type: "video/mp4" });
+    const recordedChunks = this.mediaManager?.getRecordedChunks() || [];
+    const accumulatedPcmData = this.mediaManager?.getAccumulatedPcmData() || [];
     
-    const totalLength = this.accumulatedPcmData.reduce((acc, chunk) => acc + chunk.length, 0);
+    const videoBlob = new Blob(recordedChunks, { type: "video/mp4" });
+    
+    const totalLength = accumulatedPcmData.reduce((acc, chunk) => acc + chunk.length, 0);
     const result = new Int16Array(totalLength);
     let offset = 0;
-    for (const chunk of this.accumulatedPcmData) {
+    for (const chunk of accumulatedPcmData) {
       result.set(chunk, offset);
       offset += chunk.length;
     }
@@ -776,7 +586,7 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   public get isConnected(): boolean {
-    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    return this.client !== null && this.client.isConnected;
   }
 
   // Internal implementation details (adapted from original JS)
@@ -790,123 +600,16 @@ export class GeminiAvatar extends HTMLElement {
     }
   }
 
-  private async startMic() {
-    try {
-      this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      if (this.silenceInterval) {
-        clearInterval(this.silenceInterval);
-        this.silenceInterval = null;
-        this._log("Silence padding stopped (Mic started)");
-      }
-
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      const source = this.audioContext.createMediaStreamSource(this.micStream);
-
-      const bufferSize = parseInt(this.getAttribute("audio-chunk-size") || "2048");
-      const workletCode = `
-        class AudioProcessor extends AudioWorkletProcessor {
-          constructor() {
-            super();
-            this.buffer = new Float32Array(${bufferSize});
-            this.offset = 0;
-          }
-          process(inputs, outputs, parameters) {
-            const input = inputs[0];
-            if (input && input[0]) {
-              const inputChannel = input[0];
-              for (let i = 0; i < inputChannel.length; i++) {
-                this.buffer[this.offset++] = inputChannel[i];
-                if (this.offset >= this.buffer.length) {
-                  this.port.postMessage(this.buffer);
-                  this.buffer = new Float32Array(${bufferSize});
-                  this.offset = 0;
-                }
-              }
-            }
-            return true;
-          }
-        }
-        registerProcessor('audio-processor', AudioProcessor);
-      `;
-
-      const blob = new Blob([workletCode], { type: "application/javascript" });
-      const url = URL.createObjectURL(blob);
-      await this.audioContext.audioWorklet.addModule(url);
-      URL.revokeObjectURL(url);
-
-      if (!this.audioContext) {
-        this._log("Mic start aborted (context cleared)");
-        return;
-      }
-
-      this.processor = new AudioWorkletNode(this.audioContext, "audio-processor");
-      source.connect(this.processor);
-      this.processor.connect(this.audioContext.destination);
-
-      this.processor.port.onmessage = (e) => {
-        const inputData = e.data;
-        const pcmData = this.float32ToInt16(inputData);
-        
-        if (this.isMicMuted) {
-          pcmData.fill(0); // Silence pad
-        }
-        
-        const base64Data = this.arrayBufferToBase64(pcmData.buffer);
-
-        if (this.isSetupComplete && this.ws && this.ws.readyState === WebSocket.OPEN) {
-          if (this.receivedFirstVideoFrame) {
-            const message = { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: base64Data } } };
-            this.ws.send(JSON.stringify(message));
-            
-            if (this.isRecordingVideo) {
-              this.accumulatedPcmData.push(pcmData);
-            }
-            this.audioChunksSent++;
-          }
-        }
-      };
-
-      this.isRecording = true;
-      if (this.micBtn) this.micBtn.classList.remove("off");
-      this._log("Microphone started");
-      
-
-    } catch (e) {
-      console.error("Failed to start mic:", e);
-      this.isRecording = false;
-      if (this.micBtn) this.micBtn.classList.add("off");
-    }
-  }
-
-  private stopMic() {
-    if (this.processor) {
-      this.processor.disconnect();
-      this.processor = null;
-    }
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
-    }
-
-    if (this.micStream) {
-      if (typeof this.micStream.getTracks === 'function') {
-        const tracks = this.micStream.getTracks();
-        if (Array.isArray(tracks)) {
-          tracks.forEach(track => track.stop());
-        }
-      }
-      this.micStream = null;
-    }
-    this.isRecording = false;
-    if (this.micBtn) this.micBtn.classList.add("off");
-  }
 
   private toggleMic() {
     if (!this.isRecording) {
-      this.startMic();
+      const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
+      this.mediaManager?.startMic(audioChunkSize).then(started => {
+          if (started) this.isRecording = true;
+      });
     } else {
       this.isMicMuted = !this.isMicMuted;
+      this.mediaManager?.setMicMuted(this.isMicMuted);
       if (this.micBtn) this.micBtn.classList.toggle("off", this.isMicMuted);
       this._log(this.isMicMuted ? "Microphone muted" : "Microphone unmuted");
     }
@@ -1063,66 +766,14 @@ export class GeminiAvatar extends HTMLElement {
     }
   }
 
-  private resetMediaSource() {
-    if (!this.videoEl) return;
-    this._log("Resetting MediaSource");
-    
-    if (this.mediaSource && this.mediaSource.readyState === "open") {
-      try {
-        this.mediaSource.endOfStream();
-      } catch (e) {}
-    }
-    
-    this.mediaSource = new MediaSource();
-    this.sourceBuffer = null;
-    this.videoEl.src = URL.createObjectURL(this.mediaSource);
-
-    this.mediaSource.addEventListener("sourceopen", () => {
-      this._log("MediaSource opened");
-      try {
-        const types = [
-          'video/mp4; codecs="avc1.42C01E, mp4a.40.2"',
-          'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-          'video/mp4; codecs="avc1.64001E, mp4a.40.2"',
-          'video/mp4; codecs="avc1.42C01E"',
-          'video/mp4; codecs="avc1.42E01E"',
-          'video/mp4; codecs="avc1.64001E"',
-          "video/mp4",
-        ];
-        let added = false;
-        for (const type of types) {
-          if (MediaSource.isTypeSupported(type)) {
-            this.sourceBuffer = this.mediaSource!.addSourceBuffer(type);
-            this._log("SourceBuffer added successfully", { type });
-            added = true;
-            break;
-          }
-        }
-        if (!added) {
-          throw new Error("None of the common video/mp4 codecs are supported by this browser.");
-        }
-        this.sourceBuffer!.addEventListener("updateend", () => this.processVideoQueue());
-      } catch (e) {
-        console.error("Failed to add SourceBuffer:", e);
-      }
-    });
-
-    this.recordedChunks = [];
-    this.videoChunkQueue = [];
-    this.messageQueue = [];
-    this.processingQueue = false;
-    this.isPlaying = false;
-    this.nextPlaybackTime = 0;
-  }
-
   private async tryConnect() {
     if (!this.accessToken) {
       this._log("No access token available. Cannot connect.", null, true);
       return;
     }
-    if (this.ws) return;
+    if (this.client) return;
 
-    this.resetMediaSource();
+    this.mediaManager?.resetMediaSource();
     
     this.packetsReceived = 0;
     this.audioChunksSent = 0;
@@ -1145,322 +796,54 @@ export class GeminiAvatar extends HTMLElement {
       return;
     }
 
-    const host = location === "global" ? "autopush-aiplatform.sandbox.googleapis.com" : `${location}-aiplatform.googleapis.com`;
-    const url = `wss://${host}/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent?access_token=${this.accessToken}`;
+    this.startTime = new Date().getTime();
 
-    this._log("Connecting to WebSocket...", { url }, true);
+    this.client = new GeminiLiveClient({
+        projectId: project,
+        location: location,
+        accessToken: this.accessToken,
+        avatarName: this.getAttribute("avatar-name") || "Kira",
+        voice: this.getAttribute("voice") || "kore",
+        language: this.getAttribute("language") || "en-US",
+        systemInstruction: this.getAttribute("system-instruction"),
+        enableGrounding: this.getAttribute("enable-grounding") === "true",
+        enableTranscript: this.getAttribute("enable-transcript") === "true",
+        outputMode: (this.getAttribute("output-mode") as 'audio' | 'video') || "video",
+        customAvatar: this.customAvatar,
+        defaultGreeting: this.getAttribute("default-greeting"),
+        debug: this.getAttribute("debug") === "true"
+    });
 
-    try {
-      this.startTime = new Date().getTime();
-      this.ws = new WebSocket(url);
-
-      this.ws.onopen = () => {
-        this._log("WebSocket Connected", null, true);
-        this.sendSetup();
+    this.client.onConnected = () => {
         this.dispatchEvent(new CustomEvent("avatar-connected"));
-      };
-
-      this.ws.onmessage = (event) => this.handleMessage(event);
-
-      this.ws.onerror = (error) => console.error("WebSocket Error:", error);
-
-      this.ws.onclose = () => {
-        this._log("WebSocket Closed", null, true);
-        this.ws = null;
+    };
+    this.client.onDisconnected = () => {
+        this.client = null;
         this.dispatchEvent(new CustomEvent("avatar-disconnected"));
-      };
-    } catch (e) {
-      console.error("Failed to create WebSocket:", e);
-    }
+    };
+    this.client.onSetupComplete = () => {
+        this.setupCompleteTime = new Date().getTime();
+        this.mediaManager?.setSetupComplete(true);
+    };
+    this.client.onUserTranscript = (text) => this.appendTranscript('User', text);
+    this.client.onModelTranscript = (text) => this.appendTranscript('Agent', text);
+    this.client.onAudioData = (base64) => this.mediaManager?.playAudioChunk(base64);
+    this.client.onVideoData = (base64, mime) => this.mediaManager?.handleVideoDataChunk(base64, mime);
+    this.client.onVideoChunk = (blob) => this.mediaManager?.handleVideoChunk(blob);
+    this.client.onLog = (msg, data, imp) => this._log(msg, data, imp);
+
+    this.client.connect();
   }
 
   private disconnect() {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+    if (this.client) {
+      this.client.disconnect();
+      this.client = null;
     }
-    this.stopMic();
-    // Stop other streams...
+    this.mediaManager?.stopMic();
+    this.mediaManager?.stopVideoStreaming();
   }
 
-  private sendSetup() {
-    const project = this.getAttribute("project-id");
-    const location = this.getAttribute("location") || "us-central1";
-    const modelName = this.getAttribute("avatar-name") || "Kira";
-    const voice = this.getAttribute("voice") || "kore";
-    const language = this.getAttribute("language") || "en-US";
-
-    const systemInstruction = this.getAttribute("system-instruction");
-    const enableGrounding = this.getAttribute("enable-grounding") === "true";
-    const enableTranscript = this.getAttribute("enable-transcript") === "true";
-
-    const setupMessage = {
-      setup: {
-        model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
-        avatar_config: (modelName === 'Custom' && this.customAvatar) ? {
-          customized_avatar: this.customAvatar
-        } : {
-          avatar_name: modelName,
-        },
-        generation_config: {
-          response_modalities: this.getAttribute("output-mode") === "audio" ? ["AUDIO"] : ["VIDEO"],
-          speech_config: {
-            voice_config: {
-              prebuilt_voice_config: { voice_name: voice },
-            },
-            language_code: language,
-          },
-        },
-        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-        ...(enableGrounding ? { tools: [{ google_search: {} }] } : {}),
-        ...(enableTranscript ? {
-          input_audio_transcription: {},
-          output_audio_transcription: {}
-        } : {})
-      },
-    };
-
-    this._log("Sending setup", setupMessage, true);
-    this.ws?.send(JSON.stringify(setupMessage));
-  }
-
-  private sendText(text: string) {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    const message = {
-      realtime_input: {
-        text: text,
-      },
-    };
-    this.ws.send(JSON.stringify(message));
-  }
-
-  private handleMessage(event: MessageEvent) {
-    this.packetsReceived++;
-    this.messageQueue.push(event.data);
-    this.processQueue();
-  }
-
-  private async processQueue() {
-    if (this.processingQueue) return;
-    this.processingQueue = true;
-    while (this.messageQueue.length > 0) {
-      const data = this.messageQueue.shift();
-      await this.processMessageData(data);
-    }
-    this.processingQueue = false;
-  }
-
-  private async processMessageData(data: any) {
-    if (!this.isConnected) {
-      this._log("Ignoring message, not connected");
-      return;
-    }
-    if (data instanceof Blob) {
-      try {
-        const text = await data.text();
-        const response = JSON.parse(text);
-        this.handleJsonResponse(response);
-      } catch (e) {
-        // Assume video chunk
-        await this.handleVideoChunk(data);
-      }
-    } else {
-      try {
-        const response = JSON.parse(data);
-        this.handleJsonResponse(response);
-      } catch (e) {
-        this._log("Received raw text response", data);
-      }
-    }
-  }
-
-  private handleJsonResponse(response: any) {
-    if (response.setupComplete) {
-      this._log("Setup complete received", response.setupComplete, true);
-      this.isSetupComplete = true;
-      this.setupCompleteTime = new Date().getTime();
-      
-      if (this.micRecorder && this.micRecorder.state === 'inactive') {
-        this.micRecorder.start();
-        this._log("Microphone recording started (Setup Complete)");
-      }
-      
-      const greeting = this.getAttribute("default-greeting");
-      if (greeting) {
-        this._log("Sending default greeting:", greeting);
-        this.sendMessage(greeting);
-      }
-    }
-
-    if (response.serverContent && response.serverContent.userTurn) {
-      const parts = response.serverContent.userTurn.parts;
-      for (const part of parts) {
-        if (part.text) {
-          this._log("Received user transcript in JSON", part.text);
-          this.appendTranscript('User', part.text);
-        }
-      }
-    }
-
-    if (response.serverContent && response.serverContent.modelTurn) {
-      const parts = response.serverContent.modelTurn.parts;
-      for (const part of parts) {
-        if (part.text) {
-          this._log("Received text data in JSON", part.text);
-          this.appendTranscript('Agent', part.text);
-        }
-        if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
-          this._log("Received audio data in JSON", {
-            size: part.inlineData.data.length,
-          });
-
-          const outputMode = this.getAttribute("output-mode") || "video";
-          if (outputMode === "audio") {
-            this.playAudioChunk(part.inlineData.data);
-          }
-        }
-        if (part.inlineData && part.inlineData.mimeType.startsWith("video/")) {
-          this._log("Received video data in JSON", {
-            size: part.inlineData.data.length,
-            mimeType: part.inlineData.mimeType,
-          });
-
-          const outputMode = this.getAttribute("output-mode") || "video";
-          if (outputMode === "video") {
-            this.handleVideoDataChunk(
-              part.inlineData.data,
-              part.inlineData.mimeType,
-            );
-          }
-        }
-      }
-    }
-  }
-
-  private async playAudioChunk(base64Data: string) {
-    try {
-      this._log("playAudioChunk called", { isMuted: this.isMuted, size: base64Data.length });
-      if (!this.playbackAudioContext) {
-        this.playbackAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        this.nextPlaybackTime = this.playbackAudioContext.currentTime;
-        this.audioGainNode = this.playbackAudioContext.createGain();
-        this.audioGainNode.connect(this.playbackAudioContext.destination);
-      }
-
-      this.audioGainNode.gain.value = this.isMuted ? 0 : 1;
-      
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-
-      const arrayBuffer = bytes.buffer;
-      const pcmData = new Int16Array(arrayBuffer);
-      const floatData = new Float32Array(pcmData.length);
-      for (let i = 0; i < pcmData.length; i++) floatData[i] = pcmData[i] / 32768.0;
-
-      const buffer = this.playbackAudioContext.createBuffer(1, floatData.length, 24000);
-      buffer.copyToChannel(floatData, 0);
-
-      const source = this.playbackAudioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(this.audioGainNode);
-
-      const startTime = Math.max(this.playbackAudioContext.currentTime, this.nextPlaybackTime);
-      source.start(startTime);
-      this.nextPlaybackTime = startTime + buffer.duration;
-    } catch (e: any) {
-      console.error("Failed to play audio chunk:", e);
-      this._log("Failed to play audio chunk", { error: e.message }, true);
-    }
-  }
-
-  private async handleVideoDataChunk(base64Data: string, mimeType: string) {
-    try {
-      this._log("handleVideoDataChunk called", { isRecordingVideo: this.isRecordingVideo, size: base64Data.length });
-      
-      if (!this.receivedFirstVideoFrame) {
-        this.receivedFirstVideoFrame = true;
-        this._log("First video frame received (JSON)!");
-        this.firstFrameTime = new Date().getTime();
-        
-        if (!this.micStream && this.isRecordingVideo) {
-          this.startSilencePadding();
-        }
-      }
-      this.videoFramesReceived++;
-
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-
-      const arrayBuffer = bytes.buffer;
-      if (this.isRecordingVideo) this.recordedChunks.push(new Blob([arrayBuffer], { type: mimeType }));
-
-      if (this.sourceBuffer) {
-        this.videoChunkQueue.push(arrayBuffer);
-        this.processVideoQueue();
-      } else if (this.feedVideoData) {
-        this.feedVideoData(arrayBuffer);
-      }
-    } catch (e: any) {
-      console.error("Failed to handle video data chunk:", e);
-      this._log("Failed to handle video data chunk", { error: e.message }, true);
-    }
-  }
-
-  private async handleVideoChunk(blob: Blob) {
-    if (this.isRecordingVideo) this.recordedChunks.push(blob);
-    
-    if (!this.receivedFirstVideoFrame) {
-      this.receivedFirstVideoFrame = true;
-      this._log("First video frame received (raw)!");
-      this.firstFrameTime = new Date().getTime();
-      
-      if (!this.micStream && this.isRecordingVideo) {
-        this.startSilencePadding();
-      }
-    }
-    this.videoFramesReceived++;
-
-    const arrayBuffer = await blob.arrayBuffer();
-    if (this.sourceBuffer) {
-      this.videoChunkQueue.push(arrayBuffer);
-      this.processVideoQueue();
-    } else if (this.feedVideoData) {
-      this.feedVideoData(arrayBuffer);
-    }
-  }
-
-  private float32ToInt16(float32Array: Float32Array): Int16Array {
-    const int16Array = new Int16Array(float32Array.length);
-    for (let i = 0; i < float32Array.length; i++) {
-      const s = Math.max(-1, Math.min(1, float32Array[i]));
-      int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-    }
-    return int16Array;
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
-    return window.btoa(binary);
-  }
-
-  private startSilencePadding() {
-    this._log("Starting silence padding...");
-    const sampleRate = 16000;
-    const bufferSize = 2048;
-    const intervalMs = (bufferSize / sampleRate) * 1000;
-    
-    this.silenceInterval = setInterval(() => {
-      if (this.isRecordingVideo) {
-        const pcmData = new Int16Array(bufferSize);
-        this.accumulatedPcmData.push(pcmData);
-      }
-    }, intervalMs);
-  }
 
   private startChromaKeyLoop() {
     if (this.chromaKeyLoopId) return;
@@ -1564,24 +947,6 @@ export class GeminiAvatar extends HTMLElement {
     this.transcriptArea.appendChild(p);
   }
 
-  private processVideoQueue() {
-    if (!this.sourceBuffer || this.sourceBuffer.updating || this.videoChunkQueue.length === 0) return;
-    if (this.mediaSource?.readyState !== "open") {
-      this._log("MediaSource not open, skipping append", { readyState: this.mediaSource?.readyState });
-      return;
-    }
-    const chunk = this.videoChunkQueue.shift();
-    if (chunk) {
-      try {
-        this.sourceBuffer.appendBuffer(chunk);
-        if (this.videoEl && this.videoEl.paused) {
-          this.videoEl.play().catch((e) => this._log("Auto-play prevented or failed", { error: e.message }));
-        }
-      } catch (e) {
-        console.error("Failed to append buffer:", e);
-      }
-    }
-  }
 }
 
 customElements.define('gemini-avatar', GeminiAvatar);
