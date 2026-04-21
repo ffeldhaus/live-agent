@@ -192,3 +192,18 @@ button.btn:disabled:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
+
+/* Custom Scrollbar for QA Walkthrough */
+#qaContainer::-webkit-scrollbar {
+    width: 8px;
+}
+#qaContainer::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+#qaContainer::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+#qaContainer::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
