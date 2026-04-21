@@ -148,6 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.setPreview(avatarNameSelect.value);
         if (avatarNameSelect.value === 'Custom') {
             customAvatarSection.style.display = 'block';
+        } else {
+            const preset = (AVATAR_PRESETS as any)[avatarNameSelect.value];
+            if (preset && preset.image) {
+                updateBackground(preset.image);
+            }
         }
     }
     if (localStorage.getItem('gemini_size')) {
@@ -323,6 +328,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return await response.json();
     }
 
+    // Background Color Adaptation
+    function updateBackground(imageUrl: string) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 5;
+            canvas.height = 5;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, 5, 5);
+                const imgData = ctx.getImageData(0, 0, 5, 5);
+                const data = imgData.data;
+                
+                // Count color frequencies
+                const colors: Record<string, number> = {};
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i+1];
+                    const b = data[i+2];
+                    // Ignore transparent or pure black/white if needed
+                    if (data[i+3] < 128) continue; // Ignore transparent
+                    const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+                    colors[hex] = (colors[hex] || 0) + 1;
+                }
+                
+                // Sort by frequency
+                const sortedColors = Object.entries(colors).sort((a, b) => b[1] - a[1]);
+                
+                if (sortedColors.length > 0) {
+                    const color1 = sortedColors[0][0];
+                    const color2 = sortedColors[1] ? sortedColors[1][0] : color1;
+                    
+                    console.log('Dominant colors detected:', color1, color2);
+                    
+                    // Apply to background with low opacity to keep it dark
+                    document.body.style.background = `linear-gradient(135deg, ${color1}44 0%, ${color2}44 100%), #0f172a`;
+                }
+            }
+        };
+        img.src = imageUrl;
+    }
+
     // Listeners
     [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
         el?.addEventListener('input', validateForm);
@@ -338,6 +386,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 customAvatarSection.style.display = 'block';
             } else {
                 customAvatarSection.style.display = 'none';
+                const preset = (AVATAR_PRESETS as any)[avatarNameSelect.value];
+                if (preset && preset.image) {
+                    updateBackground(preset.image);
+                }
             }
         };
     }
@@ -519,11 +571,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const transparentUrl = canv.toDataURL('image/png');
                                 generatedImg.src = transparentUrl;
                                 avatar.setAttribute('custom-avatar-url', transparentUrl);
+                                updateBackground(transparentUrl);
                             }
                         };
                         img.src = generatedImg.src;
                     } else {
                         avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                        updateBackground(generatedImg.src);
                     }
                 } else if (part.text) {
                     console.log('Generated Content Text:', part.text);
@@ -596,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     generatedImg.src = dataUrl;
                     generatedImageContainer.style.display = 'block';
                     avatar.setAttribute('custom-avatar-url', dataUrl);
+                    updateBackground(dataUrl);
                     
                     // Auto-improvement flow!
                     try {
@@ -623,6 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const base64 = part.inlineData.data;
                             generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
                             avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                            updateBackground(generatedImg.src);
                         } else {
                             alert('Model did not return an image. See console.');
                         }
@@ -652,6 +708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         generatedImg.src = dataUrl;
                         generatedImageContainer.style.display = 'block';
                         avatar.setAttribute('custom-avatar-url', dataUrl);
+                        updateBackground(dataUrl);
                         
                         // Auto-improvement flow for upload too!
                         try {
@@ -679,6 +736,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const base64 = part.inlineData.data;
                                 generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
                                 avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                                updateBackground(generatedImg.src);
                             } else {
                                 alert('Model did not return an image. See console.');
                             }
