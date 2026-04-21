@@ -702,7 +702,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.height = cameraVideo.videoHeight;
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
+                    // Mirror the image!
+                    ctx.translate(canvas.width, 0);
+                    ctx.scale(-1, 1);
+                    
                     ctx.drawImage(cameraVideo, 0, 0);
+                    
+                    // Reset transform
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
                     
                     // Stop camera
                     const stream = cameraVideo.srcObject as MediaStream;
