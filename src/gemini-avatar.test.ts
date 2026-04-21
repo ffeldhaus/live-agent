@@ -99,7 +99,7 @@ describe('GeminiAvatar', () => {
   it('should set preview image correctly', () => {
     element.setAttribute('avatar-name', 'Kira');
     const img = element.shadowRoot?.querySelector('#preview-image') as HTMLImageElement;
-    expect(img.src).toContain('kira.webp');
+    expect(img.src).toContain('kira.png');
     expect(img.style.display).toBe('block');
   });
 

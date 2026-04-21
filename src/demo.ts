@@ -1,4 +1,4 @@
-import { GeminiAvatar } from './gemini-avatar';
+import { GeminiAvatar, AVATAR_PRESETS, VOICE_PRESETS } from './gemini-avatar';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Demo script started');
@@ -59,6 +59,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const generatedImageContainer = document.getElementById('generatedImageContainer') as HTMLDivElement;
     const generatedImg = document.getElementById('generatedImg') as HTMLImageElement;
+
+    // Populate Avatar Select
+    avatarNameSelect.innerHTML = '';
+    Object.values(AVATAR_PRESETS).forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = `${preset.displayName} (${preset.style})`;
+        avatarNameSelect.appendChild(option);
+    });
+    // Add AudioOnly option
+    const audioOnlyOption = document.createElement('option');
+    audioOnlyOption.value = 'AudioOnly';
+    audioOnlyOption.textContent = 'Audio Only';
+    avatarNameSelect.appendChild(audioOnlyOption);
+
+    // Populate Voice Select
+    voiceSelect.innerHTML = '';
+    Object.values(VOICE_PRESETS).forEach(preset => {
+        const option = document.createElement('option');
+        option.value = preset.id;
+        option.textContent = `${preset.displayName} (${preset.description})`;
+        voiceSelect.appendChild(option);
+    });
 
     // Load from localStorage
     const savedToken = localStorage.getItem('gemini_access_token');

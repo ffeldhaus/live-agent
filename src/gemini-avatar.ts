@@ -3,18 +3,27 @@ import mpegts from 'mpegts.js';
 import styles from './styles/gemini-avatar.css?inline';
 
 // Asset URLs
-const assets: Record<string, string> = {
-  Kira: new URL('./assets/kira.webp', import.meta.url).href,
-  Ingrid: new URL('./assets/ingrid.webp', import.meta.url).href,
-  Vera: new URL('./assets/vera.webp', import.meta.url).href,
-  Jay: new URL('./assets/jay.webp', import.meta.url).href,
-  Paul: new URL('./assets/paul.webp', import.meta.url).href,
-  Sam: new URL('./assets/sam.webp', import.meta.url).href,
-  Piper: new URL('./assets/piper.webp', import.meta.url).href,
-  Carmen: new URL('./assets/carmen.webp', import.meta.url).href,
-  Kai: new URL('./assets/kai.webp', import.meta.url).href,
-  Leo: new URL('./assets/leo.webp', import.meta.url).href,
-  Ben: new URL('./assets/ben.webp', import.meta.url).href,
+export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string }> = {
+  Kira: { id: 'Kira', displayName: 'Kira', style: 'photorealistic', image: new URL('./assets/kira.png', import.meta.url).href },
+  Ingrid: { id: 'Ingrid', displayName: 'Ingrid', style: 'photorealistic', image: new URL('./assets/ingrid.png', import.meta.url).href },
+  Vera: { id: 'Vera', displayName: 'Vera', style: 'photorealistic', image: new URL('./assets/vera.png', import.meta.url).href },
+  Jay: { id: 'Jay', displayName: 'Jay', style: 'photorealistic', image: new URL('./assets/jay.png', import.meta.url).href },
+  Paul: { id: 'Paul', displayName: 'Paul', style: 'photorealistic', image: new URL('./assets/paul.png', import.meta.url).href },
+  Sam: { id: 'Sam', displayName: 'Sam', style: 'photorealistic', image: new URL('./assets/sam.png', import.meta.url).href },
+  Piper: { id: 'Piper', displayName: 'Piper', style: 'non-photorealistic', image: new URL('./assets/piper.png', import.meta.url).href },
+  Carmen: { id: 'Carmen', displayName: 'Carmen', style: 'non-photorealistic', image: new URL('./assets/carmen.png', import.meta.url).href },
+  Kai: { id: 'Kai', displayName: 'Kai', style: 'non-photorealistic', image: new URL('./assets/kai.png', import.meta.url).href },
+  Leo: { id: 'Leo', displayName: 'Leo', style: 'non-photorealistic', image: new URL('./assets/leo.png', import.meta.url).href },
+  Ben: { id: 'Ben', displayName: 'Ben', style: 'non-photorealistic', image: new URL('./assets/ben.png', import.meta.url).href },
+  Hana: { id: 'Hana', displayName: 'Hana', style: 'non-photorealistic', image: new URL('./assets/hana.png', import.meta.url).href },
+};
+
+export const VOICE_PRESETS: Record<string, { id: string, displayName: string, description: string }> = {
+  puck: { id: 'puck', displayName: 'Puck', description: 'Upbeat' },
+  zephyr: { id: 'zephyr', displayName: 'Zephyr', description: 'Bright' },
+  kore: { id: 'kore', displayName: 'Kore', description: 'Firm' },
+  orus: { id: 'orus', displayName: 'Orus', description: 'Firm' },
+  autonoe: { id: 'autonoe', displayName: 'Autonoe', description: 'Bright' },
 };
 
 export class GeminiAvatar extends HTMLElement {
@@ -329,7 +338,8 @@ export class GeminiAvatar extends HTMLElement {
       return;
     }
 
-    const url = assets[avatarName];
+    const preset = (AVATAR_PRESETS as any)[avatarName];
+    const url = preset ? preset.image : null;
     if (url) {
       this.previewImg.src = url;
       this.previewImg.style.display = 'block';
