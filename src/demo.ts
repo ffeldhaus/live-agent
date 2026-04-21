@@ -697,272 +697,386 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Listen for transcript items from component
-    avatar.addEventListener('transcript-item', (e: any) => {
-        if (renderOutsideToggle.checked && externalTranscript) {
-            const { sender, text } = e.detail;
-            const p = document.createElement('p');
-            p.style.margin = '5px 0';
-            p.style.fontSize = '0.95rem';
-            p.style.padding = '5px 10px';
-            p.style.borderRadius = '8px';
-            p.style.maxWidth = '80%';
-            p.style.wordBreak = 'break-word';
+    // Feature Walkthrough Logic
+    const qaScenarios = [
+        {
+            id: '1.1',
+            title: 'Direct Access Token',
+            description: 'Verify connection using a direct access token.',
+            steps: [
+                'Enter a valid Access Token in the form.',
+                'Click "Save Configuration".',
+                'Click "Start".'
+            ],
+            verification: [
+                'Component connects to WebSocket.',
+                'Button changes to "Stop".',
+                'Video starts playing.'
+            ]
+        },
+        {
+            id: '1.2',
+            title: 'OAuth Sign-in',
+            description: 'Verify authentication via Google OAuth.',
+            steps: [
+                'Enter a valid OAuth Client ID (leave Access Token empty).',
+                'Click "Save Configuration".',
+                'Click "Start".',
+                'Complete sign-in if prompted.'
+            ],
+            verification: [
+                'A Google sign-in popup appears (if not already authorized).',
+                'Component connects successfully after acquiring token.'
+            ]
+        },
+        {
+            id: '2.1',
+            title: 'Microphone Mute & Silence Padding',
+            description: 'Verify mic muting and timeline alignment.',
+            steps: [
+                'Start a session.',
+                'Click the Microphone button on the component to mute.',
+                'Speak into the microphone.',
+                'Unmute and speak.',
+                'Stop session and download video (with user audio enabled).'
+            ],
+            verification: [
+                'The Avatar does not respond when muted.',
+                'The Avatar responds when unmuted.',
+                'The recorded user audio has silence in the muted segment, maintaining alignment.'
+            ]
+        },
+        {
+            id: '2.3',
+            title: 'Camera & Screen Sharing',
+            description: 'Verify camera and screen sharing activation.',
+            steps: [
+                'Start a session.',
+                'Click the Camera or Screen Share button on the component.'
+            ],
+            verification: [
+                'Permissions are requested if not already granted.',
+                'Button changes state to active.'
+            ]
+        },
+        {
+            id: '3.1',
+            title: 'Persistence across page reload',
+            description: 'Verify settings are saved and restored.',
+            steps: [
+                'Change settings in the form (Size, Position, Voice).',
+                'Click "Save Configuration".',
+                'Reload the page.'
+            ],
+            verification: [
+                'All settings are restored to the UI controls.'
+            ]
+        },
+        {
+            id: '3.2',
+            title: 'Dynamic Size & Position',
+            description: 'Verify immediate update of size and position.',
+            steps: [
+                'Change Size or Position in the form while session is active.'
+            ],
+            verification: [
+                'The component updates its size and position on screen immediately.'
+            ]
+        },
+        {
+            id: '4.1',
+            title: 'Combined Video & Audio Download',
+            description: 'Verify FFmpeg muxing and panned audio.',
+            steps: [
+                'Enable "Save and download video session".',
+                'Enable "Include user audio in download".',
+                'Start session, speak, and wait for avatar response.',
+                'Stop session.'
+            ],
+            verification: [
+                'Button shows "Processing video..." and is disabled.',
+                'A `.mp4` file is downloaded containing both tracks.',
+                'Audio is panned (Left/Right) based on Avatar\'s position.'
+            ]
+        },
+        {
+            id: '4.2',
+            title: 'Fallback on Failure',
+            description: 'Verify fallback behavior when FFmpeg fails.',
+            steps: [
+                'Simulate a failure (e.g., block unpkg.com).',
+                'Stop session with recording enabled.'
+            ],
+            verification: [
+                'Alert appears.',
+                'Two separate files (.mp4 and .webm) are downloaded.'
+            ]
+        },
+        {
+            id: '5.1',
+            title: 'System Instructions (Persona)',
+            description: 'Verify custom persona behavior.',
+            steps: [
+                'Enter a persona: "You are a pirate. Respond to everything with \'Ahoy!\'".',
+                'Click "Start".',
+                'Speak to the Avatar.'
+            ],
+            verification: [
+                'Avatar responds in character.'
+            ]
+        },
+        {
+            id: '5.2',
+            title: 'Default Greeting',
+            description: 'Verify automatic greeting on start.',
+            steps: [
+                'Enter a greeting: "Welcome aboard!".',
+                'Click "Start".'
+            ],
+            verification: [
+                'Avatar speaks "Welcome aboard!" immediately after connection.'
+            ]
+        },
+        {
+            id: '5.3',
+            title: '"I\'m feeling lucky" Generation',
+            description: 'Verify AI generation of persona and greeting.',
+            steps: [
+                'Click "I\'m feeling lucky" next to Persona or Greeting.'
+            ],
+            verification: [
+                'Field is populated with generated text.'
+            ]
+        },
+        {
+            id: '5.4',
+            title: 'Image Generation',
+            description: 'Verify custom avatar image generation.',
+            steps: [
+                'Enter an image prompt or use "I\'m feeling lucky".',
+                'Click "Generate".'
+            ],
+            verification: [
+                'An image appears in the container.',
+                'Applied to the avatar preview.'
+            ]
+        },
+        {
+            id: '5.5',
+            title: 'Custom Avatar Creation',
+            description: 'Verify camera capture and auto-improvement.',
+            steps: [
+                'Select "Custom" in Avatar Preset.',
+                'Click "Camera".',
+                'Align face and click "Capture".'
+            ],
+            verification: [
+                'Image is captured and analyzed.',
+                'New avatar image is generated and applied.'
+            ]
+        },
+        {
+            id: '6.1',
+            title: 'Real-time Stats',
+            description: 'Verify statistics display.',
+            steps: [
+                'Start a session.',
+                'Watch the "Session Statistics" panel.'
+            ],
+            verification: [
+                'Packets and frames counters increase.',
+                'Setup duration and latency show realistic values.',
+                'Average FPS is close to 24.'
+            ]
+        },
+        {
+            id: '6.2',
+            title: 'Latency Visualizer',
+            description: 'Verify visual latency bar.',
+            steps: [
+                'Start a session.',
+                'Watch the latency bar in Statistics.'
+            ],
+            verification: [
+                'Bar shows blue and green segments.',
+                'Values are displayed inside or total on the right.'
+            ]
+        },
+        {
+            id: '7.1',
+            title: 'Background Removal',
+            description: 'Verify Chroma Keying.',
+            steps: [
+                'Use a custom avatar with solid green background.',
+                'Enable Chroma Keying.',
+                'Select "Green Key" and "Make Transparent".'
+            ],
+            verification: [
+                'The green background disappears.'
+            ]
+        },
+        {
+            id: '8.1',
+            title: 'External Transcript',
+            description: 'Verify rendering transcript outside the component.',
+            steps: [
+                'Enable "Render Transcript Outside Component" in Avatar settings.',
+                'Start session.',
+                'Speak or send message.'
+            ],
+            verification: [
+                'Transcript appears in the section above Settings.',
+                'Internal transcript in component is hidden.'
+            ]
+        },
+        {
+            id: '9.1',
+            title: 'Google Search Grounding',
+            description: 'Verify enabling search grounding.',
+            steps: [
+                'Enable "Enable Google Search Grounding" in Avatar settings.',
+                'Start session.',
+                'Ask a question that requires recent info.'
+            ],
+            verification: [
+                'Avatar provides accurate, grounded answer.'
+            ]
+        }
+    ];
+
+    const renderQA = () => {
+        if (!qaList) return;
+        qaList.innerHTML = '';
+        qaScenarios.forEach(scenario => {
+            const div = document.createElement('div');
+            div.className = 'qa-scenario';
+            div.style.marginBottom = '15px';
+            div.style.padding = '15px';
+            div.style.background = '#1e293b';
+            div.style.borderRadius = '8px';
             
-            const isUser = sender === 'User';
-            const icon = isUser ? '👤' : '🤖';
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.gap = '8px';
+            header.style.fontWeight = 'bold';
+            header.style.color = '#f8fafc';
+            header.style.marginBottom = '5px';
+            header.style.fontSize = '1.1rem';
             
-            p.innerHTML = `<span>${icon}</span> ${text}`;
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.style.width = 'auto';
+            const savedState = localStorage.getItem(`gemini_qa_${scenario.id}`);
+            checkbox.checked = savedState === 'true';
             
-            if (isUser) {
-              p.style.alignSelf = 'flex-end';
-              p.style.background = 'rgba(99, 102, 241, 0.3)';
-              p.style.marginLeft = 'auto';
-              p.style.color = '#f8fafc';
-            } else {
-              p.style.alignSelf = 'flex-start';
-              p.style.background = 'rgba(255, 255, 255, 0.1)';
-              p.style.marginRight = 'auto';
-              p.style.color = '#cbd5e1';
+            checkbox.onchange = () => {
+                localStorage.setItem(`gemini_qa_${scenario.id}`, checkbox.checked.toString());
+            };
+            
+            header.appendChild(checkbox);
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = `${scenario.id}: ${scenario.title}`;
+            header.appendChild(titleSpan);
+            
+            div.appendChild(header);
+            
+            if (scenario.description) {
+                const desc = document.createElement('p');
+                desc.style.fontSize = '0.95rem';
+                desc.style.color = '#94a3b8';
+                desc.style.margin = '0 0 10px 25px';
+                desc.textContent = scenario.description;
+                div.appendChild(desc);
             }
             
-            externalTranscript.appendChild(p);
-        }
-    });
+            const stepsTitle = document.createElement('div');
+            stepsTitle.style.fontSize = '0.95rem';
+            stepsTitle.style.fontWeight = 'bold';
+            stepsTitle.style.color = '#cbd5e1';
+            stepsTitle.style.margin = '0 0 5px 25px';
+            stepsTitle.textContent = 'Steps:';
+            div.appendChild(stepsTitle);
+            
+            const ul = document.createElement('ul');
+            ul.style.margin = '0 0 10px 45px';
+            ul.style.fontSize = '0.95rem';
+            ul.style.color = '#cbd5e1';
+            scenario.steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                ul.appendChild(li);
+            });
+            div.appendChild(ul);
+            
+            const verifTitle = document.createElement('div');
+            verifTitle.style.fontSize = '0.95rem';
+            verifTitle.style.fontWeight = 'bold';
+            verifTitle.style.color = '#cbd5e1';
+            verifTitle.style.margin = '0 0 5px 25px';
+            verifTitle.textContent = 'Verification:';
+            div.appendChild(verifTitle);
+            
+            const ulVerif = document.createElement('ul');
+            ulVerif.style.margin = '0 0 0 45px';
+            ulVerif.style.fontSize = '0.95rem';
+            ulVerif.style.color = '#cbd5e1';
+            scenario.verification.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                ulVerif.appendChild(li);
+            });
+            div.appendChild(ulVerif);
+            
+            qaList.appendChild(div);
+        });
+    };
 
-    // External Chat Input
-    if (externalSendBtn) {
-        externalSendBtn.onclick = () => {
-            const text = externalChatInput.value;
-            if (text) {
-                avatar.sendMessage(text);
-                externalChatInput.value = '';
+    const updateQaPosition = () => {
+        if (!qaContainer) return;
+        const pos = avatar.getAttribute('position') || 'top-right';
+        
+        qaContainer.style.top = '0';
+        qaContainer.style.bottom = '0';
+        qaContainer.style.height = '100vh';
+        qaContainer.style.width = 'min(570px, 40vw)';
+        
+        if (pos.includes('right')) {
+            qaContainer.style.left = '0';
+            qaContainer.style.right = 'auto';
+            qaContainer.style.borderRight = '1px solid #334155';
+            qaContainer.style.borderLeft = 'none';
+        } else {
+            qaContainer.style.right = '0';
+            qaContainer.style.left = 'auto';
+            qaContainer.style.borderLeft = '1px solid #334155';
+            qaContainer.style.borderRight = 'none';
+        }
+    };
+
+    if (toggleQaBtn) {
+        toggleQaBtn.onclick = () => {
+            if (qaContainer) {
+                const isVisible = qaContainer.style.display !== 'none';
+                qaContainer.style.display = isVisible ? 'none' : 'block';
+                toggleQaBtn.textContent = isVisible ? 'Open Feature Walkthrough' : 'Close Feature Walkthrough';
+                if (!isVisible) {
+                    updateQaPosition();
+                    renderQA();
+                }
             }
         };
     }
-    if (externalChatInput) {
-        externalChatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                externalSendBtn.click();
+
+    // Listen for position changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'position') {
+                updateQaPosition();
             }
         });
-    }
-
-    let isProcessingVideo = false;
-
-    if (streamBtn) {
-        streamBtn.onclick = () => {
-            if (avatar.isConnected) {
-                avatar.stop();
-                
-                if (saveVideoToggle.checked) {
-                    isProcessingVideo = true;
-                    streamBtn.textContent = 'Processing video...';
-                    streamBtn.disabled = true;
-                    streamBtn.style.opacity = '0.5';
-                    streamBtn.style.cursor = 'not-allowed';
-                    
-                    // Wait a bit for streams to close and finalize
-                    setTimeout(async () => {
-                        const { videoBlob, audioBlob } = avatar.getSessionFiles();
-                        const recordUserAudio = recordUserAudioCheckbox?.checked;
-                        
-                        if (recordUserAudio && audioBlob.size > 0) {
-                            console.log('Starting FFmpeg muxing...');
-                            try {
-                                console.log('Loading FFmpeg...');
-                                const ffmpeg = await getFFmpeg();
-                                const { fetchFile } = await import('@ffmpeg/util');
-                                
-                                console.log('Writing files to FFmpeg FS...');
-                                await ffmpeg.writeFile('video.mp4', await fetchFile(videoBlob));
-                                await ffmpeg.writeFile('audio.pcm', await fetchFile(audioBlob));
-                                
-                                const pos = avatar.getAttribute('position') || 'top-right';
-                                const avatarOnRight = pos.includes('right');
-                                
-                                // amerge=inputs=2 will combine two mono channels into a stereo channel
-                                // The order determines which goes to Left and which to Right.
-                                // Channel 0 is Left, Channel 1 is Right.
-                                let filterComplex = '';
-                                if (avatarOnRight) {
-                                    // User audio (Input 1) -> Left, Avatar audio (Input 0) -> Right
-                                    filterComplex = "[1:a][0:a]amerge=inputs=2[a]";
-                                } else {
-                                    // Avatar audio (Input 0) -> Left, User audio (Input 1) -> Right
-                                    filterComplex = "[0:a][1:a]amerge=inputs=2[a]";
-                                }
-
-                                console.log('Executing FFmpeg command with filter:', filterComplex);
-                                await ffmpeg.exec([
-                                    '-i', 'video.mp4', 
-                                    '-f', 's16le', 
-                                    '-ar', '16000', 
-                                    '-ac', '1', 
-                                    '-i', 'audio.pcm', 
-                                    '-filter_complex', filterComplex, 
-                                    '-map', '0:v', 
-                                    '-map', '[a]', 
-                                    '-c:v', 'copy', 
-                                    '-c:a', 'aac', 
-                                    'output.mp4'
-                                ]);
-                                
-                                console.log('Reading output file...');
-                                const data = await ffmpeg.readFile('output.mp4');
-                                const combinedBlob = new Blob([data], { type: 'video/mp4' });
-                                
-                                downloadBlob(combinedBlob, `avatar_session_combined_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
-                                console.log('FFmpeg muxing completed.');
-                            } catch (error) {
-                                console.error('FFmpeg error:', error);
-                                alert('Failed to combine video and audio with FFmpeg. Downloading separate files instead.');
-                                downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
-                                downloadBlob(audioBlob, `user_audio_${new Date().toISOString().replace(/:/g, '-')}.webm`);
-                            }
-                        } else {
-                            downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
-                        }
-                        
-                        // Reset button state
-                        isProcessingVideo = false;
-                        streamBtn.textContent = 'Start';
-                        streamBtn.disabled = false;
-                        streamBtn.style.opacity = '1';
-                        streamBtn.style.cursor = 'pointer';
-                        streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                        validateForm();
-                    }, 1000);
-                }
-            } else {
-                // Apply settings
-                avatar.setAttribute('project-id', projectIdInput.value);
-                avatar.setAttribute('location', locationInput.value);
-                avatar.setAttribute('avatar-name', avatarNameSelect.value);
-                avatar.setAttribute('size', sizeSelect.value);
-                avatar.setAttribute('position', positionSelect.value);
-                avatar.setAttribute('oauth-client-id', oauthClientIdInput.value);
-                avatar.setAttribute('access-token', tokenInput.value);
-                avatar.setAttribute('voice', voiceSelect.value);
-                avatar.setAttribute('language', languageSelect.value);
-                avatar.setAttribute('record-video', saveVideoToggle.checked ? 'true' : 'false');
-                avatar.setAttribute('debug', debugToggle.checked ? 'true' : 'false');
-                avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
-                
-                // Apply advanced settings
-                avatar.setAttribute('system-instruction', systemInstructionInput.value);
-                avatar.setAttribute('default-greeting', defaultGreetingInput.value);
-                
-                // Apply Chroma Key settings
-                avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
-                avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
-                avatar.setAttribute('background-color', backgroundColor.value);
-
-                // Apply toggle states
-                avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
-                avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
-                avatar.setAttribute('render-transcript-outside', renderOutsideToggle.checked.toString());
-
-                // Apply grounding setting
-                avatar.setAttribute('enable-grounding', enableGrounding.checked.toString());
-
-                if (avatarNameSelect.value === 'AudioOnly') {
-                    avatar.setAttribute('output-mode', 'audio');
-                } else {
-                    avatar.setAttribute('output-mode', 'video');
-                }
-
-                if (externalTranscript) {
-                    externalTranscript.innerHTML = '';
-                }
-
-                avatar.start();
-                avatar.unmute(); // Unmute by default on start
-            }
-        };
-    }
-
-    avatar.addEventListener('avatar-connected', () => {
-        if (streamBtn) {
-            streamBtn.disabled = false;
-            streamBtn.textContent = 'Stop';
-            streamBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-        }
-        
-        // Start polling stats
-        statsInterval = setInterval(updateStats, 1000);
     });
-
-    avatar.addEventListener('avatar-disconnected', () => {
-        if (!isProcessingVideo) {
-            if (streamBtn) {
-                streamBtn.textContent = 'Start';
-                streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            }
-            validateForm();
-        }
-        
-        // Stop polling stats
-        if (statsInterval) {
-            clearInterval(statsInterval);
-            statsInterval = null;
-        }
-        updateStats(); // Final update
-    });
-
-    if (saveBtn) {
-        saveBtn.onclick = () => {
-            localStorage.setItem('gemini_project_id', projectIdInput.value);
-            localStorage.setItem('gemini_location', locationInput.value);
-            localStorage.setItem('gemini_avatar_name', avatarNameSelect.value);
-            localStorage.setItem('gemini_size', sizeSelect.value);
-            localStorage.setItem('gemini_position', positionSelect.value);
-            localStorage.setItem('gemini_oauth_client_id', oauthClientIdInput.value);
-            localStorage.setItem('gemini_voice', voiceSelect.value);
-            localStorage.setItem('gemini_language', languageSelect.value);
-
-            // Save checkbox states
-            localStorage.setItem('gemini_save_video', saveVideoToggle.checked.toString());
-            localStorage.setItem('gemini_debug', debugToggle.checked.toString());
-            if (recordUserAudioCheckbox) {
-                localStorage.setItem('gemini_record_user_audio', recordUserAudioCheckbox.checked.toString());
-            }
-            
-            localStorage.setItem('gemini_mic_auto_request', micAutoRequestToggle.checked.toString());
-            localStorage.setItem('gemini_ctrl_mic', ctrlMic.checked.toString());
-            localStorage.setItem('gemini_ctrl_camera', ctrlCamera.checked.toString());
-            localStorage.setItem('gemini_ctrl_screen', ctrlScreen.checked.toString());
-            localStorage.setItem('gemini_ctrl_mute', ctrlMute.checked.toString());
-            localStorage.setItem('gemini_ctrl_snapshot', ctrlSnapshot.checked.toString());
-            
-            localStorage.setItem('gemini_audio_chunk_size', audioChunkSizeSlider.value);
-            
-            // Save advanced settings
-            localStorage.setItem('gemini_system_instruction', systemInstructionInput.value);
-            localStorage.setItem('gemini_default_greeting', defaultGreetingInput.value);
-            localStorage.setItem('gemini_image_prompt', imagePromptInput.value);
-            
-            // Save Chroma Key settings
-            localStorage.setItem('gemini_enable_chroma_key', enableChromaKey.checked.toString());
-            localStorage.setItem('gemini_chroma_key_color', chromaKeyColor.value);
-            localStorage.setItem('gemini_background_color', backgroundColor.value);
-
-            // Save toggle states
-            localStorage.setItem('gemini_enable_transcript', enableTranscript.checked.toString());
-            localStorage.setItem('gemini_enable_chat_input', enableChatInput.checked.toString());
-            localStorage.setItem('gemini_enable_transcript_outside', renderOutsideToggle.checked.toString());
-
-            // Save grounding setting
-            localStorage.setItem('gemini_enable_grounding', enableGrounding.checked.toString());
-
-            if (tokenInput.value) {
-                localStorage.setItem('gemini_access_token', tokenInput.value);
-                localStorage.setItem('gemini_token_time', new Date().getTime().toString());
-            }
-
-            alert('Configuration saved.');
-        };
-    }
+    observer.observe(avatar, { attributes: true });
 
     // Initial apply
     updateVisibleControls();
