@@ -22,11 +22,37 @@ body {
 }
 body.animated-bg {
     background: 
-        radial-gradient(circle at var(--px1) var(--py1), var(--c1) 0%, transparent 70%),
-        radial-gradient(circle at var(--px2) var(--py2), var(--c2) 0%, transparent 70%),
-        radial-gradient(circle at var(--px3) var(--py3), var(--c3) 0%, transparent 70%),
-        radial-gradient(circle at var(--px4) var(--py4), var(--c4) 0%, transparent 70%),
+        radial-gradient(circle, var(--c1) 0%, transparent 70%) no-repeat,
+        radial-gradient(circle, var(--c2) 0%, transparent 70%) no-repeat,
+        radial-gradient(circle, var(--c3) 0%, transparent 70%) no-repeat,
+        radial-gradient(circle, var(--c4) 0%, transparent 70%) no-repeat,
         #0f172a !important;
+    background-size: 150% 150%, 150% 150%, 150% 150%, 150% 150% !important;
+    animation: 
+        bgMove1 calc(var(--speed) * 0.8) ease-in-out infinite,
+        bgMove2 var(--speed) ease-in-out infinite,
+        bgMove3 calc(var(--speed) * 1.2) ease-in-out infinite,
+        bgMove4 calc(var(--speed) * 1.5) ease-in-out infinite;
+}
+@keyframes bgMove1 {
+    0% { background-position: 0% 0%; }
+    50% { background-position: 100% 100%; }
+    100% { background-position: 0% 0%; }
+}
+@keyframes bgMove2 {
+    0% { background-position: 100% 0%; }
+    50% { background-position: 0% 100%; }
+    100% { background-position: 100% 0%; }
+}
+@keyframes bgMove3 {
+    0% { background-position: 0% 100%; }
+    50% { background-position: 100% 0%; }
+    100% { background-position: 0% 100%; }
+}
+@keyframes bgMove4 {
+    0% { background-position: 50% 0%; }
+    50% { background-position: 50% 100%; }
+    100% { background-position: 50% 0%; }
 }
 .container {
     max-width: 800px;
