@@ -189,6 +189,7 @@
             <!-- Custom Avatar Creation (Hidden by default) -->
             <div id="customAvatarSection" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                 <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Create Custom Avatar:</label>
+                <p style="font-size: 0.85rem; color: #94a3b8; margin: 5px 0 10px 0;">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
                 <div style="display: flex; gap: 10px; margin-top: 5px;">
                     <button class="btn" id="cameraBtn" style="margin-top: 0; flex: 1; background: #475569;">Camera</button>
                     <button class="btn" id="uploadBtn" style="margin-top: 0; flex: 1; background: #475569;">Upload Image</button>
@@ -272,6 +273,22 @@
     <div id="qaContainer" style="display: none; position: fixed; width: min(570px, 40vw); height: 100vh; top: 0; bottom: 0; overflow-y: auto; background: #0f172a; padding: 20px; z-index: 1000; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
         <h2 style="font-size: 1.2rem; margin-top: 0; color: #f8fafc;">Feature Walkthrough</h2>
         <div id="qaList"></div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="modal-overlay" id="cameraModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 class="modal-title" style="background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Take Photo</h2>
+            <div style="position: relative; width: 100%; padding-top: 177.77%; /* 9:16 Aspect Ratio */ background: #000; border-radius: 12px; overflow: hidden;">
+                <video id="cameraVideo" autoplay playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"></video>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed #38bdf8; width: 60%; height: 60%; border-radius: 50%; pointer-events: none;"></div>
+                <p style="position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8rem; color: #38bdf8; margin: 0;">Align mouth to center circle</p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="modal-btn" id="captureBtn" style="flex: 1;">Capture</button>
+                <button class="modal-btn" id="closeCameraBtn" style="flex: 1; background: #475569;">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <!-- The Web Component instance -->

@@ -90,6 +90,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // New Grounding element
     const enableGrounding = document.getElementById('enableGrounding') as HTMLInputElement;
 
+    // Camera Modal elements
+    const cameraModal = document.getElementById('cameraModal') as HTMLDivElement;
+    const cameraVideo = document.getElementById('cameraVideo') as HTMLVideoElement;
+    const captureBtn = document.getElementById('captureBtn') as HTMLButtonElement;
+    const closeCameraBtn = document.getElementById('closeCameraBtn') as HTMLButtonElement;
+
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
     Object.values(AVATAR_PRESETS).forEach(preset => {
@@ -280,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // REST API Helper
-    async function generateContent(model: string, prompt: string) {
+    async function generateContent(model: string, prompt: string, inlineData?: { mimeType: string, data: string }) {
         const project = projectIdInput.value;
         const location = locationInput.value || 'us-central1';
         const token = tokenInput.value;
@@ -292,6 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
         const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
         
+        const parts: any[] = [{ text: prompt }];
+        if (inlineData) {
+            parts.push({ inlineData });
+        }
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -299,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                contents: [{ parts }]
             })
         });
         
@@ -459,8 +470,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 generateImageBtn.textContent = 'Generating...';
                 
+                // Add background settings to prompt!
+                let finalPrompt = enhancedPrompt;
+                if (enableChromaKey.checked) {
+                    const color = chromaKeyColor.value;
+                    finalPrompt += ` with a solid ${color} background.`;
+                } else if (backgroundColor.value === 'white') {
+                    finalPrompt += ` with a solid white background.`;
+                }
+                
                 // 2. Generate image with gemini-3.1-flash-image-preview
-                const data = await generateContent('gemini-3.1-flash-image-preview', enhancedPrompt);
+                const data = await generateContent('gemini-3.1-flash-image-preview', finalPrompt);
                 
                 console.log('Image Gen Response:', data);
                 const part = data.candidates[0].content.parts[0];
@@ -469,7 +489,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     const base64 = part.inlineData.data;
                     generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
                     generatedImageContainer.style.display = 'block';
-                    avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                    
+                    // Apply transparency via canvas if needed!
+                    if (enableChromaKey.checked && backgroundColor.value === 'transparent') {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canv = document.createElement('canvas');
+                            canv.width = img.width;
+                            canv.height = img.height;
+                            const cx = canv.getContext('2d');
+                            if (cx) {
+                                cx.drawImage(img, 0, 0);
+                                const imgData = cx.getImageData(0, 0, canv.width, canv.height);
+                                const data = imgData.data;
+                                
+                                const keyColor = chromaKeyColor.value;
+                                for (let i = 0; i < data.length; i += 4) {
+                                    const r = data[i];
+                                    const g = data[i+1];
+                                    const b = data[i+2];
+                                    
+                                    if (keyColor === 'green' && g > r && g > b) {
+                                        data[i+3] = 0; // Transparent!
+                                    } else if (keyColor === 'blue' && b > r && b > g) {
+                                        data[i+3] = 0; // Transparent!
+                                    }
+                                }
+                                cx.putImageData(imgData, 0, 0);
+                                const transparentUrl = canv.toDataURL('image/png');
+                                generatedImg.src = transparentUrl;
+                                avatar.setAttribute('custom-avatar-url', transparentUrl);
+                            }
+                        };
+                        img.src = generatedImg.src;
+                    } else {
+                        avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                    }
                 } else if (part.text) {
                     console.log('Generated Content Text:', part.text);
                     alert('Model returned text instead of an image. See console for details.');
@@ -486,12 +541,134 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Custom Avatar Buttons (Placeholders for now)
+    // Custom Avatar Buttons (Camera & Upload)
     if (cameraBtn) {
-        cameraBtn.onclick = () => alert('Camera capture feature not implemented yet.');
+        cameraBtn.onclick = async () => {
+            if (cameraModal && cameraVideo) {
+                cameraModal.classList.add('active');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                    cameraVideo.srcObject = stream;
+                } catch (e) {
+                    console.error('Camera access error:', e);
+                    alert('Failed to access camera: ' + e);
+                    cameraModal.classList.remove('active');
+                }
+            }
+        };
     }
+
+    if (closeCameraBtn) {
+        closeCameraBtn.onclick = () => {
+            if (cameraModal && cameraVideo) {
+                const stream = cameraVideo.srcObject as MediaStream;
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                cameraVideo.srcObject = null;
+                cameraModal.classList.remove('active');
+            }
+        };
+    }
+
+    if (captureBtn) {
+        captureBtn.onclick = async () => {
+            if (cameraVideo) {
+                const canvas = document.createElement('canvas');
+                canvas.width = cameraVideo.videoWidth;
+                canvas.height = cameraVideo.videoHeight;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(cameraVideo, 0, 0);
+                    
+                    // Stop camera
+                    const stream = cameraVideo.srcObject as MediaStream;
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    cameraVideo.srcObject = null;
+                    cameraModal.classList.remove('active');
+                    
+                    // Get image data URL
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    // Show preview
+                    generatedImg.src = dataUrl;
+                    generatedImageContainer.style.display = 'block';
+                    avatar.setAttribute('custom-avatar-url', dataUrl);
+                    
+                    // Auto-improvement flow!
+                    try {
+                        generateImageBtn.disabled = true;
+                        generateImageBtn.textContent = 'Analyzing...';
+                        
+                        const base64Data = dataUrl.split(',')[1];
+                        const prompt = "Analyze this photo. Describe the person in detail (hair, eyes, clothing, expression) and generate a prompt for an image generation model to create a professional avatar profile picture of this person. Follow best practices for image generation prompts. Return ONLY the generated prompt text.";
+                        
+                        const data = await generateContent('gemini-3.1-flash', prompt, { mimeType: 'image/png', data: base64Data });
+                        const enhancedPrompt = data.candidates[0].content.parts[0].text.trim();
+                        console.log('Enhanced Prompt from Image:', enhancedPrompt);
+                        
+                        imagePromptInput.value = enhancedPrompt;
+                        
+                        // Auto-trigger generation!
+                        generateImageBtn.click();
+                    } catch (e: any) {
+                        console.error('Auto-improvement error:', e);
+                        alert('Failed to auto-improve image: ' + e.message);
+                    } finally {
+                        generateImageBtn.disabled = false;
+                        generateImageBtn.textContent = 'Generate';
+                    }
+                }
+            }
+        };
+    }
+
     if (uploadBtn) {
-        uploadBtn.onclick = () => alert('Upload image feature not implemented yet.');
+        uploadBtn.onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e: any) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (re: any) => {
+                        const dataUrl = re.target.result;
+                        generatedImg.src = dataUrl;
+                        generatedImageContainer.style.display = 'block';
+                        avatar.setAttribute('custom-avatar-url', dataUrl);
+                        
+                        // Auto-improvement flow for upload too!
+                        try {
+                            generateImageBtn.disabled = true;
+                            generateImageBtn.textContent = 'Analyzing...';
+                            
+                            const base64Data = dataUrl.split(',')[1];
+                            const prompt = "Analyze this photo. Describe the person in detail (hair, eyes, clothing, expression) and generate a prompt for an image generation model to create a professional avatar profile picture of this person. Follow best practices for image generation prompts. Return ONLY the generated prompt text.";
+                            
+                            const data = await generateContent('gemini-3.1-flash', prompt, { mimeType: file.type, data: base64Data });
+                            const enhancedPrompt = data.candidates[0].content.parts[0].text.trim();
+                            console.log('Enhanced Prompt from Upload:', enhancedPrompt);
+                            
+                            imagePromptInput.value = enhancedPrompt;
+                            
+                            // Auto-trigger generation!
+                            generateImageBtn.click();
+                        } catch (e: any) {
+                            console.error('Auto-improvement error:', e);
+                            alert('Failed to auto-improve image: ' + e.message);
+                        } finally {
+                            generateImageBtn.disabled = false;
+                            generateImageBtn.textContent = 'Generate';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
+        };
     }
 
     // Listen for transcript items from component
@@ -765,3 +942,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updateVisibleControls();
     validateForm();
 });
+
+function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+let statsInterval: any = null;
