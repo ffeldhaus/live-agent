@@ -70,6 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const qaList = document.getElementById('qaList') as HTMLDivElement;
     const toggleQaBtn = document.getElementById('toggleQaBtn') as HTMLButtonElement;
 
+    // New Overhaul elements
+    const enableTranscript = document.getElementById('enableTranscript') as HTMLInputElement;
+    const enableChatInput = document.getElementById('enableChatInput') as HTMLInputElement;
+    const customAvatarSection = document.getElementById('customAvatarSection') as HTMLDivElement;
+    const cameraBtn = document.getElementById('cameraBtn') as HTMLButtonElement;
+    const uploadBtn = document.getElementById('uploadBtn') as HTMLButtonElement;
+
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
     Object.values(AVATAR_PRESETS).forEach(preset => {
@@ -93,6 +100,12 @@ document.addEventListener('DOMContentLoaded', () => {
         voiceSelect.appendChild(option);
     });
 
+    // Show connection type on load
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    if (conn && statConnType) {
+        statConnType.textContent = conn.type || '-';
+    }
+
     // Load from localStorage
     const savedToken = localStorage.getItem('gemini_access_token');
     const savedTime = localStorage.getItem('gemini_token_time');
@@ -114,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('gemini_avatar_name')) {
         avatarNameSelect.value = localStorage.getItem('gemini_avatar_name')!;
         avatar.setPreview(avatarNameSelect.value);
+        if (avatarNameSelect.value === 'Custom') {
+            customAvatarSection.style.display = 'block';
+        }
     }
     if (localStorage.getItem('gemini_size')) {
         sizeSelect.value = localStorage.getItem('gemini_size')!;
@@ -169,6 +185,10 @@ document.addEventListener('DOMContentLoaded', () => {
     avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
     avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
     avatar.setAttribute('background-color', backgroundColor.value);
+
+    // Load toggle states
+    enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
+    enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
 
     function validateForm() {
         const project = projectIdInput.value.trim();
@@ -245,139 +265,169 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Listeners
     [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
-        el.addEventListener('input', validateForm);
+        el?.addEventListener('input', validateForm);
     });
 
     sizeSelect.onchange = () => avatar.setAttribute('size', sizeSelect.value);
     positionSelect.onchange = () => avatar.setAttribute('position', positionSelect.value);
-    avatarNameSelect.onchange = () => avatar.setPreview(avatarNameSelect.value);
+    
+    avatarNameSelect.onchange = () => {
+        avatar.setPreview(avatarNameSelect.value);
+        if (avatarNameSelect.value === 'Custom') {
+            customAvatarSection.style.display = 'block';
+        } else {
+            customAvatarSection.style.display = 'none';
+        }
+    };
     
     if (micAutoRequestToggle) {
         micAutoRequestToggle.onchange = () => avatar.setAttribute('mic-auto-request', micAutoRequestToggle.checked.toString());
     }
     
     [ctrlMic, ctrlCamera, ctrlScreen, ctrlMute, ctrlSnapshot].forEach(el => {
-        el.onchange = updateVisibleControls;
+        if (el) el.onchange = updateVisibleControls;
     });
 
-    audioChunkSizeSlider.oninput = () => {
-        chunkSizeVal.textContent = audioChunkSizeSlider.value;
-        avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
-    };
+    if (audioChunkSizeSlider) {
+        audioChunkSizeSlider.oninput = () => {
+            chunkSizeVal.textContent = audioChunkSizeSlider.value;
+            avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+        };
+    }
 
     // Chroma Key Listeners
-    enableChromaKey.onchange = () => avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
-    chromaKeyColor.onchange = () => avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
-    backgroundColor.onchange = () => avatar.setAttribute('background-color', backgroundColor.value);
+    if (enableChromaKey) enableChromaKey.onchange = () => avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+    if (chromaKeyColor) chromaKeyColor.onchange = () => avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
+    if (backgroundColor) backgroundColor.onchange = () => avatar.setAttribute('background-color', backgroundColor.value);
+
+    // Toggle Listeners
+    if (enableTranscript) enableTranscript.onchange = () => avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
+    if (enableChatInput) enableChatInput.onchange = () => avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
 
     // Lucky buttons
-    luckyPersonaBtn.onclick = async () => {
-        const name = avatarNameSelect.value;
-        const voice = voiceSelect.value;
-        const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. Return only the persona description.`;
-        
-        try {
-            luckyPersonaBtn.disabled = true;
-            luckyPersonaBtn.textContent = 'Thinking...';
-            const data = await generateContent('gemini-3-flash-preview', prompt);
-            const text = data.candidates[0].content.parts[0].text;
-            systemInstructionInput.value = text.trim();
-        } catch (e: any) {
-            alert(`Failed to generate persona: ${e.message}`);
-        } finally {
-            luckyPersonaBtn.disabled = false;
-            luckyPersonaBtn.textContent = "I'm feeling lucky";
-        }
-    };
-
-    luckyGreetingBtn.onclick = async () => {
-        const persona = systemInstructionInput.value;
-        if (!persona) {
-            alert('Please generate or enter a persona first.');
-            return;
-        }
-        const prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
-        
-        try {
-            luckyGreetingBtn.disabled = true;
-            luckyGreetingBtn.textContent = 'Thinking...';
-            const data = await generateContent('gemini-3-flash-preview', prompt);
-            const text = data.candidates[0].content.parts[0].text;
-            defaultGreetingInput.value = text.trim();
-        } catch (e: any) {
-            alert(`Failed to generate greeting: ${e.message}`);
-        } finally {
-            luckyGreetingBtn.disabled = false;
-            luckyGreetingBtn.textContent = "I'm feeling lucky";
-        }
-    };
-
-    luckyImageBtn.onclick = async () => {
-        const persona = systemInstructionInput.value;
-        if (!persona) {
-            alert('Please generate or enter a persona first.');
-            return;
-        }
-        const prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
-        
-        try {
-            luckyImageBtn.disabled = true;
-            luckyImageBtn.textContent = 'Thinking...';
-            const data = await generateContent('gemini-3-flash-preview', prompt);
-            const text = data.candidates[0].content.parts[0].text;
-            imagePromptInput.value = text.trim();
-        } catch (e: any) {
-            alert(`Failed to generate image prompt: ${e.message}`);
-        } finally {
-            luckyImageBtn.disabled = false;
-            luckyImageBtn.textContent = "I'm feeling lucky";
-        }
-    };
-
-    generateImageBtn.onclick = async () => {
-        const userPrompt = imagePromptInput.value;
-        if (!userPrompt) {
-            alert('Please enter a prompt or use "I\'m feeling lucky".');
-            return;
-        }
-        
-        try {
-            generateImageBtn.disabled = true;
-            generateImageBtn.textContent = 'Enhancing...';
+    if (luckyPersonaBtn) {
+        luckyPersonaBtn.onclick = async () => {
+            const name = avatarNameSelect.value;
+            const voice = voiceSelect.value;
+            const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. Return only the persona description.`;
             
-            // 1. Enhance prompt with gemini-3-flash
-            const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
-            const enhanceData = await generateContent('gemini-3-flash', enhancePrompt);
-            const enhancedPrompt = enhanceData.candidates[0].content.parts[0].text.trim();
-            console.log('Enhanced Prompt:', enhancedPrompt);
-            
-            generateImageBtn.textContent = 'Generating...';
-            
-            // 2. Generate image with gemini-3.1-flash-image-preview
-            const data = await generateContent('gemini-3.1-flash-image-preview', enhancedPrompt);
-            
-            console.log('Image Gen Response:', data);
-            const part = data.candidates[0].content.parts[0];
-            
-            if (part.inlineData && part.inlineData.data) {
-                const base64 = part.inlineData.data;
-                generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
-                generatedImageContainer.style.display = 'block';
-                avatar.setAttribute('custom-avatar-url', generatedImg.src);
-            } else if (part.text) {
-                console.log('Generated Content Text:', part.text);
-                alert('Model returned text instead of an image. See console for details.');
-            } else {
-                alert('Failed to generate image (unknown response structure). See console.');
+            try {
+                luckyPersonaBtn.disabled = true;
+                luckyPersonaBtn.textContent = 'Thinking...';
+                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const text = data.candidates[0].content.parts[0].text;
+                systemInstructionInput.value = text.trim();
+            } catch (e: any) {
+                alert(`Failed to generate persona: ${e.message}`);
+            } finally {
+                luckyPersonaBtn.disabled = false;
+                luckyPersonaBtn.textContent = "I'm feeling lucky";
             }
-        } catch (e: any) {
-            console.error('Image gen error:', e);
-            alert(`Failed to generate image: ${e.message}`);
-        } finally {
-            generateImageBtn.disabled = false;
-            generateImageBtn.textContent = 'Generate';
-        }
-    };
+        };
+    }
+
+    if (luckyGreetingBtn) {
+        luckyGreetingBtn.onclick = async () => {
+            const persona = systemInstructionInput.value;
+            if (!persona) {
+                alert('Please generate or enter a persona first.');
+                return;
+            }
+            const prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
+            
+            try {
+                luckyGreetingBtn.disabled = true;
+                luckyGreetingBtn.textContent = 'Thinking...';
+                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const text = data.candidates[0].content.parts[0].text;
+                defaultGreetingInput.value = text.trim();
+            } catch (e: any) {
+                alert(`Failed to generate greeting: ${e.message}`);
+            } finally {
+                luckyGreetingBtn.disabled = false;
+                luckyGreetingBtn.textContent = "I'm feeling lucky";
+            }
+        };
+    }
+
+    if (luckyImageBtn) {
+        luckyImageBtn.onclick = async () => {
+            const persona = systemInstructionInput.value;
+            if (!persona) {
+                alert('Please generate or enter a persona first.');
+                return;
+            }
+            const prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
+            
+            try {
+                luckyImageBtn.disabled = true;
+                luckyImageBtn.textContent = 'Thinking...';
+                const data = await generateContent('gemini-3-flash-preview', prompt);
+                const text = data.candidates[0].content.parts[0].text;
+                imagePromptInput.value = text.trim();
+            } catch (e: any) {
+                alert(`Failed to generate image prompt: ${e.message}`);
+            } finally {
+                luckyImageBtn.disabled = false;
+                luckyImageBtn.textContent = "I'm feeling lucky";
+            }
+        };
+    }
+
+    if (generateImageBtn) {
+        generateImageBtn.onclick = async () => {
+            const userPrompt = imagePromptInput.value;
+            if (!userPrompt) {
+                alert('Please enter a prompt or use "I\'m feeling lucky".');
+                return;
+            }
+            
+            try {
+                generateImageBtn.disabled = true;
+                generateImageBtn.textContent = 'Enhancing...';
+                
+                // 1. Enhance prompt with gemini-3-flash
+                const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
+                const enhanceData = await generateContent('gemini-3-flash', enhancePrompt);
+                const enhancedPrompt = enhanceData.candidates[0].content.parts[0].text.trim();
+                console.log('Enhanced Prompt:', enhancedPrompt);
+                
+                generateImageBtn.textContent = 'Generating...';
+                
+                // 2. Generate image with gemini-3.1-flash-image-preview
+                const data = await generateContent('gemini-3.1-flash-image-preview', enhancedPrompt);
+                
+                console.log('Image Gen Response:', data);
+                const part = data.candidates[0].content.parts[0];
+                
+                if (part.inlineData && part.inlineData.data) {
+                    const base64 = part.inlineData.data;
+                    generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
+                    generatedImageContainer.style.display = 'block';
+                    avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                } else if (part.text) {
+                    console.log('Generated Content Text:', part.text);
+                    alert('Model returned text instead of an image. See console for details.');
+                } else {
+                    alert('Failed to generate image (unknown response structure). See console.');
+                }
+            } catch (e: any) {
+                console.error('Image gen error:', e);
+                alert(`Failed to generate image: ${e.message}`);
+            } finally {
+                generateImageBtn.disabled = false;
+                generateImageBtn.textContent = 'Generate';
+            }
+        };
+    }
+
+    // Custom Avatar Buttons (Placeholders for now)
+    if (cameraBtn) {
+        cameraBtn.onclick = () => alert('Camera capture feature not implemented yet.');
+    }
+    if (uploadBtn) {
+        uploadBtn.onclick = () => alert('Upload image feature not implemented yet.');
+    }
 
     avatar.addEventListener('avatar-connected', () => {
         streamBtn.disabled = false;
@@ -388,12 +438,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statsInterval = setInterval(updateStats, 1000);
     });
 
+    let statsInterval: any = null;
+
     avatar.addEventListener('avatar-disconnected', () => {
-        if (!isProcessingVideo) {
-            streamBtn.textContent = 'Start';
-            streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            validateForm();
-        }
+        streamBtn.textContent = 'Start';
+        streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        validateForm();
         
         // Stop polling stats
         if (statsInterval) {
@@ -438,6 +488,10 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('gemini_enable_chroma_key', enableChromaKey.checked.toString());
         localStorage.setItem('gemini_chroma_key_color', chromaKeyColor.value);
         localStorage.setItem('gemini_background_color', backgroundColor.value);
+
+        // Save toggle states
+        localStorage.setItem('gemini_enable_transcript', enableTranscript.checked.toString());
+        localStorage.setItem('gemini_enable_chat_input', enableChatInput.checked.toString());
 
         if (tokenInput.value) {
             localStorage.setItem('gemini_access_token', tokenInput.value);
@@ -493,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.stop();
             
             if (saveVideoToggle.checked) {
-                isProcessingVideo = true;
                 streamBtn.textContent = 'Processing video...';
                 streamBtn.disabled = true;
                 streamBtn.style.opacity = '0.5';
@@ -562,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     // Reset button state
-                    isProcessingVideo = false;
                     streamBtn.textContent = 'Start';
                     streamBtn.disabled = false;
                     streamBtn.style.opacity = '1';
@@ -595,6 +647,10 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
             avatar.setAttribute('background-color', backgroundColor.value);
 
+            // Apply toggle states
+            avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
+            avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
+
             if (avatarNameSelect.value === 'AudioOnly') {
                 avatar.setAttribute('output-mode', 'audio');
             } else {
@@ -605,20 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.unmute(); // Unmute by default on start
         }
     };
-
-    sendBtn.onclick = () => {
-        const text = textInput.value;
-        if (text) {
-            avatar.sendMessage(text);
-            textInput.value = '';
-        }
-    };
-
-    textInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            sendBtn.click();
-        }
-    });
 
     // Copy HTML Feature
     if (copyHtmlBtn) {
@@ -657,6 +699,8 @@ document.addEventListener('DOMContentLoaded', () => {
     enable-chroma-key="${enableChromaKey.checked}"
     chroma-key-color="${chromaKeyColor.value}"
     background-color="${backgroundColor.value}"
+    enable-transcript="${enableTranscript.checked}"
+    enable-chat-input="${enableChatInput.checked}"
 ></gemini-avatar>`;
 
             navigator.clipboard.writeText(htmlCode).then(() => {
@@ -670,6 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // QA Walkthrough Logic
     const qaScenarios = [
+        // ... (Same as before)
         {
             id: '1.1',
             title: 'Direct Access Token',
@@ -879,7 +924,7 @@ document.addEventListener('DOMContentLoaded', () => {
             header.style.fontWeight = 'bold';
             header.style.color = '#f8fafc';
             header.style.marginBottom = '5px';
-            header.style.fontSize = '1.1rem'; // Larger font for header
+            header.style.fontSize = '1.1rem';
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -900,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (scenario.description) {
                 const desc = document.createElement('p');
-                desc.style.fontSize = '0.95rem'; // Larger font for description
+                desc.style.fontSize = '0.95rem';
                 desc.style.color = '#94a3b8';
                 desc.style.margin = '0 0 10px 25px';
                 desc.textContent = scenario.description;
@@ -908,7 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const stepsTitle = document.createElement('div');
-            stepsTitle.style.fontSize = '0.95rem'; // Larger font
+            stepsTitle.style.fontSize = '0.95rem';
             stepsTitle.style.fontWeight = 'bold';
             stepsTitle.style.color = '#cbd5e1';
             stepsTitle.style.margin = '0 0 5px 25px';
@@ -917,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const ul = document.createElement('ul');
             ul.style.margin = '0 0 10px 45px';
-            ul.style.fontSize = '0.95rem'; // Larger font
+            ul.style.fontSize = '0.95rem';
             ul.style.color = '#cbd5e1';
             scenario.steps.forEach(step => {
                 const li = document.createElement('li');
@@ -927,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.appendChild(ul);
             
             const verifTitle = document.createElement('div');
-            verifTitle.style.fontSize = '0.95rem'; // Larger font
+            verifTitle.style.fontSize = '0.95rem';
             verifTitle.style.fontWeight = 'bold';
             verifTitle.style.color = '#cbd5e1';
             verifTitle.style.margin = '0 0 5px 25px';
@@ -936,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const ulVerif = document.createElement('ul');
             ulVerif.style.margin = '0 0 0 45px';
-            ulVerif.style.fontSize = '0.95rem'; // Larger font
+            ulVerif.style.fontSize = '0.95rem';
             ulVerif.style.color = '#cbd5e1';
             scenario.verification.forEach(step => {
                 const li = document.createElement('li');
@@ -956,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
         qaContainer.style.top = '0';
         qaContainer.style.bottom = '0';
         qaContainer.style.height = '100vh';
-        qaContainer.style.width = 'min(570px, 40vw)'; // 50% wider if space available
+        qaContainer.style.width = 'min(570px, 40vw)';
         
         if (pos.includes('right')) {
             qaContainer.style.left = '0';
