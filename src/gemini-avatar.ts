@@ -19,11 +19,36 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
 };
 
 export const VOICE_PRESETS: Record<string, { id: string, displayName: string, description: string }> = {
-  puck: { id: 'puck', displayName: 'Puck', description: 'Upbeat' },
-  zephyr: { id: 'zephyr', displayName: 'Zephyr', description: 'Bright' },
   kore: { id: 'kore', displayName: 'Kore', description: 'Firm' },
   orus: { id: 'orus', displayName: 'Orus', description: 'Firm' },
   autonoe: { id: 'autonoe', displayName: 'Autonoe', description: 'Bright' },
+  umbriel: { id: 'umbriel', displayName: 'Umbriel', description: 'Easy-going' },
+  erinome: { id: 'erinome', displayName: 'Erinome', description: 'Clear' },
+  laomedeia: { id: 'laomedeia', displayName: 'Laomedeia', description: 'Upbeat' },
+  schedar: { id: 'schedar', displayName: 'Schedar', description: 'Even' },
+  achird: { id: 'achird', displayName: 'Achird', description: 'Friendly' },
+  sadachbia: { id: 'sadachbia', displayName: 'Sadachbia', description: 'Lively' },
+  fenrir: { id: 'fenrir', displayName: 'Fenrir', description: 'Excitable' },
+  aoede: { id: 'aoede', displayName: 'Aoede', description: 'Breezy' },
+  enceladus: { id: 'enceladus', displayName: 'Enceladus', description: 'Breathy' },
+  algieba: { id: 'algieba', displayName: 'Algieba', description: 'Smooth' },
+  algenib: { id: 'algenib', displayName: 'Algenib', description: 'Gravelly' },
+  achernar: { id: 'achernar', displayName: 'Achernar', description: 'Soft' },
+  gacrux: { id: 'gacrux', displayName: 'Gacrux', description: 'Mature' },
+  zubenelgenubi: { id: 'zubenelgenubi', displayName: 'Zubenelgenubi', description: 'Casual' },
+  sadaltager: { id: 'sadaltager', displayName: 'Sadaltager', description: 'Knowledgeable' },
+  charon: { id: 'charon', displayName: 'Charon', description: 'Informative' },
+  leda: { id: 'leda', displayName: 'Leda', description: 'Youthful' },
+  callirrhoe: { id: 'callirrhoe', displayName: 'Callirrhoe', description: 'Easy-going' },
+  iapetus: { id: 'iapetus', displayName: 'Iapetus', description: 'Clear' },
+  despina: { id: 'despina', displayName: 'Despina', description: 'Smooth' },
+  rasalgethi: { id: 'rasalgethi', displayName: 'Rasalgethi', description: 'Informative' },
+  alnilam: { id: 'alnilam', displayName: 'Alnilam', description: 'Firm' },
+  pulcherrima: { id: 'pulcherrima', displayName: 'Pulcherrima', description: 'Forward' },
+  vindemiatrix: { id: 'vindemiatrix', displayName: 'Vindemiatrix', description: 'Gentle' },
+  sulafat: { id: 'sulafat', displayName: 'Warm' },
+  puck: { id: 'puck', displayName: 'Puck', description: 'Upbeat' },
+  zephyr: { id: 'zephyr', displayName: 'Zephyr', description: 'Bright' },
 };
 
 export class GeminiAvatar extends HTMLElement {
