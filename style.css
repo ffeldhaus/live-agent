@@ -21,31 +21,7 @@ body {
     justify-content: center;
 }
 body.animated-bg {
-    background: 
-        radial-gradient(circle, var(--c1) 0%, transparent 70%) no-repeat,
-        radial-gradient(circle, var(--c2) 0%, transparent 70%) no-repeat,
-        radial-gradient(circle, var(--c3) 0%, transparent 70%) no-repeat,
-        radial-gradient(circle, var(--c4) 0%, transparent 70%) no-repeat,
-        #0f172a !important;
-    background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200% !important;
-    animation: gradientShift var(--speed) ease-in-out infinite;
-}
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 0%, 100% 100%, 100% 0%, 0% 100%;
-    }
-    25% {
-        background-position: 100% 0%, 0% 100%, 0% 0%, 100% 100%;
-    }
-    50% {
-        background-position: 100% 100%, 0% 0%, 100% 0%, 0% 100%;
-    }
-    75% {
-        background-position: 0% 100%, 100% 0%, 100% 100%, 0% 0%;
-    }
-    100% {
-        background-position: 0% 0%, 100% 100%, 100% 0%, 0% 100%;
-    }
+    background: linear-gradient(135deg, var(--c1), var(--c2), var(--c3), var(--c4)), #0f172a !important;
 }
 .container {
     max-width: 800px;
