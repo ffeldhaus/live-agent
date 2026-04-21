@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioOnlyOption = document.createElement('option');
     audioOnlyOption.value = 'AudioOnly';
     audioOnlyOption.textContent = 'Audio Only';
-    avatarNameSelect.appendChild(audioOnlyOption);
+    avatarNameSelect.appendChild(option);
 
     // Populate Voice Select
     voiceSelect.innerHTML = '';
@@ -260,8 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const customName = customAvatarName ? customAvatarName.value.trim() : '';
         const isCustomValid = customName.length > 0;
         
-        console.log('validateForm:', { project, loc, token: token ? '***' : '', customName, isLuckyValid, isCustomValid });
-        
         const isValidForCustom = isLuckyValid && isCustomValid;
         
         if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
@@ -290,6 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (uploadBtn) uploadBtn.title = "Upload an image to create a custom avatar." + customMissingStr;
         if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + luckyMissingStr;
         if (generateImageBtn) generateImageBtn.title = "Generate an avatar image from prompt." + customMissingStr;
+        
+        // Custom validation check for buttons staying disabled
+        console.log('validateForm:', { project, loc, token: token ? '***' : '', customName, isLuckyValid, isCustomValid, isValidForCustom });
     }
 
     const updateVisibleControls = () => {
@@ -428,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTheme(colors: string[], speed: string) {
         const body = document.body;
         body.classList.add('animated-bg');
-        body.style.setProperty('--c1', colors[0] + '44');
+        body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
         body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
         body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
         body.style.setProperty('--c4', colors[3] ? colors[3] + '44' : colors[0] + '44');
@@ -529,15 +530,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 luckyPersonaBtn.disabled = true;
+                const originalText = luckyPersonaBtn.textContent;
                 luckyPersonaBtn.textContent = 'Thinking...';
                 const data = await generateContent('gemini-3-flash-preview', prompt);
                 const text = data.candidates[0].content.parts[0].text;
                 systemInstructionInput.value = text.trim();
+                luckyPersonaBtn.textContent = originalText;
             } catch (e: any) {
                 alert(`Failed to generate persona: ${e.message}`);
+                luckyPersonaBtn.textContent = "I'm feeling lucky";
             } finally {
                 luckyPersonaBtn.disabled = false;
-                luckyPersonaBtn.textContent = "I'm feeling lucky";
             }
         };
     }
@@ -553,15 +556,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 luckyGreetingBtn.disabled = true;
+                const originalText = luckyGreetingBtn.textContent;
                 luckyGreetingBtn.textContent = 'Thinking...';
                 const data = await generateContent('gemini-3-flash-preview', prompt);
                 const text = data.candidates[0].content.parts[0].text;
                 defaultGreetingInput.value = text.trim();
+                luckyGreetingBtn.textContent = originalText;
             } catch (e: any) {
                 alert(`Failed to generate greeting: ${e.message}`);
+                luckyGreetingBtn.textContent = "I'm feeling lucky";
             } finally {
                 luckyGreetingBtn.disabled = false;
-                luckyGreetingBtn.textContent = "I'm feeling lucky";
             }
         };
     }
@@ -577,15 +582,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 luckyImageBtn.disabled = true;
+                const originalText = luckyImageBtn.textContent;
                 luckyImageBtn.textContent = 'Thinking...';
                 const data = await generateContent('gemini-3-flash-preview', prompt);
                 const text = data.candidates[0].content.parts[0].text;
                 imagePromptInput.value = text.trim();
+                luckyImageBtn.textContent = originalText;
             } catch (e: any) {
                 alert(`Failed to generate image prompt: ${e.message}`);
+                luckyImageBtn.textContent = "I'm feeling lucky";
             } finally {
                 luckyImageBtn.disabled = false;
-                luckyImageBtn.textContent = "I'm feeling lucky";
             }
         };
     }
@@ -629,9 +636,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await generateContent('gemini-3.1-flash-image-preview', finalPrompt);
                 
                 console.log('Image Gen Response:', data);
-                const part = data.candidates[0].content.parts[0];
+                // Find the part with inlineData
+                const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
                 
-                if (part.inlineData && part.inlineData.data) {
+                if (part && part.inlineData && part.inlineData.data) {
                     const base64 = part.inlineData.data;
                     generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
                     generatedImageContainer.style.display = 'block';
@@ -682,11 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         avatar.setAttribute('custom-avatar-url', finalUrl);
                         updateBackground(finalUrl);
                     }
-                } else if (part.text) {
-                    console.log('Generated Content Text:', part.text);
-                    alert('Model returned text instead of an image. See console for details.');
                 } else {
-                    alert('Failed to generate image (unknown response structure). See console.');
+                    alert('Failed to generate image (no image data in response). See console.');
                 }
             } catch (e: any) {
                 console.error('Image gen error:', e);
@@ -863,11 +868,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Auto-improvement flow!
                     try {
-                        generateImageBtn.disabled = true;
-                        generateImageBtn.textContent = 'Improving...';
+                        captureBtn.disabled = true;
+                        const originalText = captureBtn.textContent;
+                        captureBtn.textContent = 'Improving...';
                         
                         const base64Data = dataUrl.split(',')[1];
-                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio.";
+                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
                         
                         if (enableChromaKey.checked) {
                             const color = chromaKeyColor.value;
@@ -881,9 +887,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: 'image/png', data: base64Data });
                         
                         console.log('Image Gen Response:', data);
-                        const part = data.candidates[0].content.parts[0];
+                        const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
                         
-                        if (part.inlineData && part.inlineData.data) {
+                        if (part && part.inlineData && part.inlineData.data) {
                             const base64 = part.inlineData.data;
                             const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
                             generatedImg.src = improvedUrl;
@@ -900,8 +906,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Image improvement error:', e);
                         alert('Failed to improve image: ' + e.message);
                     } finally {
-                        generateImageBtn.disabled = false;
-                        generateImageBtn.textContent = 'Generate';
+                        captureBtn.disabled = false;
+                        captureBtn.textContent = "Capture";
                     }
                 }
             }
@@ -930,11 +936,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         // Auto-improvement flow for upload too!
                         try {
-                            generateImageBtn.disabled = true;
-                            generateImageBtn.textContent = 'Improving...';
+                            uploadBtn.disabled = true;
+                            const originalText = uploadBtn.textContent;
+                            uploadBtn.textContent = 'Improving...';
                             
                             const base64Data = dataUrl.split(',')[1];
-                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio.";
+                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
                             
                             if (enableChromaKey.checked) {
                                 const color = chromaKeyColor.value;
@@ -948,9 +955,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: file.type, data: base64Data });
                             
                             console.log('Image Gen Response:', data);
-                            const part = data.candidates[0].content.parts[0];
+                            const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
                             
-                            if (part.inlineData && part.inlineData.data) {
+                            if (part && part.inlineData && part.inlineData.data) {
                                 const base64 = part.inlineData.data;
                                 const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
                                 generatedImg.src = improvedUrl;
@@ -967,8 +974,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.error('Image improvement error:', e);
                             alert('Failed to improve image: ' + e.message);
                         } finally {
-                            generateImageBtn.disabled = false;
-                            generateImageBtn.textContent = 'Generate';
+                            uploadBtn.disabled = false;
+                            uploadBtn.textContent = "Upload Image";
                         }
                     };
                     reader.readAsDataURL(file);
