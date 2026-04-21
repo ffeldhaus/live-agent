@@ -21,14 +21,12 @@ body {
     justify-content: center;
 }
 body.animated-bg {
-    background: linear-gradient(-45deg, var(--c1), var(--c2), var(--c3), var(--c4)), #0f172a !important;
-    background-size: 400% 400% !important;
-    animation: gradientShift var(--speed) ease infinite;
-}
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    background: 
+        radial-gradient(circle at var(--px1) var(--py1), var(--c1) 0%, transparent 70%),
+        radial-gradient(circle at var(--px2) var(--py2), var(--c2) 0%, transparent 70%),
+        radial-gradient(circle at var(--px3) var(--py3), var(--c3) 0%, transparent 70%),
+        radial-gradient(circle at var(--px4) var(--py4), var(--c4) 0%, transparent 70%),
+        #0f172a !important;
 }
 .container {
     max-width: 800px;

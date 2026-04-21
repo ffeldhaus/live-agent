@@ -395,14 +395,47 @@ document.addEventListener('DOMContentLoaded', () => {
         img.src = imageUrl;
     }
 
+    let animFrame: number | null = null;
+    
+    function startBgAnimation(speedFactor: number) {
+        if (animFrame) cancelAnimationFrame(animFrame);
+        
+        let t = 0;
+        function loop() {
+            t += 0.005 * speedFactor; // Slower base speed for smoother animation
+            
+            const body = document.body;
+            // Move centers in complex patterns
+            body.style.setProperty('--px1', `${50 + 40 * Math.cos(t)}%`);
+            body.style.setProperty('--py1', `${50 + 40 * Math.sin(t)}%`);
+            
+            body.style.setProperty('--px2', `${50 + 35 * Math.sin(t * 0.7)}%`);
+            body.style.setProperty('--py2', `${50 + 35 * Math.cos(t * 0.8)}%`);
+            
+            body.style.setProperty('--px3', `${50 + 30 * Math.cos(t * 1.3)}%`);
+            body.style.setProperty('--py3', `${50 + 30 * Math.sin(t * 1.1)}%`);
+            
+            body.style.setProperty('--px4', `${50 + 45 * Math.sin(t * 0.4)}%`);
+            body.style.setProperty('--py4', `${50 + 45 * Math.cos(t * 0.6)}%`);
+            
+            animFrame = requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
     function applyTheme(colors: string[], speed: string) {
         const body = document.body;
         body.classList.add('animated-bg');
-        body.style.setProperty('--c1', colors[0] + '33'); // Low opacity
-        body.style.setProperty('--c2', colors[1] ? colors[1] + '33' : colors[0] + '33');
-        body.style.setProperty('--c3', colors[2] ? colors[2] + '33' : colors[0] + '33');
-        body.style.setProperty('--c4', colors[3] ? colors[3] + '33' : colors[0] + '33');
-        body.style.setProperty('--speed', speed);
+        body.style.setProperty('--c1', colors[0] + '44'); // Slightly higher opacity
+        body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
+        body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
+        body.style.setProperty('--c4', colors[3] ? colors[3] + '44' : colors[0] + '44');
+        
+        let factor = 1;
+        if (speed === '10s') factor = 2.0;
+        if (speed === '25s') factor = 0.5;
+        
+        startBgAnimation(factor);
     }
 
     function applyAvatarTheme(avatarName: string) {
