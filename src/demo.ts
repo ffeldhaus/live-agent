@@ -545,6 +545,136 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let isProcessingVideo = false;
+
+    if (streamBtn) {
+        streamBtn.onclick = () => {
+            if (avatar.isConnected) {
+                avatar.stop();
+                
+                if (saveVideoToggle.checked) {
+                    isProcessingVideo = true;
+                    streamBtn.textContent = 'Processing video...';
+                    streamBtn.disabled = true;
+                    streamBtn.style.opacity = '0.5';
+                    streamBtn.style.cursor = 'not-allowed';
+                    
+                    // Wait a bit for streams to close and finalize
+                    setTimeout(async () => {
+                        const { videoBlob, audioBlob } = avatar.getSessionFiles();
+                        const recordUserAudio = recordUserAudioCheckbox?.checked;
+                        
+                        if (recordUserAudio && audioBlob.size > 0) {
+                            console.log('Starting FFmpeg muxing...');
+                            try {
+                                console.log('Loading FFmpeg...');
+                                const ffmpeg = await getFFmpeg();
+                                const { fetchFile } = await import('@ffmpeg/util');
+                                
+                                console.log('Writing files to FFmpeg FS...');
+                                await ffmpeg.writeFile('video.mp4', await fetchFile(videoBlob));
+                                await ffmpeg.writeFile('audio.pcm', await fetchFile(audioBlob));
+                                
+                                const pos = avatar.getAttribute('position') || 'top-right';
+                                const avatarOnRight = pos.includes('right');
+                                
+                                // amerge=inputs=2 will combine two mono channels into a stereo channel
+                                // The order determines which goes to Left and which to Right.
+                                // Channel 0 is Left, Channel 1 is Right.
+                                let filterComplex = '';
+                                if (avatarOnRight) {
+                                    // User audio (Input 1) -> Left, Avatar audio (Input 0) -> Right
+                                    filterComplex = "[1:a][0:a]amerge=inputs=2[a]";
+                                } else {
+                                    // Avatar audio (Input 0) -> Left, User audio (Input 1) -> Right
+                                    filterComplex = "[0:a][1:a]amerge=inputs=2[a]";
+                                }
+
+                                console.log('Executing FFmpeg command with filter:', filterComplex);
+                                await ffmpeg.exec([
+                                    '-i', 'video.mp4', 
+                                    '-f', 's16le', 
+                                    '-ar', '16000', 
+                                    '-ac', '1', 
+                                    '-i', 'audio.pcm', 
+                                    '-filter_complex', filterComplex, 
+                                    '-map', '0:v', 
+                                    '-map', '[a]', 
+                                    '-c:v', 'copy', 
+                                    '-c:a', 'aac', 
+                                    'output.mp4'
+                                ]);
+                                
+                                console.log('Reading output file...');
+                                const data = await ffmpeg.readFile('output.mp4');
+                                const combinedBlob = new Blob([data], { type: 'video/mp4' });
+                                
+                                downloadBlob(combinedBlob, `avatar_session_combined_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
+                                console.log('FFmpeg muxing completed.');
+                            } catch (error) {
+                                console.error('FFmpeg error:', error);
+                                alert('Failed to combine video and audio with FFmpeg. Downloading separate files instead.');
+                                downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
+                                downloadBlob(audioBlob, `user_audio_${new Date().toISOString().replace(/:/g, '-')}.webm`);
+                            }
+                        } else {
+                            downloadBlob(videoBlob, `avatar_session_${new Date().toISOString().replace(/:/g, '-')}.mp4`);
+                        }
+                        
+                        // Reset button state
+                        isProcessingVideo = false;
+                        streamBtn.textContent = 'Start';
+                        streamBtn.disabled = false;
+                        streamBtn.style.opacity = '1';
+                        streamBtn.style.cursor = 'pointer';
+                        streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                        validateForm();
+                    }, 1000);
+                }
+            } else {
+                // Apply settings
+                avatar.setAttribute('project-id', projectIdInput.value);
+                avatar.setAttribute('location', locationInput.value);
+                avatar.setAttribute('avatar-name', avatarNameSelect.value);
+                avatar.setAttribute('size', sizeSelect.value);
+                avatar.setAttribute('position', positionSelect.value);
+                avatar.setAttribute('oauth-client-id', oauthClientIdInput.value);
+                avatar.setAttribute('access-token', tokenInput.value);
+                avatar.setAttribute('voice', voiceSelect.value);
+                avatar.setAttribute('language', languageSelect.value);
+                avatar.setAttribute('record-video', saveVideoToggle.checked ? 'true' : 'false');
+                avatar.setAttribute('debug', debugToggle.checked ? 'true' : 'false');
+                avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+                
+                // Apply advanced settings
+                avatar.setAttribute('system-instruction', systemInstructionInput.value);
+                avatar.setAttribute('default-greeting', defaultGreetingInput.value);
+                
+                // Apply Chroma Key settings
+                avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+                avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
+                avatar.setAttribute('background-color', backgroundColor.value);
+
+                // Apply toggle states
+                avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
+                avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
+                avatar.setAttribute('render-transcript-outside', renderOutsideToggle.checked.toString());
+
+                // Apply grounding setting
+                avatar.setAttribute('enable-grounding', enableGrounding.checked.toString());
+
+                if (avatarNameSelect.value === 'AudioOnly') {
+                    avatar.setAttribute('output-mode', 'audio');
+                } else {
+                    avatar.setAttribute('output-mode', 'video');
+                }
+
+                avatar.start();
+                avatar.unmute(); // Unmute by default on start
+            }
+        };
+    }
+
     avatar.addEventListener('avatar-connected', () => {
         if (streamBtn) {
             streamBtn.disabled = false;
@@ -557,11 +687,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     avatar.addEventListener('avatar-disconnected', () => {
-        if (streamBtn) {
-            streamBtn.textContent = 'Start';
-            streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        if (!isProcessingVideo) {
+            if (streamBtn) {
+                streamBtn.textContent = 'Start';
+                streamBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            }
+            validateForm();
         }
-        validateForm();
         
         // Stop polling stats
         if (statsInterval) {
