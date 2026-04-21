@@ -835,6 +835,11 @@ export class GeminiAvatar extends HTMLElement {
       await this.audioContext.audioWorklet.addModule(url);
       URL.revokeObjectURL(url);
 
+      if (!this.audioContext) {
+        this._log("Mic start aborted (context cleared)");
+        return;
+      }
+
       this.processor = new AudioWorkletNode(this.audioContext, "audio-processor");
       source.connect(this.processor);
       this.processor.connect(this.audioContext.destination);
@@ -875,8 +880,14 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   private stopMic() {
-    if (this.processor) this.processor.disconnect();
-    if (this.audioContext) this.audioContext.close();
+    if (this.processor) {
+      this.processor.disconnect();
+      this.processor = null;
+    }
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
 
     if (this.micStream) {
       this.micStream.getTracks().forEach(track => track.stop());
