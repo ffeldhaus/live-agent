@@ -39,10 +39,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const statPacketsReceived = document.getElementById('statPacketsReceived') as HTMLSpanElement;
     const statAudioSent = document.getElementById('statAudioSent') as HTMLSpanElement;
     const statVideoSent = document.getElementById('statVideoSent') as HTMLSpanElement;
-    const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
-    const statFps = document.getElementById('statFps') as HTMLSpanElement;
     const statVideoPackets = document.getElementById('statVideoPackets') as HTMLSpanElement;
     const statTotalFrames = document.getElementById('statTotalFrames') as HTMLSpanElement;
+    const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
+    const statFps = document.getElementById('statFps') as HTMLSpanElement;
+
+    // Advanced Customization elements
+    const systemInstructionInput = document.getElementById('systemInstruction') as HTMLTextAreaElement;
+    const defaultGreetingInput = document.getElementById('defaultGreeting') as HTMLInputElement;
+    const imagePromptInput = document.getElementById('imagePrompt') as HTMLInputElement;
+    
+    const luckyPersonaBtn = document.getElementById('luckyPersonaBtn') as HTMLButtonElement;
+    const luckyGreetingBtn = document.getElementById('luckyGreetingBtn') as HTMLButtonElement;
+    const luckyImageBtn = document.getElementById('luckyImageBtn') as HTMLButtonElement;
+    const generateImageBtn = document.getElementById('generateImageBtn') as HTMLButtonElement;
+    
+    const generatedImageContainer = document.getElementById('generatedImageContainer') as HTMLDivElement;
+    const generatedImg = document.getElementById('generatedImg') as HTMLImageElement;
 
     // Load from localStorage
     const savedToken = localStorage.getItem('gemini_access_token');
@@ -107,6 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
     }
 
+    // Load advanced settings
+    if (localStorage.getItem('gemini_system_instruction')) systemInstructionInput.value = localStorage.getItem('gemini_system_instruction')!;
+    if (localStorage.getItem('gemini_default_greeting')) defaultGreetingInput.value = localStorage.getItem('gemini_default_greeting')!;
+    if (localStorage.getItem('gemini_image_prompt')) imagePromptInput.value = localStorage.getItem('gemini_image_prompt')!;
+
     function validateForm() {
         const project = projectIdInput.value.trim();
         const loc = locationInput.value.trim();
@@ -146,6 +164,39 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statFps) statFps.textContent = stats.averageFps ? stats.averageFps.toString() : '-';
     };
 
+    // REST API Helper
+    async function generateContent(model: string, prompt: string) {
+        const project = projectIdInput.value;
+        const location = locationInput.value || 'us-central1';
+        const token = tokenInput.value;
+        
+        if (!project || !token) {
+            throw new Error('Project ID and Access Token are required for AI generation features.');
+        }
+        
+        const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
+        const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
+        
+        if (!response.ok) {
+            const err = await response.text();
+            console.error(`API Error (${model}):`, err);
+            throw new Error(`API Error: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+
     // Listeners
     [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
         el.addEventListener('input', validateForm);
@@ -166,6 +217,115 @@ document.addEventListener('DOMContentLoaded', () => {
     audioChunkSizeSlider.oninput = () => {
         chunkSizeVal.textContent = audioChunkSizeSlider.value;
         avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+    };
+
+    // Lucky buttons
+    luckyPersonaBtn.onclick = async () => {
+        const name = avatarNameSelect.value;
+        const voice = voiceSelect.value;
+        const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. Return only the persona description.`;
+        
+        try {
+            luckyPersonaBtn.disabled = true;
+            luckyPersonaBtn.textContent = 'Thinking...';
+            const data = await generateContent('gemini-3-flash-preview', prompt);
+            const text = data.candidates[0].content.parts[0].text;
+            systemInstructionInput.value = text.trim();
+        } catch (e: any) {
+            alert(`Failed to generate persona: ${e.message}`);
+        } finally {
+            luckyPersonaBtn.disabled = false;
+            luckyPersonaBtn.textContent = "I'm feeling lucky";
+        }
+    };
+
+    luckyGreetingBtn.onclick = async () => {
+        const persona = systemInstructionInput.value;
+        if (!persona) {
+            alert('Please generate or enter a persona first.');
+            return;
+        }
+        const prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
+        
+        try {
+            luckyGreetingBtn.disabled = true;
+            luckyGreetingBtn.textContent = 'Thinking...';
+            const data = await generateContent('gemini-3-flash-preview', prompt);
+            const text = data.candidates[0].content.parts[0].text;
+            defaultGreetingInput.value = text.trim();
+        } catch (e: any) {
+            alert(`Failed to generate greeting: ${e.message}`);
+        } finally {
+            luckyGreetingBtn.disabled = false;
+            luckyGreetingBtn.textContent = "I'm feeling lucky";
+        }
+    };
+
+    luckyImageBtn.onclick = async () => {
+        const persona = systemInstructionInput.value;
+        if (!persona) {
+            alert('Please generate or enter a persona first.');
+            return;
+        }
+        const prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
+        
+        try {
+            luckyImageBtn.disabled = true;
+            luckyImageBtn.textContent = 'Thinking...';
+            const data = await generateContent('gemini-3-flash-preview', prompt);
+            const text = data.candidates[0].content.parts[0].text;
+            imagePromptInput.value = text.trim();
+        } catch (e: any) {
+            alert(`Failed to generate image prompt: ${e.message}`);
+        } finally {
+            luckyImageBtn.disabled = false;
+            luckyImageBtn.textContent = "I'm feeling lucky";
+        }
+    };
+
+    generateImageBtn.onclick = async () => {
+        const userPrompt = imagePromptInput.value;
+        if (!userPrompt) {
+            alert('Please enter a prompt or use "I\'m feeling lucky".');
+            return;
+        }
+        
+        try {
+            generateImageBtn.disabled = true;
+            generateImageBtn.textContent = 'Enhancing...';
+            
+            // 1. Enhance prompt with gemini-3-flash
+            const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
+            const enhanceData = await generateContent('gemini-3-flash', enhancePrompt);
+            const enhancedPrompt = enhanceData.candidates[0].content.parts[0].text.trim();
+            console.log('Enhanced Prompt:', enhancedPrompt);
+            
+            generateImageBtn.textContent = 'Generating...';
+            
+            // 2. Generate image with gemini-3.1-flash-image-preview
+            const data = await generateContent('gemini-3.1-flash-image-preview', enhancedPrompt);
+            
+            console.log('Image Gen Response:', data);
+            const part = data.candidates[0].content.parts[0];
+            
+            if (part.inlineData && part.inlineData.data) {
+                const base64 = part.inlineData.data;
+                generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
+                generatedImageContainer.style.display = 'block';
+                avatar.setAttribute('custom-avatar-url', generatedImg.src);
+            } else if (part.text) {
+                console.log('Generated Content Text:', part.text);
+                alert('Model returned text instead of an image. See console for details.');
+            } else {
+                alert('Failed to generate image (unknown response structure). See console.');
+            }
+        } catch (e: any) {
+            console.error('Image gen error:', e);
+            alert(`Failed to generate image: ${e.message}`);
+        } finally {
+            generateImageBtn.disabled = false;
+            generateImageBtn.textContent = 'Generate';
+        }
     };
 
     avatar.addEventListener('avatar-connected', () => {
@@ -217,6 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('gemini_ctrl_snapshot', ctrlSnapshot.checked.toString());
         
         localStorage.setItem('gemini_audio_chunk_size', audioChunkSizeSlider.value);
+        
+        // Save advanced settings
+        localStorage.setItem('gemini_system_instruction', systemInstructionInput.value);
+        localStorage.setItem('gemini_default_greeting', defaultGreetingInput.value);
+        localStorage.setItem('gemini_image_prompt', imagePromptInput.value);
 
         if (tokenInput.value) {
             localStorage.setItem('gemini_access_token', tokenInput.value);
@@ -352,7 +517,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     validateForm();
                 }, 1000);
             }
-            // If not saving video, the 'avatar-disconnected' event listener will handle resetting the button!
         } else {
             // Apply settings
             avatar.setAttribute('project-id', projectIdInput.value);
@@ -367,6 +531,10 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.setAttribute('record-video', saveVideoToggle.checked ? 'true' : 'false');
             avatar.setAttribute('debug', debugToggle.checked ? 'true' : 'false');
             avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
+            
+            // Apply advanced settings
+            avatar.setAttribute('system-instruction', systemInstructionInput.value);
+            avatar.setAttribute('default-greeting', defaultGreetingInput.value);
 
             if (avatarNameSelect.value === 'AudioOnly') {
                 avatar.setAttribute('output-mode', 'audio');
@@ -404,6 +572,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const voice = voiceSelect.value;
             const lang = languageSelect.value;
             const chunkSize = audioChunkSizeSlider.value;
+            const systemInstruction = systemInstructionInput.value;
+            const defaultGreeting = defaultGreetingInput.value;
             
             const visibleControls = [];
             if (ctrlMic.checked) visibleControls.push('mic');
@@ -423,6 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
     mic-auto-request="${micAutoRequestToggle.checked}"
     visible-controls="${visibleControls.join(',')}"
     audio-chunk-size="${chunkSize}"
+    system-instruction="${systemInstruction.replace(/"/g, '&quot;')}"
+    default-greeting="${defaultGreeting.replace(/"/g, '&quot;')}"
 ></gemini-avatar>`;
 
             navigator.clipboard.writeText(htmlCode).then(() => {

@@ -76,6 +76,9 @@ Add the `<gemini-avatar>` tag to your page:
 | `mic-auto-request` | Auto-request mic permission on load (default: `"true"`) | No |
 | `visible-controls` | Controls to show (default: `"mic,camera,screen,mute"`) | No |
 | `audio-chunk-size` | Audio buffer size in samples (default: `2048`) | No |
+| `system-instruction` | System instructions / Persona for the avatar | No |
+| `default-greeting` | Initial greeting spoken by the avatar | No |
+| `custom-avatar-url` | URL for custom avatar image override | No |
 
 *(1) At least one of `access-token` or `oauth-client-id` must be provided.*
 
@@ -167,6 +170,15 @@ You can upload the contents of the `dist-demo` directory to any static web serve
 
 > [!IMPORTANT]
 > Ensure that the bucket or server is configured to serve the necessary security headers (`Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`) if you want FFmpeg features to work in the demo.
+
+## Demo App Features
+
+The demo app included in this repository demonstrates advanced usage of the web component and integrates with Vertex AI APIs for content generation:
+
+-   **AI Persona & Greeting Generation**: Use the "I'm feeling lucky" buttons to generate random personas and matching greetings using the `gemini-3-flash-preview` model.
+-   **AI Image Generation**: Generate custom avatar images using the `gemini-3.1-flash-image-preview` model. It also uses `gemini-3-flash` to enhance your prompt for better results.
+-   **Session Statistics**: Real-time display of latency, frame rate, and packet counts.
+-   **Video Recording**: Download combined video and audio files of the session (processed via FFmpeg in the browser).
 
 ## Development
 

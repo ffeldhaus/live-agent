@@ -271,6 +271,9 @@ export class GeminiAvatar extends HTMLElement {
       "mic-auto-request",
       "visible-controls",
       "audio-chunk-size",
+      "system-instruction",
+      "default-greeting",
+      "custom-avatar-url",
     ];
   }
 
@@ -297,6 +300,9 @@ export class GeminiAvatar extends HTMLElement {
       case "avatar-name":
         this.setPreview(newValue);
         break;
+      case "custom-avatar-url":
+        this.setPreview(this.getAttribute("avatar-name") || "Kira");
+        break;
       case "visible-controls":
         this.updateControlsVisibility(newValue);
         break;
@@ -311,6 +317,13 @@ export class GeminiAvatar extends HTMLElement {
   public setPreview(avatarName: string) {
     if (!this.previewImg) return;
     
+    const customUrl = this.getAttribute("custom-avatar-url");
+    if (customUrl) {
+      this.previewImg.src = customUrl;
+      this.previewImg.style.display = 'block';
+      return;
+    }
+
     if (avatarName === 'AudioOnly' || avatarName === 'Custom') {
       this.previewImg.style.display = 'none';
       return;
@@ -881,6 +894,8 @@ export class GeminiAvatar extends HTMLElement {
     const voice = this.getAttribute("voice") || "kore";
     const language = this.getAttribute("language") || "en-US";
 
+    const systemInstruction = this.getAttribute("system-instruction");
+
     const setupMessage = {
       setup: {
         model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
@@ -898,6 +913,7 @@ export class GeminiAvatar extends HTMLElement {
             language_code: language,
           },
         },
+        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {})
       },
     };
 
@@ -964,6 +980,12 @@ export class GeminiAvatar extends HTMLElement {
       if (this.micRecorder && this.micRecorder.state === 'inactive') {
         this.micRecorder.start();
         this._log("Microphone recording started (Setup Complete)");
+      }
+      
+      const greeting = this.getAttribute("default-greeting");
+      if (greeting) {
+        this._log("Sending default greeting:", greeting);
+        this.sendMessage(greeting);
       }
     }
 
