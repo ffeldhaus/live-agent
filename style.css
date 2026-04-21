@@ -21,7 +21,7 @@ body {
     justify-content: center;
 }
 body.animated-bg {
-    background: linear-gradient(-45deg, var(--c1), var(--c2), var(--c3), var(--c4)) !important;
+    background: linear-gradient(-45deg, var(--c1), var(--c2), var(--c3), var(--c4)), #0f172a !important;
     background-size: 400% 400% !important;
     animation: gradientShift var(--speed) ease infinite;
 }
@@ -33,7 +33,7 @@ body.animated-bg {
 .container {
     max-width: 800px;
     width: 90%;
-    background: var(--glass-bg);
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
@@ -42,7 +42,7 @@ body.animated-bg {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 .form {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(30, 41, 59, 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.05);
