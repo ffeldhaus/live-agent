@@ -985,6 +985,7 @@ export class GeminiAvatar extends HTMLElement {
 
     const systemInstruction = this.getAttribute("system-instruction");
     const enableGrounding = this.getAttribute("enable-grounding") === "true";
+    const enableTranscript = this.getAttribute("enable-transcript") === "true";
 
     const setupMessage = {
       setup: {
@@ -1004,7 +1005,11 @@ export class GeminiAvatar extends HTMLElement {
           },
         },
         ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-        ...(enableGrounding ? { tools: [{ google_search: {} }] } : {})
+        ...(enableGrounding ? { tools: [{ google_search: {} }] } : {}),
+        ...(enableTranscript ? {
+          input_audio_transcription: {},
+          output_audio_transcription: {}
+        } : {})
       },
     };
 
@@ -1077,6 +1082,16 @@ export class GeminiAvatar extends HTMLElement {
       if (greeting) {
         this._log("Sending default greeting:", greeting);
         this.sendMessage(greeting);
+      }
+    }
+
+    if (response.serverContent && response.serverContent.userTurn) {
+      const parts = response.serverContent.userTurn.parts;
+      for (const part of parts) {
+        if (part.text) {
+          this._log("Received user transcript in JSON", part.text);
+          this.appendTranscript('User', part.text);
+        }
       }
     }
 
