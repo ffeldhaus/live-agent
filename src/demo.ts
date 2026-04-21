@@ -334,12 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
         img.crossOrigin = "Anonymous";
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            canvas.width = 5;
-            canvas.height = 5;
+            canvas.width = 100;
+            canvas.height = 100;
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                ctx.drawImage(img, 0, 0, 5, 5);
-                const imgData = ctx.getImageData(0, 0, 5, 5);
+                ctx.drawImage(img, 0, 0, 100, 100);
+                
+                // Read pixels from the bottom half (indicative of Avatar color)
+                const imgData = ctx.getImageData(0, 50, 100, 50);
                 const data = imgData.data;
                 
                 // Count color frequencies
@@ -348,8 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const r = data[i];
                     const g = data[i+1];
                     const b = data[i+2];
-                    // Ignore transparent or pure black/white if needed
+                    
                     if (data[i+3] < 128) continue; // Ignore transparent
+                    
                     const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
                     colors[hex] = (colors[hex] || 0) + 1;
                 }
@@ -361,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const color1 = sortedColors[0][0];
                     const color2 = sortedColors[1] ? sortedColors[1][0] : color1;
                     
-                    console.log('Dominant colors detected:', color1, color2);
+                    console.log('Dominant colors detected (bottom half):', color1, color2);
                     
                     // Apply to background with low opacity to keep it dark
                     document.body.style.background = `linear-gradient(135deg, ${color1}44 0%, ${color2}44 100%), #0f172a`;
