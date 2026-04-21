@@ -167,7 +167,6 @@ export class GeminiAvatar extends HTMLElement {
         const text = this.chatInput!.value;
         if (text) {
           this.sendMessage(text);
-          this.appendTranscript('User', text);
           this.chatInput!.value = '';
         }
       }
@@ -324,6 +323,7 @@ export class GeminiAvatar extends HTMLElement {
       "background-color",
       "enable-transcript",
       "enable-chat-input",
+      "render-transcript-outside",
     ];
   }
 
@@ -363,11 +363,20 @@ export class GeminiAvatar extends HTMLElement {
         break;
       case "enable-transcript":
         const showTranscript = newValue === "true";
-        if (this.transcriptArea) this.transcriptArea.style.display = showTranscript ? 'block' : 'none';
+        const renderOutside = this.getAttribute("render-transcript-outside") === "true";
+        if (this.transcriptArea) this.transcriptArea.style.display = (showTranscript && !renderOutside) ? 'flex' : 'none';
         break;
       case "enable-chat-input":
         const showChat = newValue === "true";
-        if (this.chatContainer) this.chatContainer.style.display = showChat ? 'flex' : 'none';
+        const renderOutsideChat = this.getAttribute("render-transcript-outside") === "true";
+        if (this.chatContainer) this.chatContainer.style.display = (showChat && !renderOutsideChat) ? 'flex' : 'none';
+        break;
+      case "render-transcript-outside":
+        const outside = newValue === "true";
+        const showT = this.getAttribute("enable-transcript") === "true";
+        const showC = this.getAttribute("enable-chat-input") === "true";
+        if (this.transcriptArea) this.transcriptArea.style.display = (showT && !outside) ? 'flex' : 'none';
+        if (this.chatContainer) this.chatContainer.style.display = (showC && !outside) ? 'flex' : 'none';
         break;
       case "enable-chroma-key":
         const enabled = newValue === "true";
@@ -524,6 +533,7 @@ export class GeminiAvatar extends HTMLElement {
 
   public sendMessage(text: string) {
     this.sendText(text);
+    this.appendTranscript('User', text);
   }
 
   public getSessionFiles() {
@@ -1296,13 +1306,37 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   private appendTranscript(sender: string, text: string) {
+    // Always fire event for external rendering
+    this.dispatchEvent(new CustomEvent('transcript-item', { detail: { sender, text } }));
+
     if (!this.transcriptArea) return;
+    
     const p = document.createElement('p');
     p.style.margin = '5px 0';
     p.style.fontSize = '0.95rem';
-    p.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    p.style.padding = '5px 10px';
+    p.style.borderRadius = '8px';
+    p.style.maxWidth = '80%';
+    p.style.wordBreak = 'break-word';
+    
+    const isUser = sender === 'User';
+    const icon = isUser ? '👤' : '🤖';
+    
+    p.innerHTML = `<span>${icon}</span> ${text}`;
+    
+    if (isUser) {
+      p.style.alignSelf = 'flex-end';
+      p.style.background = 'rgba(99, 102, 241, 0.3)';
+      p.style.marginLeft = 'auto';
+      p.style.color = '#f8fafc';
+    } else {
+      p.style.alignSelf = 'flex-start';
+      p.style.background = 'rgba(255, 255, 255, 0.1)';
+      p.style.marginRight = 'auto';
+      p.style.color = '#cbd5e1';
+    }
+    
     this.transcriptArea.appendChild(p);
-    this.transcriptArea.scrollTop = this.transcriptArea.scrollHeight;
   }
 
   private processVideoQueue() {

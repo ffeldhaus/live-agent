@@ -13,13 +13,25 @@
 </head>
 <body>
 
-    <div class="container" style="margin-top: 40px; margin-bottom: 40px;">
+    <div class="container" style="margin-top: 40px; margin-bottom: 40px; padding: 40px;">
         <h1>Gemini Live Avatar</h1>
         <p class="subtitle">Configure and test the Vertex AI Live Avatar component.</p>
         
+        <!-- External Transcript Section (Hidden by default) -->
+        <div id="externalTranscriptSection" class="form" style="display: none; margin-bottom: 20px;">
+            <h2>Transcript</h2>
+            <div id="externalTranscript" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column-reverse;">
+                <!-- Appended by script -->
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="externalChatInput" placeholder="Type a message..." style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
+                <button class="btn" id="externalSendBtn" style="margin-top: 0; padding: 0 20px;">Send</button>
+            </div>
+        </div>
+
         <!-- Settings Section -->
-        <div class="form">
-            <h2>Settings</h2>
+        <details open class="form" style="margin-bottom: 20px;">
+            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Settings</summary>
             <div class="grid">
                 <div class="form-group">
                     <label for="accessToken">Access Token</label>
@@ -81,21 +93,37 @@
                     </div>
                 </div>
             </details>
-        </div>
+        </details>
         
         <!-- Avatar Section -->
-        <div class="form" style="margin-top: 20px;">
-            <h2>Avatar</h2>
+        <details open class="form" style="margin-bottom: 20px;">
+            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Avatar</summary>
             <div class="grid">
                 <div class="form-group">
                     <label for="avatarName">Avatar Preset</label>
-                    <select id="avatarName">
-                        <!-- Populated by script -->
-                    </select>
+                    <select id="avatarName"></select>
                 </div>
                 <div class="form-group">
                     <label for="voiceSelect">Voice</label>
                     <select id="voiceSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label for="size">Size</label>
+                    <select id="size">
+                        <option value="300px">Standard (300px)</option>
+                        <option value="200px">Small (200px)</option>
+                        <option value="400px">Large (400px)</option>
+                        <option value="704px">Full Size (704x1280)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="position">Position</label>
+                    <select id="position">
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-right" selected>Top Right</option>
+                        <option value="top-left">Top Left</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="languageSelect">Language</label>
@@ -120,55 +148,41 @@
                         <option value="tr-TR">Turkish (Turkey)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="size">Size</label>
-                    <select id="size">
-                        <option value="300px">Standard (300px)</option>
-                        <option value="200px">Small (200px)</option>
-                        <option value="400px">Large (400px)</option>
-                        <option value="704px">Full Size (704x1280)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="position">Position</label>
-                    <select id="position">
-                        <option value="bottom-right">Bottom Right</option>
-                        <option value="bottom-left">Bottom Left</option>
-                        <option value="top-right" selected>Top Right</option>
-                        <option value="top-left">Top Left</option>
-                    </select>
-                </div>
             </div>
             
             <div class="form-group full-width" style="margin-top: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <input type="checkbox" id="enableTranscript" style="width: auto;">
-                    <label for="enableTranscript" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Transcript in Component</label>
+                    <label for="enableTranscript" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Transcript</label>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
                     <input type="checkbox" id="enableChatInput" style="width: auto;">
-                    <label for="enableChatInput" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Chat Input in Component</label>
+                    <label for="enableChatInput" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Chat Input</label>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
+                    <input type="checkbox" id="renderOutsideToggle" style="width: auto;">
+                    <label for="renderOutsideToggle" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Render Transcript Outside Component</label>
                 </div>
             </div>
 
-            <div class="form-group full-width">
+            <div class="form-group full-width" style="margin-top: 20px;">
                 <label for="systemInstruction" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">System Instructions / Persona</label>
                 <div style="display: flex; gap: 10px;">
                     <textarea id="systemInstruction" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." style="flex: 1; min-height: 60px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;"></textarea>
-                    <button class="btn" id="luckyPersonaBtn" style="margin-top: 0; background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%); font-size: 0.95rem; padding: 0 10px;">I'm feeling lucky</button>
+                    <button class="btn" id="luckyPersonaBtn" style="margin-top: 0; background: #334155; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
                 </div>
             </div>
             
-            <div class="form-group full-width">
+            <div class="form-group full-width" style="margin-top: 20px;">
                 <label for="defaultGreeting" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Default Greeting</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="defaultGreeting" placeholder="E.g., Hello! How can I help you today?" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                    <button class="btn" id="luckyGreetingBtn" style="margin-top: 0; background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%); font-size: 0.95rem; padding: 0 10px;">I'm feeling lucky</button>
+                    <button class="btn" id="luckyGreetingBtn" style="margin-top: 0; background: #334155; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
                 </div>
             </div>
 
             <!-- Custom Avatar Creation (Hidden by default) -->
-            <div id="customAvatarSection" style="display: none; margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+            <div id="customAvatarSection" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
                 <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Create Custom Avatar:</label>
                 <div style="display: flex; gap: 10px; margin-top: 5px;">
                     <button class="btn" id="cameraBtn" style="margin-top: 0; flex: 1; background: #475569;">Camera</button>
@@ -179,7 +193,7 @@
                     <label for="imagePrompt" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Image Generation Prompt</label>
                     <div style="display: flex; gap: 10px; margin-top: 5px;">
                         <input type="text" id="imagePrompt" placeholder="E.g., A futuristic city with flying cars" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                        <button class="btn" id="luckyImageBtn" style="margin-top: 0; background: linear-gradient(135deg, #ec4899 0%, #d946ef 100%); font-size: 0.95rem; padding: 0 10px;">I'm feeling lucky</button>
+                        <button class="btn" id="luckyImageBtn" style="margin-top: 0; background: #334155; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
                         <button class="btn" id="generateImageBtn" style="margin-top: 0; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); font-size: 0.95rem; padding: 0 10px;">Generate</button>
                     </div>
                 </div>
@@ -206,7 +220,7 @@
                     <img id="generatedImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #334155;">
                 </div>
             </div>
-        </div>
+        </details>
         
         <!-- Actions -->
         <div style="display: flex; gap: 10px; margin-top: 20px;" class="full-width">
@@ -220,8 +234,8 @@
         </div>
 
         <!-- Session Statistics -->
-        <div class="form" style="margin-top: 20px;">
-            <h2>Session Statistics</h2>
+        <details open class="form" style="margin-top: 20px;">
+            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Session Statistics</summary>
             <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95rem; color: #cbd5e1;">
                 <div>Setup Duration: <span id="statSetupDuration">-</span> ms</div>
                 <div>Setup Complete to First Frame Duration: <span id="statLatency">-</span> ms</div>
@@ -235,8 +249,18 @@
                 <div>Downlink: <span id="statDownlink">-</span> Mbps</div>
                 <div>RTT: <span id="statRtt">-</span> ms</div>
                 <div>Connection Type: <span id="statConnType">-</span></div>
+                
+                <!-- Latency Visualizer -->
+                <div class="form-group full-width" style="margin-top: 10px;">
+                    <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Latency Visualizer:</label>
+                    <div id="latencyBar" style="display: flex; height: 20px; background: #334155; border-radius: 10px; overflow: hidden; margin-top: 5px;">
+                        <div id="barSetup" style="background: #3b82f6; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
+                        <div id="barLatency" style="background: #10b981; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 5px;">Total Latency: <span id="statTotalLatency">-</span> ms</div>
+                </div>
             </div>
-        </div>
+        </details>
 
     </div>
 
