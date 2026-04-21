@@ -363,11 +363,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (sortedColors.length > 0) {
                     const color1 = sortedColors[0][0];
                     const color2 = sortedColors[1] ? sortedColors[1][0] : color1;
+                    const color3 = sortedColors[2] ? sortedColors[2][0] : color2;
+                    const color4 = sortedColors[3] ? sortedColors[3][0] : color3;
                     
-                    console.log('Dominant colors detected (bottom half):', color1, color2);
+                    console.log('Dominant colors detected (bottom half):', color1, color2, color3, color4);
                     
                     // Apply to background with low opacity to keep it dark
-                    document.body.style.background = `linear-gradient(135deg, ${color1}44 0%, ${color2}44 100%), #0f172a`;
+                    document.body.style.background = `linear-gradient(135deg, ${color1}33 0%, ${color2}33 33%, ${color3}33 66%, ${color4}33 100%), #0f172a`;
                 }
             }
         };
