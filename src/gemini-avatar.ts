@@ -324,6 +324,7 @@ export class GeminiAvatar extends HTMLElement {
       "enable-transcript",
       "enable-chat-input",
       "render-transcript-outside",
+      "enable-grounding",
     ];
   }
 
@@ -983,6 +984,7 @@ export class GeminiAvatar extends HTMLElement {
     const language = this.getAttribute("language") || "en-US";
 
     const systemInstruction = this.getAttribute("system-instruction");
+    const enableGrounding = this.getAttribute("enable-grounding") === "true";
 
     const setupMessage = {
       setup: {
@@ -1001,7 +1003,8 @@ export class GeminiAvatar extends HTMLElement {
             language_code: language,
           },
         },
-        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {})
+        ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
+        ...(enableGrounding ? { tools: [{ google_search: {} }] } : {})
       },
     };
 
