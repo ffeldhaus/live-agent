@@ -488,8 +488,6 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url);
     }
 
-    let isProcessingVideo = false;
-
     streamBtn.onclick = () => {
         if (avatar.isConnected) {
             avatar.stop();
@@ -881,6 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
             header.style.fontWeight = 'bold';
             header.style.color = '#f8fafc';
             header.style.marginBottom = '5px';
+            header.style.fontSize = '1.1rem'; // Larger font for header
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -901,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (scenario.description) {
                 const desc = document.createElement('p');
-                desc.style.fontSize = '0.8rem';
+                desc.style.fontSize = '0.95rem'; // Larger font for description
                 desc.style.color = '#94a3b8';
                 desc.style.margin = '0 0 10px 25px';
                 desc.textContent = scenario.description;
@@ -909,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const stepsTitle = document.createElement('div');
-            stepsTitle.style.fontSize = '0.8rem';
+            stepsTitle.style.fontSize = '0.95rem'; // Larger font
             stepsTitle.style.fontWeight = 'bold';
             stepsTitle.style.color = '#cbd5e1';
             stepsTitle.style.margin = '0 0 5px 25px';
@@ -918,7 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const ul = document.createElement('ul');
             ul.style.margin = '0 0 10px 45px';
-            ul.style.fontSize = '0.8rem';
+            ul.style.fontSize = '0.95rem'; // Larger font
             ul.style.color = '#cbd5e1';
             scenario.steps.forEach(step => {
                 const li = document.createElement('li');
@@ -928,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             div.appendChild(ul);
             
             const verifTitle = document.createElement('div');
-            verifTitle.style.fontSize = '0.8rem';
+            verifTitle.style.fontSize = '0.95rem'; // Larger font
             verifTitle.style.fontWeight = 'bold';
             verifTitle.style.color = '#cbd5e1';
             verifTitle.style.margin = '0 0 5px 25px';
@@ -937,7 +936,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const ulVerif = document.createElement('ul');
             ulVerif.style.margin = '0 0 0 45px';
-            ulVerif.style.fontSize = '0.8rem';
+            ulVerif.style.fontSize = '0.95rem'; // Larger font
             ulVerif.style.color = '#cbd5e1';
             scenario.verification.forEach(step => {
                 const li = document.createElement('li');
@@ -957,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
         qaContainer.style.top = '0';
         qaContainer.style.bottom = '0';
         qaContainer.style.height = '100vh';
-        qaContainer.style.width = '380px'; // Good width for sidebar
+        qaContainer.style.width = 'min(570px, 40vw)'; // 50% wider if space available
         
         if (pos.includes('right')) {
             qaContainer.style.left = '0';
