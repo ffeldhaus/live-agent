@@ -260,10 +260,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const customName = customAvatarName ? customAvatarName.value.trim() : '';
         const isCustomValid = customName.length > 0;
         
-        if (cameraBtn) cameraBtn.disabled = !isCustomValid;
-        if (uploadBtn) uploadBtn.disabled = !isCustomValid;
-        if (generateImageBtn) generateImageBtn.disabled = !isCustomValid;
-        if (luckyImageBtn) luckyImageBtn.disabled = !(isLuckyValid && isCustomValid);
+        const isValidForCustom = isLuckyValid && isCustomValid;
+        
+        if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
+        if (uploadBtn) uploadBtn.disabled = !isValidForCustom;
+        if (generateImageBtn) generateImageBtn.disabled = !isValidForCustom;
+        if (luckyImageBtn) luckyImageBtn.disabled = !isValidForCustom;
+        
+        // Update tooltips
+        const missingLucky = [];
+        if (project.length === 0) missingLucky.push('Project ID');
+        if (loc.length === 0) missingLucky.push('Location');
+        if (token.length === 0) missingLucky.push('Access Token');
+        
+        const missingCustom = [...missingLucky];
+        if (customName.length === 0) missingCustom.push('Avatar Name');
+        
+        const luckyMissingStr = missingLucky.length > 0 ? ` (Missing: ${missingLucky.join(', ')})` : '';
+        const customMissingStr = missingCustom.length > 0 ? ` (Missing: ${missingCustom.join(', ')})` : '';
+        
+        if (luckyPersonaBtn) luckyPersonaBtn.title = "Generate a random persona." + luckyMissingStr;
+        if (luckyGreetingBtn) luckyGreetingBtn.title = "Generate a default greeting." + luckyMissingStr;
+        
+        if (cameraBtn) cameraBtn.title = "Take a photo with your camera to create a custom avatar." + customMissingStr;
+        if (uploadBtn) uploadBtn.title = "Upload an image to create a custom avatar." + customMissingStr;
+        if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + customMissingStr;
+        if (generateImageBtn) generateImageBtn.title = "Generate an avatar image from prompt." + customMissingStr;
     }
 
     const updateVisibleControls = () => {
