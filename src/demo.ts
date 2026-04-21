@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return ffmpeg;
     }
 
-    // QA Walkthrough Logic
+    // Feature Walkthrough Logic
     const qaScenarios = [
         {
             id: '1.1',
@@ -938,7 +938,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (qaContainer) {
                 const isVisible = qaContainer.style.display !== 'none';
                 qaContainer.style.display = isVisible ? 'none' : 'block';
-                toggleQaBtn.textContent = isVisible ? 'Open QA Walkthrough' : 'Close QA Walkthrough';
+                toggleQaBtn.textContent = isVisible ? 'Open Feature Walkthrough' : 'Close Feature Walkthrough';
                 if (!isVisible) {
                     updateQaPosition();
                     renderQA();
