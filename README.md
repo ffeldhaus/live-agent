@@ -79,6 +79,13 @@ Add the `<gemini-avatar>` tag to your page:
 | `system-instruction` | System instructions / Persona for the avatar | No |
 | `default-greeting` | Initial greeting spoken by the avatar | No |
 | `custom-avatar-url` | URL for custom avatar image override | No |
+| `enable-chroma-key` | Set to `"true"` to enable background removal | No |
+| `chroma-key-color` | Color to remove (default: `"green"`) | No |
+| `background-color` | Replacement background color (default: `"transparent"`) | No |
+| `enable-transcript` | Set to `"true"` to enable live transcript | No |
+| `enable-chat-input` | Set to `"true"` to enable chat input field | No |
+| `render-transcript-outside` | Set to `"true"` to render transcript outside component | No |
+| `enable-grounding` | Set to `"true"` to enable Google Search Grounding | No |
 
 *(1) At least one of `access-token` or `oauth-client-id` must be provided.*
 

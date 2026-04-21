@@ -929,6 +929,10 @@ export class GeminiAvatar extends HTMLElement {
     this.setupCompleteTime = null;
     this.firstFrameTime = null;
     this.receivedFirstVideoFrame = false;
+    
+    if (this.transcriptArea) {
+      this.transcriptArea.innerHTML = '';
+    }
 
     const location = this.getAttribute("location") || "us-central1";
     const project = this.getAttribute("project-id");

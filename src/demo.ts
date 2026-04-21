@@ -669,6 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     avatar.setAttribute('output-mode', 'video');
                 }
 
+                if (externalTranscript) {
+                    externalTranscript.innerHTML = '';
+                }
+
                 avatar.start();
                 avatar.unmute(); // Unmute by default on start
             }
