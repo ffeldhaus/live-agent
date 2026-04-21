@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function validateForm() {
         const project = projectIdInput.value.trim();
-        const loc = locationInput.value.trim();
+        const loc = locationInput.value.trim() || 'us-central1';
         const token = tokenInput.value.trim();
         const oauth = oauthClientIdInput.value.trim();
 
