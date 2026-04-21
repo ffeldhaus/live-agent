@@ -20,6 +20,16 @@ body {
     align-items: center;
     justify-content: center;
 }
+body.animated-bg {
+    background: linear-gradient(-45deg, var(--c1), var(--c2), var(--c3), var(--c4)) !important;
+    background-size: 400% 400% !important;
+    animation: gradientShift var(--speed) ease infinite;
+}
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 .container {
     max-width: 800px;
     width: 90%;

@@ -164,17 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('gemini_avatar_name')) {
         const name = localStorage.getItem('gemini_avatar_name')!;
         avatarNameSelect.value = name;
-        if (customAvatars[name]) {
-            avatar.setAttribute('custom-avatar-url', customAvatars[name]);
-            updateBackground(customAvatars[name]);
-            if (customAvatarName) customAvatarName.value = name;
-        } else {
-            avatar.setPreview(name);
-            const preset = (AVATAR_PRESETS as any)[name];
-            if (preset && preset.image) {
-                updateBackground(preset.image);
-            }
-        }
+        applyAvatarTheme(name);
     }
     
     if (localStorage.getItem('gemini_size')) {
@@ -398,16 +388,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     console.log('Dominant colors detected (bottom half):', color1, color2, color3, color4);
                     
-                    // Apply to background with low opacity to keep it dark
-                    document.body.style.background = `linear-gradient(135deg, ${color1}33 0%, ${color2}33 33%, ${color3}33 66%, ${color4}33 100%), #0f172a`;
+                    applyTheme([color1, color2, color3, color4], '15s');
                 }
             }
         };
         img.src = imageUrl;
     }
 
+    function applyTheme(colors: string[], speed: string) {
+        const body = document.body;
+        body.classList.add('animated-bg');
+        body.style.setProperty('--c1', colors[0] + '33'); // Low opacity
+        body.style.setProperty('--c2', colors[1] ? colors[1] + '33' : colors[0] + '33');
+        body.style.setProperty('--c3', colors[2] ? colors[2] + '33' : colors[0] + '33');
+        body.style.setProperty('--c4', colors[3] ? colors[3] + '33' : colors[0] + '33');
+        body.style.setProperty('--speed', speed);
+    }
+
+    function applyAvatarTheme(avatarName: string) {
+        const preset = (AVATAR_PRESETS as any)[avatarName];
+        if (preset && preset.palette) {
+            // Map mood to animation speed
+            let speed = '15s';
+            if (preset.mood.includes('Breezy') || preset.mood.includes('Vibrant')) speed = '10s';
+            if (preset.mood.includes('Calm') || preset.mood.includes('Gentle')) speed = '25s';
+            
+            applyTheme(preset.palette, speed);
+            avatar.setPreview(avatarName);
+        } else if (customAvatars[avatarName]) {
+            avatar.setAttribute('custom-avatar-url', customAvatars[avatarName]);
+            updateBackground(customAvatars[avatarName]);
+        } else {
+            avatar.setPreview(avatarName);
+            const pr = (AVATAR_PRESETS as any)[avatarName];
+            if (pr && pr.image) {
+                updateBackground(pr.image);
+            }
+        }
+    }
+
     // Listeners
-    [projectIdInput, locationInput, tokenInput, oauthClientIdInput, customAvatarName].forEach(el => {
+    [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
         el?.addEventListener('input', validateForm);
     });
 
@@ -417,17 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (avatarNameSelect) {
         avatarNameSelect.onchange = () => {
             const val = avatarNameSelect.value;
-            if (customAvatars[val]) {
-                if (customAvatarName) customAvatarName.value = val;
-                avatar.setAttribute('custom-avatar-url', customAvatars[val]);
-                updateBackground(customAvatars[val]);
-            } else {
-                avatar.setPreview(val);
-                const preset = (AVATAR_PRESETS as any)[val];
-                if (preset && preset.image) {
-                    updateBackground(preset.image);
-                }
-            }
+            applyAvatarTheme(val);
         };
     }
     

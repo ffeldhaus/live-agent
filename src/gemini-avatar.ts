@@ -3,19 +3,115 @@ import mpegts from 'mpegts.js';
 import styles from './styles/gemini-avatar.css?inline';
 
 // Asset URLs
-export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string }> = {
-  Kira: { id: 'Kira', displayName: 'Kira', style: 'photorealistic', image: new URL('./assets/kira.png', import.meta.url).href },
-  Ingrid: { id: 'Ingrid', displayName: 'Ingrid', style: 'photorealistic', image: new URL('./assets/ingrid.png', import.meta.url).href },
-  Vera: { id: 'Vera', displayName: 'Vera', style: 'photorealistic', image: new URL('./assets/vera.png', import.meta.url).href },
-  Jay: { id: 'Jay', displayName: 'Jay', style: 'photorealistic', image: new URL('./assets/jay.png', import.meta.url).href },
-  Paul: { id: 'Paul', displayName: 'Paul', style: 'photorealistic', image: new URL('./assets/paul.png', import.meta.url).href },
-  Sam: { id: 'Sam', displayName: 'Sam', style: 'photorealistic', image: new URL('./assets/sam.png', import.meta.url).href },
-  Piper: { id: 'Piper', displayName: 'Piper', style: 'non-photorealistic', image: new URL('./assets/piper.png', import.meta.url).href },
-  Carmen: { id: 'Carmen', displayName: 'Carmen', style: 'non-photorealistic', image: new URL('./assets/carmen.png', import.meta.url).href },
-  Kai: { id: 'Kai', displayName: 'Kai', style: 'non-photorealistic', image: new URL('./assets/kai.png', import.meta.url).href },
-  Leo: { id: 'Leo', displayName: 'Leo', style: 'non-photorealistic', image: new URL('./assets/leo.png', import.meta.url).href },
-  Ben: { id: 'Ben', displayName: 'Ben', style: 'non-photorealistic', image: new URL('./assets/ben.png', import.meta.url).href },
-  Hana: { id: 'Hana', displayName: 'Hana', style: 'non-photorealistic', image: new URL('./assets/hana.png', import.meta.url).href },
+export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string, palette: string[], texture: string, mood: string }> = {
+  Hana: { 
+    id: 'Hana', 
+    displayName: 'Hana', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/hana.png', import.meta.url).href,
+    palette: ['#2a3b52', '#8fa4b4', '#b53d3d'],
+    texture: 'Soft studio gradient, matte fabric',
+    mood: 'Studious, calm, disciplined'
+  },
+  Ben: { 
+    id: 'Ben', 
+    displayName: 'Ben', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/ben.png', import.meta.url).href,
+    palette: ['#344e52', '#5b6b4e', '#d4a38a'],
+    texture: 'Deep mesh gradient, diffused light',
+    mood: 'Friendly, modern, approachable'
+  },
+  Carmen: { 
+    id: 'Carmen', 
+    displayName: 'Carmen', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/carmen.png', import.meta.url).href,
+    palette: ['#2d5a9e', '#4a614d', '#c29a75'],
+    texture: 'Blurred classroom, cork & slate textures',
+    mood: 'Wise, nurturing, academic'
+  },
+  Ingrid: { 
+    id: 'Ingrid', 
+    displayName: 'Ingrid', 
+    style: 'photorealistic', 
+    image: new URL('./assets/ingrid.png', import.meta.url).href,
+    palette: ['#1e2a4a', '#d1d5db', '#a82e2e'],
+    texture: 'Hard stone background, sharp suit lines',
+    mood: 'Formal, authoritative, precise'
+  },
+  Jay: { 
+    id: 'Jay', 
+    displayName: 'Jay', 
+    style: 'photorealistic', 
+    image: new URL('./assets/jay.png', import.meta.url).href,
+    palette: ['#3f444d', '#d9c8b2', '#93c5fd'],
+    texture: 'Corporate office blur, clean professional lines',
+    mood: 'Executive, reliable, corporate'
+  },
+  Kai: { 
+    id: 'Kai', 
+    displayName: 'Kai', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/kai.png', import.meta.url).href,
+    palette: ['#ca8a04', '#7dd3fc', '#4d7c0f'],
+    texture: 'Overexposed bokeh, sunny park vibe',
+    mood: 'Breezy, youthful, optimistic'
+  },
+  Kira: { 
+    id: 'Kira', 
+    displayName: 'Kira', 
+    style: 'photorealistic', 
+    image: new URL('./assets/kira.png', import.meta.url).href,
+    palette: ['#254a65', '#9ca3af', '#fde68a'],
+    texture: 'Industrial neutral, soft directional light',
+    mood: 'Practical, grounded, industrious'
+  },
+  Leo: { 
+    id: 'Leo', 
+    displayName: 'Leo', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/leo.png', import.meta.url).href,
+    palette: ['#78350f', '#4338ca', '#facc15'],
+    texture: 'Rustic, paint-splattered denim, warm clay',
+    mood: 'Creative, artisanal, vintage'
+  },
+  Paul: { 
+    id: 'Paul', 
+    displayName: 'Paul', 
+    style: 'photorealistic', 
+    image: new URL('./assets/paul.png', import.meta.url).href,
+    palette: ['#334155', '#f8fafc', '#1e3a8a'],
+    texture: 'Classic studio vignette, high-contrast formal',
+    mood: 'Traditional, senior, dignified'
+  },
+  Piper: { 
+    id: 'Piper', 
+    displayName: 'Piper', 
+    style: 'non-photorealistic', 
+    image: new URL('./assets/piper.png', import.meta.url).href,
+    palette: ['#0d9488', '#f59e0b', '#166534'],
+    texture: 'Impressionist studio blur, floral & denim',
+    mood: 'Artistic, vibrant, soulful'
+  },
+  Sam: { 
+    id: 'Sam', 
+    displayName: 'Sam', 
+    style: 'photorealistic', 
+    image: new URL('./assets/sam.png', import.meta.url).href,
+    palette: ['#92400e', '#14532d', '#bfdbfe'],
+    texture: 'Blurred library shelves, warm textures',
+    mood: 'Intellectual, smart-casual, cozy'
+  },
+  Vera: { 
+    id: 'Vera', 
+    displayName: 'Vera', 
+    style: 'photorealistic', 
+    image: new URL('./assets/vera.png', import.meta.url).href,
+    palette: ['#000000', '#94a3b8', '#1e293b'],
+    texture: 'Solid depth, metallic shimmer, luxury velvet',
+    mood: 'Elegant, sophisticated, musical'
+  },
 };
 
 export const VOICE_PRESETS: Record<string, { id: string, displayName: string, description: string }> = {
