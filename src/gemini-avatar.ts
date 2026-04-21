@@ -74,6 +74,8 @@ export class GeminiAvatar extends HTMLElement {
   private isMicMuted = false;
   private receivedFirstVideoFrame = false;
   private silenceInterval: any = null;
+  private displayCanvas: HTMLCanvasElement | null = null;
+  private chromaKeyLoopId: number | null = null;
   
   // Statistics
   private startTime: number | null = null;
@@ -138,6 +140,11 @@ export class GeminiAvatar extends HTMLElement {
     this.videoEl.autoplay = true;
     this.videoEl.playsInline = true;
     this.videoEl.muted = true; // Mute to allow autoplay
+
+    this.displayCanvas = document.createElement("canvas");
+    this.displayCanvas.id = "avatar-canvas";
+    this.displayCanvas.style.display = "none"; // Hidden by default
+    this.container.appendChild(this.displayCanvas);
     this.container.appendChild(this.videoEl);
 
     this.previewImg = document.createElement("img");
@@ -283,6 +290,9 @@ export class GeminiAvatar extends HTMLElement {
       "system-instruction",
       "default-greeting",
       "custom-avatar-url",
+      "chroma-key-color",
+      "enable-chroma-key",
+      "background-color",
     ];
   }
 
@@ -318,6 +328,17 @@ export class GeminiAvatar extends HTMLElement {
       case "mic-auto-request":
         if (newValue === "true" && !this.isRecording) {
           this.startMic();
+        }
+        break;
+      case "enable-chroma-key":
+        const enabled = newValue === "true";
+        if (this.displayCanvas) this.displayCanvas.style.display = enabled ? 'block' : 'none';
+        if (this.videoEl) this.videoEl.style.display = enabled ? 'none' : 'block';
+        
+        if (enabled) {
+          this.startChromaKeyLoop();
+        } else {
+          this.stopChromaKeyLoop();
         }
         break;
     }
@@ -1161,6 +1182,74 @@ export class GeminiAvatar extends HTMLElement {
         this.accumulatedPcmData.push(pcmData);
       }
     }, intervalMs);
+  }
+
+  private startChromaKeyLoop() {
+    if (this.chromaKeyLoopId) return;
+    
+    const loop = () => {
+      this.computeFrame();
+      this.chromaKeyLoopId = requestAnimationFrame(loop);
+    };
+    this.chromaKeyLoopId = requestAnimationFrame(loop);
+    this._log("Chroma Key loop started");
+  }
+
+  private stopChromaKeyLoop() {
+    if (this.chromaKeyLoopId) {
+      cancelAnimationFrame(this.chromaKeyLoopId);
+      this.chromaKeyLoopId = null;
+      this._log("Chroma Key loop stopped");
+    }
+  }
+
+  private computeFrame() {
+    if (!this.videoEl || !this.displayCanvas) return;
+    
+    const ctx = this.displayCanvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size to match video
+    if (this.displayCanvas.width !== this.videoEl.videoWidth) {
+      this.displayCanvas.width = this.videoEl.videoWidth;
+      this.displayCanvas.height = this.videoEl.videoHeight;
+    }
+
+    ctx.drawImage(this.videoEl, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
+    
+    const frame = ctx.getImageData(0, 0, this.displayCanvas.width, this.displayCanvas.height);
+    const l = frame.data.length / 4;
+
+    const chromaKeyColor = this.getAttribute("chroma-key-color") || "green";
+    const bgColor = this.getAttribute("background-color") || "white";
+
+    // Parse target color
+    let targetR = 0, targetG = 255, targetB = 0; // Default green
+    if (chromaKeyColor === "blue") {
+      targetR = 0; targetG = 0; targetB = 255;
+    }
+
+    const tolerance = 30;
+
+    for (let i = 0; i < l; i++) {
+      const r = frame.data[i * 4 + 0];
+      const g = frame.data[i * 4 + 1];
+      const b = frame.data[i * 4 + 2];
+      
+      if (Math.abs(r - targetR) < tolerance &&
+          Math.abs(g - targetG) < tolerance &&
+          Math.abs(b - targetB) < tolerance) {
+        
+        if (bgColor === "white") {
+          frame.data[i * 4 + 0] = 255;
+          frame.data[i * 4 + 1] = 255;
+          frame.data[i * 4 + 2] = 255;
+        } else if (bgColor === "transparent") {
+          frame.data[i * 4 + 3] = 0;
+        }
+      }
+    }
+    ctx.putImageData(frame, 0, 0);
   }
 
   private processVideoQueue() {

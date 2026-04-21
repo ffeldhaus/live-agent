@@ -55,6 +55,24 @@
                     </div>
                     <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">Multiples of 128 recommended. Lower = less latency, Higher = less overhead.</p>
                 </div>
+                
+                <div class="form-group full-width" style="margin-top: 10px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; color: #cbd5e1;">Chroma Keying (Background Removal):</label>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 4px; color: #cbd5e1; font-size: 0.8rem;"><input type="checkbox" id="enableChromaKey" style="width: auto;"> Enable</label>
+                        
+                        <select id="chromaKeyColor" style="font-size: 0.8rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                            <option value="green">Green Key</option>
+                            <option value="blue">Blue Key</option>
+                        </select>
+                        
+                        <select id="backgroundColor" style="font-size: 0.8rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                            <option value="white">Replace with White</option>
+                            <option value="transparent">Make Transparent</option>
+                        </select>
+                    </div>
+                    <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;">Only works for custom avatars with uniform background.</p>
+                </div>
             </div>
             
             <div class="form-group">
@@ -212,6 +230,9 @@
             <div style="display: flex; gap: 10px; margin-top: 10px;" class="full-width">
                 <button class="btn" id="copyHtmlBtn" style="flex: 1; margin-top: 0; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">Copy Embed Code</button>
             </div>
+            <div style="display: flex; gap: 10px; margin-top: 10px;" class="full-width">
+                <button class="btn" id="toggleQaBtn" style="flex: 1; margin-top: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">Open QA Walkthrough</button>
+            </div>
         </div>
         
         <!-- Session Statistics -->
@@ -250,6 +271,12 @@
 
     <!-- The Web Component instance -->
     <gemini-avatar id="my-avatar" position="top-right" size="300px"></gemini-avatar>
+
+    <!-- Floating QA Panel -->
+    <div id="qaContainer" style="display: none; position: fixed; width: 380px; height: 100vh; top: 0; bottom: 0; overflow-y: auto; background: #0f172a; padding: 20px; z-index: 1000; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+        <h2 style="font-size: 1.2rem; margin-top: 0; color: #f8fafc;">QA Walkthrough</h2>
+        <div id="qaList"></div>
+    </div>
 
     <!-- Load the demo script as module -->
     <script type="module" src="/src/demo.ts"></script>

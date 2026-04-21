@@ -60,6 +60,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const generatedImageContainer = document.getElementById('generatedImageContainer') as HTMLDivElement;
     const generatedImg = document.getElementById('generatedImg') as HTMLImageElement;
 
+    // Chroma Keying elements
+    const enableChromaKey = document.getElementById('enableChromaKey') as HTMLInputElement;
+    const chromaKeyColor = document.getElementById('chromaKeyColor') as HTMLSelectElement;
+    const backgroundColor = document.getElementById('backgroundColor') as HTMLSelectElement;
+
+    // QA elements
+    const qaContainer = document.getElementById('qaContainer') as HTMLDivElement;
+    const qaList = document.getElementById('qaList') as HTMLDivElement;
+    const toggleQaBtn = document.getElementById('toggleQaBtn') as HTMLButtonElement;
+
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
     Object.values(AVATAR_PRESETS).forEach(preset => {
@@ -151,6 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('gemini_default_greeting')) defaultGreetingInput.value = localStorage.getItem('gemini_default_greeting')!;
     if (localStorage.getItem('gemini_image_prompt')) imagePromptInput.value = localStorage.getItem('gemini_image_prompt')!;
 
+    // Load Chroma Key settings
+    enableChromaKey.checked = localStorage.getItem('gemini_enable_chroma_key') === 'true';
+    if (localStorage.getItem('gemini_chroma_key_color')) chromaKeyColor.value = localStorage.getItem('gemini_chroma_key_color')!;
+    if (localStorage.getItem('gemini_background_color')) backgroundColor.value = localStorage.getItem('gemini_background_color')!;
+    
+    avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+    avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
+    avatar.setAttribute('background-color', backgroundColor.value);
+
     function validateForm() {
         const project = projectIdInput.value.trim();
         const loc = locationInput.value.trim();
@@ -174,8 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ctrlSnapshot.checked) list.push('snapshot');
         avatar.setAttribute('visible-controls', list.join(','));
     };
-
-    let statsInterval: any = null;
 
     const updateStats = () => {
         const stats = avatar.getStats();
@@ -247,6 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
         chunkSizeVal.textContent = audioChunkSizeSlider.value;
         avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
     };
+
+    // Chroma Key Listeners
+    enableChromaKey.onchange = () => avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+    chromaKeyColor.onchange = () => avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
+    backgroundColor.onchange = () => avatar.setAttribute('background-color', backgroundColor.value);
 
     // Lucky buttons
     luckyPersonaBtn.onclick = async () => {
@@ -411,6 +433,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('gemini_system_instruction', systemInstructionInput.value);
         localStorage.setItem('gemini_default_greeting', defaultGreetingInput.value);
         localStorage.setItem('gemini_image_prompt', imagePromptInput.value);
+        
+        // Save Chroma Key settings
+        localStorage.setItem('gemini_enable_chroma_key', enableChromaKey.checked.toString());
+        localStorage.setItem('gemini_chroma_key_color', chromaKeyColor.value);
+        localStorage.setItem('gemini_background_color', backgroundColor.value);
 
         if (tokenInput.value) {
             localStorage.setItem('gemini_access_token', tokenInput.value);
@@ -564,6 +591,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Apply advanced settings
             avatar.setAttribute('system-instruction', systemInstructionInput.value);
             avatar.setAttribute('default-greeting', defaultGreetingInput.value);
+            
+            // Apply Chroma Key settings
+            avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+            avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
+            avatar.setAttribute('background-color', backgroundColor.value);
 
             if (avatarNameSelect.value === 'AudioOnly') {
                 avatar.setAttribute('output-mode', 'audio');
@@ -624,6 +656,9 @@ document.addEventListener('DOMContentLoaded', () => {
     audio-chunk-size="${chunkSize}"
     system-instruction="${systemInstruction.replace(/"/g, '&quot;')}"
     default-greeting="${defaultGreeting.replace(/"/g, '&quot;')}"
+    enable-chroma-key="${enableChromaKey.checked}"
+    chroma-key-color="${chromaKeyColor.value}"
+    background-color="${backgroundColor.value}"
 ></gemini-avatar>`;
 
             navigator.clipboard.writeText(htmlCode).then(() => {
@@ -634,6 +669,332 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         };
     }
+
+    // QA Walkthrough Logic
+    const qaScenarios = [
+        {
+            id: '1.1',
+            title: 'Direct Access Token',
+            description: 'Verify connection using a direct access token.',
+            steps: [
+                'Enter a valid Access Token in the form.',
+                'Click "Save Configuration".',
+                'Click "Start".'
+            ],
+            verification: [
+                'Component connects to WebSocket.',
+                'Button changes to "Stop".',
+                'Video starts playing.'
+            ]
+        },
+        {
+            id: '1.2',
+            title: 'OAuth Sign-in',
+            description: 'Verify authentication via Google OAuth.',
+            steps: [
+                'Enter a valid OAuth Client ID (leave Access Token empty).',
+                'Click "Save Configuration".',
+                'Click "Start".',
+                'Complete sign-in if prompted.'
+            ],
+            verification: [
+                'A Google sign-in popup appears (if not already authorized).',
+                'Component connects successfully after acquiring token.'
+            ]
+        },
+        {
+            id: '2.1',
+            title: 'Microphone Mute & Silence Padding',
+            description: 'Verify mic muting and timeline alignment.',
+            steps: [
+                'Start a session.',
+                'Click the Microphone button on the component to mute.',
+                'Speak into the microphone.',
+                'Unmute and speak.',
+                'Stop session and download video (with user audio enabled).'
+            ],
+            verification: [
+                'The Avatar does not respond when muted.',
+                'The Avatar responds when unmuted.',
+                'The recorded user audio has silence in the muted segment, maintaining alignment.'
+            ]
+        },
+        {
+            id: '2.3',
+            title: 'Camera & Screen Sharing',
+            description: 'Verify camera and screen sharing activation.',
+            steps: [
+                'Start a session.',
+                'Click the Camera or Screen Share button on the component.'
+            ],
+            verification: [
+                'Permissions are requested if not already granted.',
+                'Button changes state to active.'
+            ]
+        },
+        {
+            id: '3.1',
+            title: 'Persistence across page reload',
+            description: 'Verify settings are saved and restored.',
+            steps: [
+                'Change settings in the form (Size, Position, Voice).',
+                'Click "Save Configuration".',
+                'Reload the page.'
+            ],
+            verification: [
+                'All settings are restored to the UI controls.'
+            ]
+        },
+        {
+            id: '3.2',
+            title: 'Dynamic Size & Position',
+            description: 'Verify immediate update of size and position.',
+            steps: [
+                'Change Size or Position in the form while session is active.'
+            ],
+            verification: [
+                'The component updates its size and position on screen immediately.'
+            ]
+        },
+        {
+            id: '4.1',
+            title: 'Combined Video & Audio Download',
+            description: 'Verify FFmpeg muxing and panned audio.',
+            steps: [
+                'Enable "Save and download video session".',
+                'Enable "Include user audio in download".',
+                'Start session, speak, and wait for avatar response.',
+                'Stop session.'
+            ],
+            verification: [
+                'Button shows "Processing video..." and is disabled.',
+                'A `.mp4` file is downloaded containing both tracks.',
+                'Audio is panned (Left/Right) based on Avatar\'s position.'
+            ]
+        },
+        {
+            id: '4.2',
+            title: 'Fallback on Failure',
+            description: 'Verify fallback behavior when FFmpeg fails.',
+            steps: [
+                'Simulate a failure (e.g., block unpkg.com).',
+                'Stop session with recording enabled.'
+            ],
+            verification: [
+                'Alert appears.',
+                'Two separate files (.mp4 and .webm) are downloaded.'
+            ]
+        },
+        {
+            id: '5.1',
+            title: 'System Instructions (Persona)',
+            description: 'Verify custom persona behavior.',
+            steps: [
+                'Enter a persona: "You are a pirate. Respond to everything with \'Ahoy!\'".',
+                'Click "Start".',
+                'Speak to the Avatar.'
+            ],
+            verification: [
+                'Avatar responds in character.'
+            ]
+        },
+        {
+            id: '5.2',
+            title: 'Default Greeting',
+            description: 'Verify automatic greeting on start.',
+            steps: [
+                'Enter a greeting: "Welcome aboard!".',
+                'Click "Start".'
+            ],
+            verification: [
+                'Avatar speaks "Welcome aboard!" immediately after connection.'
+            ]
+        },
+        {
+            id: '5.3',
+            title: '"I\'m feeling lucky" Generation',
+            description: 'Verify AI generation of persona and greeting.',
+            steps: [
+                'Click "I\'m feeling lucky" next to Persona or Greeting.'
+            ],
+            verification: [
+                'Field is populated with generated text.'
+            ]
+        },
+        {
+            id: '5.4',
+            title: 'Image Generation',
+            description: 'Verify custom avatar image generation.',
+            steps: [
+                'Enter an image prompt or use "I\'m feeling lucky".',
+                'Click "Generate".'
+            ],
+            verification: [
+                'An image appears in the container.',
+                'Applied to the avatar preview.'
+            ]
+        },
+        {
+            id: '6.1',
+            title: 'Real-time Stats',
+            description: 'Verify statistics display.',
+            steps: [
+                'Start a session.',
+                'Watch the "Session Statistics" panel.'
+            ],
+            verification: [
+                'Packets and frames counters increase.',
+                'Setup duration and latency show realistic values.',
+                'Average FPS is close to 24.'
+            ]
+        },
+        {
+            id: '7.1',
+            title: 'Background Removal',
+            description: 'Verify Chroma Keying.',
+            steps: [
+                'Use a custom avatar with solid green background.',
+                'Enable Chroma Keying.',
+                'Select "Green Key" and "Make Transparent".'
+            ],
+            verification: [
+                'The green background disappears.'
+            ]
+        }
+    ];
+
+    const renderQA = () => {
+        if (!qaList) return;
+        qaList.innerHTML = '';
+        qaScenarios.forEach(scenario => {
+            const div = document.createElement('div');
+            div.className = 'qa-scenario';
+            div.style.marginBottom = '15px';
+            div.style.padding = '15px';
+            div.style.background = '#1e293b';
+            div.style.borderRadius = '8px';
+            
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.gap = '8px';
+            header.style.fontWeight = 'bold';
+            header.style.color = '#f8fafc';
+            header.style.marginBottom = '5px';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.style.width = 'auto';
+            const savedState = localStorage.getItem(`gemini_qa_${scenario.id}`);
+            checkbox.checked = savedState === 'true';
+            
+            checkbox.onchange = () => {
+                localStorage.setItem(`gemini_qa_${scenario.id}`, checkbox.checked.toString());
+            };
+            
+            header.appendChild(checkbox);
+            const titleSpan = document.createElement('span');
+            titleSpan.textContent = `${scenario.id}: ${scenario.title}`;
+            header.appendChild(titleSpan);
+            
+            div.appendChild(header);
+            
+            if (scenario.description) {
+                const desc = document.createElement('p');
+                desc.style.fontSize = '0.8rem';
+                desc.style.color = '#94a3b8';
+                desc.style.margin = '0 0 10px 25px';
+                desc.textContent = scenario.description;
+                div.appendChild(desc);
+            }
+            
+            const stepsTitle = document.createElement('div');
+            stepsTitle.style.fontSize = '0.8rem';
+            stepsTitle.style.fontWeight = 'bold';
+            stepsTitle.style.color = '#cbd5e1';
+            stepsTitle.style.margin = '0 0 5px 25px';
+            stepsTitle.textContent = 'Steps:';
+            div.appendChild(stepsTitle);
+            
+            const ul = document.createElement('ul');
+            ul.style.margin = '0 0 10px 45px';
+            ul.style.fontSize = '0.8rem';
+            ul.style.color = '#cbd5e1';
+            scenario.steps.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                ul.appendChild(li);
+            });
+            div.appendChild(ul);
+            
+            const verifTitle = document.createElement('div');
+            verifTitle.style.fontSize = '0.8rem';
+            verifTitle.style.fontWeight = 'bold';
+            verifTitle.style.color = '#cbd5e1';
+            verifTitle.style.margin = '0 0 5px 25px';
+            verifTitle.textContent = 'Verification:';
+            div.appendChild(verifTitle);
+            
+            const ulVerif = document.createElement('ul');
+            ulVerif.style.margin = '0 0 0 45px';
+            ulVerif.style.fontSize = '0.8rem';
+            ulVerif.style.color = '#cbd5e1';
+            scenario.verification.forEach(step => {
+                const li = document.createElement('li');
+                li.textContent = step;
+                ulVerif.appendChild(li);
+            });
+            div.appendChild(ulVerif);
+            
+            qaList.appendChild(div);
+        });
+    };
+
+    const updateQaPosition = () => {
+        if (!qaContainer) return;
+        const pos = avatar.getAttribute('position') || 'top-right';
+        
+        qaContainer.style.top = '0';
+        qaContainer.style.bottom = '0';
+        qaContainer.style.height = '100vh';
+        qaContainer.style.width = '380px'; // Good width for sidebar
+        
+        if (pos.includes('right')) {
+            qaContainer.style.left = '0';
+            qaContainer.style.right = 'auto';
+            qaContainer.style.borderRight = '1px solid #334155';
+            qaContainer.style.borderLeft = 'none';
+        } else {
+            qaContainer.style.right = '0';
+            qaContainer.style.left = 'auto';
+            qaContainer.style.borderLeft = '1px solid #334155';
+            qaContainer.style.borderRight = 'none';
+        }
+    };
+
+    if (toggleQaBtn) {
+        toggleQaBtn.onclick = () => {
+            if (qaContainer) {
+                const isVisible = qaContainer.style.display !== 'none';
+                qaContainer.style.display = isVisible ? 'none' : 'block';
+                toggleQaBtn.textContent = isVisible ? 'Open QA Walkthrough' : 'Close QA Walkthrough';
+                if (!isVisible) {
+                    updateQaPosition();
+                    renderQA();
+                }
+            }
+        };
+    }
+
+    // Listen for position changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'position') {
+                updateQaPosition();
+            }
+        });
+    });
+    observer.observe(avatar, { attributes: true });
 
     // Initial apply
     updateVisibleControls();
