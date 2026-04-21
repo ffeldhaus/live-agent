@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const statTotalFrames = document.getElementById('statTotalFrames') as HTMLSpanElement;
     const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
     const statFps = document.getElementById('statFps') as HTMLSpanElement;
+    const statDownlink = document.getElementById('statDownlink') as HTMLSpanElement;
+    const statRtt = document.getElementById('statRtt') as HTMLSpanElement;
+    const statConnType = document.getElementById('statConnType') as HTMLSpanElement;
 
     // Advanced Customization elements
     const systemInstructionInput = document.getElementById('systemInstruction') as HTMLTextAreaElement;
@@ -154,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStats = () => {
         const stats = avatar.getStats();
         if (statSetupDuration) statSetupDuration.textContent = stats.setupDurationMs ? stats.setupDurationMs.toString() : '-';
-        if (statLatency) statLatency.textContent = stats.firstFrameLatencyMs ? stats.firstFrameLatencyMs.toString() : '-';
+        if (statLatency) statLatency.textContent = stats.setupToFirstFrameDurationMs ? stats.setupToFirstFrameDurationMs.toString() : '-';
         if (statPacketsReceived) statPacketsReceived.textContent = stats.packetsReceived.toString();
         if (statAudioSent) statAudioSent.textContent = stats.audioChunksSent.toString();
         if (statVideoSent) statVideoSent.textContent = stats.videoFramesSent.toString();
@@ -162,6 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statTotalFrames) statTotalFrames.textContent = stats.totalVideoFrames.toString();
         if (statSessionDuration) statSessionDuration.textContent = stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-';
         if (statFps) statFps.textContent = stats.averageFps ? stats.averageFps.toString() : '-';
+        if (statDownlink) statDownlink.textContent = stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-';
+        if (statRtt) statRtt.textContent = stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-';
+        if (statConnType) statConnType.textContent = stats.networkInfo?.type ? stats.networkInfo.type : '-';
     };
 
     // REST API Helper

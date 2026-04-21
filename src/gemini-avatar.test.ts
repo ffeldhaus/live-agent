@@ -145,7 +145,7 @@ describe('GeminiAvatar', () => {
 
     const stats = element.getStats();
     expect(stats.setupDurationMs).toBe(1000);
-    expect(stats.firstFrameLatencyMs).toBe(500);
+    expect(stats.setupToFirstFrameDurationMs).toBe(500);
     expect(stats.packetsReceived).toBe(10);
     expect(stats.audioChunksSent).toBe(5);
     expect(stats.totalVideoFrames).toBe(48);

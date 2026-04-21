@@ -474,7 +474,7 @@ export class GeminiAvatar extends HTMLElement {
   public getStats() {
     const now = new Date().getTime();
     const setupDurationMs = this.setupCompleteTime && this.startTime ? this.setupCompleteTime - this.startTime : null;
-    const firstFrameLatencyMs = this.firstFrameTime && this.setupCompleteTime ? this.firstFrameTime - this.setupCompleteTime : null;
+    const setupToFirstFrameDurationMs = this.firstFrameTime && this.setupCompleteTime ? this.firstFrameTime - this.setupCompleteTime : null;
     const sessionDurationMs = this.firstFrameTime ? now - this.firstFrameTime : null;
     
     // Get actual frames from video element if supported
@@ -486,9 +486,16 @@ export class GeminiAvatar extends HTMLElement {
       ? (totalFrames / (sessionDurationMs / 1000))
       : null;
 
+    const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+    const networkInfo = conn ? {
+      downlink: conn.downlink,
+      rtt: conn.rtt,
+      type: conn.type
+    } : null;
+
     return {
       setupDurationMs,
-      firstFrameLatencyMs,
+      setupToFirstFrameDurationMs,
       packetsReceived: this.packetsReceived,
       audioChunksSent: this.audioChunksSent,
       videoFramesSent: this.videoFramesSent,
@@ -496,6 +503,7 @@ export class GeminiAvatar extends HTMLElement {
       totalVideoFrames: totalFrames,
       sessionDurationMs,
       averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
+      networkInfo
     };
   }
 
