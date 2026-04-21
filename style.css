@@ -128,7 +128,7 @@ button.btn-lucky {
     background: #c026d3 !important;
     color: white !important;
 }
-button.btn-lucky:hover {
+button.btn-lucky:hover:not(:disabled) {
     background: #a21caf !important;
     box-shadow: 0 4px 12px rgba(192, 38, 211, 0.4) !important;
 }

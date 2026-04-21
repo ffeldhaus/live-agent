@@ -183,6 +183,8 @@ export class GeminiAvatar extends HTMLElement {
   private screenBtn!: HTMLButtonElement;
   private muteBtn!: HTMLButtonElement;
   private snapshotBtn!: HTMLButtonElement;
+  private settingsBtn!: HTMLButtonElement;
+  private settingsModal!: HTMLDivElement;
 
   // Media streams
   private micStream: MediaStream | null = null;
@@ -193,6 +195,8 @@ export class GeminiAvatar extends HTMLElement {
   private micChunks: Blob[] = [];
   private accumulatedPcmData: Int16Array[] = [];
   private isMicMuted = false;
+  private selectedAudioDeviceId = '';
+  private selectedVideoDeviceId = '';
   private receivedFirstVideoFrame = false;
   private silenceInterval: any = null;
   private displayCanvas: HTMLCanvasElement | null = null;
@@ -343,7 +347,27 @@ export class GeminiAvatar extends HTMLElement {
     this.snapshotBtn = this.createButton("Save Frame as WebP", `<svg viewBox="0 0 24 24"><path d="M21 19H3c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h4.17l1.83-2h6l1.83 2H21c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2zm-9-2c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0-8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg>`, () => this.saveFrame());
     controls.appendChild(this.snapshotBtn);
     
-    this.updateControlsVisibility(this.getAttribute("visible-controls") || "mic,camera,screen,mute");
+    this.settingsBtn = this.createButton("Settings", `<svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.483.483 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.74 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`, () => this.toggleSettings());
+    controls.appendChild(this.settingsBtn);
+    
+    this.settingsModal = document.createElement("div");
+    this.settingsModal.className = "settings-modal";
+    this.settingsModal.innerHTML = `
+      <button class="close-btn">&times;</button>
+      <h3>Device Settings</h3>
+      <label for="audioDeviceSelect">Microphone</label>
+      <select id="audioDeviceSelect"></select>
+      <label for="videoDeviceSelect">Camera</label>
+      <select id="videoDeviceSelect"></select>
+    `;
+    this.container.appendChild(this.settingsModal);
+    
+    const closeBtn = this.settingsModal.querySelector('.close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => this.toggleSettings());
+    }
+    
+    this.updateControlsVisibility(this.getAttribute("visible-controls") || "mic,camera,screen,mute,settings");
 
     this.container.appendChild(controls);
     this.shadowRoot.appendChild(this.container);
@@ -359,6 +383,7 @@ export class GeminiAvatar extends HTMLElement {
     if (this.screenBtn) this.screenBtn.style.display = list.includes('screen') ? 'flex' : 'none';
     if (this.muteBtn) this.muteBtn.style.display = list.includes('mute') ? 'flex' : 'none';
     if (this.snapshotBtn) this.snapshotBtn.style.display = list.includes('snapshot') ? 'flex' : 'none';
+    if (this.settingsBtn) this.settingsBtn.style.display = list.includes('settings') ? 'flex' : 'none';
   }
 
   private createButton(title: string, iconSVG: string, onClick: () => void): HTMLButtonElement {
@@ -367,6 +392,47 @@ export class GeminiAvatar extends HTMLElement {
     btn.title = title;
     btn.onclick = onClick;
     return btn;
+  }
+
+  private toggleSettings() {
+    const isActive = this.settingsModal.classList.toggle('active');
+    if (isActive) {
+        this.populateDevices();
+    }
+  }
+  
+  private async populateDevices() {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioSelect = this.settingsModal.querySelector('#audioDeviceSelect') as HTMLSelectElement;
+      const videoSelect = this.settingsModal.querySelector('#videoDeviceSelect') as HTMLSelectElement;
+      
+      if (audioSelect) {
+          audioSelect.innerHTML = '';
+          devices.filter(d => d.kind === 'audioinput').forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d.deviceId;
+              opt.textContent = d.label || `Mic ${audioSelect.options.length + 1}`;
+              audioSelect.appendChild(opt);
+          });
+          audioSelect.value = this.selectedAudioDeviceId;
+          audioSelect.onchange = () => {
+              this.selectedAudioDeviceId = audioSelect.value;
+          };
+      }
+      
+      if (videoSelect) {
+          videoSelect.innerHTML = '';
+          devices.filter(d => d.kind === 'videoinput').forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d.deviceId;
+              opt.textContent = d.label || `Camera ${videoSelect.options.length + 1}`;
+              videoSelect.appendChild(opt);
+          });
+          videoSelect.value = this.selectedVideoDeviceId;
+          videoSelect.onchange = () => {
+              this.selectedVideoDeviceId = videoSelect.value;
+          };
+      }
   }
 
   private initMpegts() {

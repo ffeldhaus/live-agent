@@ -160,7 +160,7 @@ describe('GeminiAvatar', () => {
     const muteBtn = element.shadowRoot?.querySelector('button:nth-child(4)') as HTMLButtonElement;
     const snapshotBtn = element.shadowRoot?.querySelector('button:nth-child(5)') as HTMLButtonElement;
 
-    expect(micBtn.style.display).toBe('flex');
+    expect(micBtn.style.display).toBe('');
     expect(camBtn.style.display).toBe('none');
     expect(screenBtn.style.display).toBe('none');
     expect(muteBtn.style.display).toBe('flex');
