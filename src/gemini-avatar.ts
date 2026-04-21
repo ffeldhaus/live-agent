@@ -16,7 +16,6 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
   Leo: { id: 'Leo', displayName: 'Leo', style: 'non-photorealistic', image: new URL('./assets/leo.png', import.meta.url).href },
   Ben: { id: 'Ben', displayName: 'Ben', style: 'non-photorealistic', image: new URL('./assets/ben.png', import.meta.url).href },
   Hana: { id: 'Hana', displayName: 'Hana', style: 'non-photorealistic', image: new URL('./assets/hana.png', import.meta.url).href },
-  Custom: { id: 'Custom', displayName: 'Custom Avatar', style: 'custom', image: '' },
 };
 
 export const VOICE_PRESETS: Record<string, { id: string, displayName: string, description: string }> = {

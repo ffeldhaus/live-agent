@@ -99,6 +99,59 @@
         <!-- Avatar Section -->
         <details open class="form" style="margin-bottom: 20px;">
             <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Avatar</summary>
+            
+            <!-- Hint always visible -->
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 5px 0 10px 0;">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
+
+            <!-- Collapsible Custom Avatar Section -->
+            <details style="margin-bottom: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px;">
+                <summary style="cursor: pointer; font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Create Custom Avatar</summary>
+                
+                <div style="margin-top: 10px;">
+                    <div class="form-group full-width">
+                        <label for="customAvatarName" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Avatar Name *</label>
+                        <input type="text" id="customAvatarName" placeholder="Enter unique name to create preset" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;" required>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn" id="cameraBtn" style="margin-top: 0; flex: 1; background: #475569;">Camera</button>
+                        <button class="btn" id="uploadBtn" style="margin-top: 0; flex: 1; background: #475569;">Upload Image</button>
+                    </div>
+                    
+                    <!-- Image Prompt -->
+                    <div style="margin-top: 10px;">
+                        <label for="imagePrompt" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Image Generation Prompt</label>
+                        <div style="display: flex; gap: 10px; margin-top: 5px;">
+                            <input type="text" id="imagePrompt" placeholder="E.g., A futuristic city with flying cars" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
+                            <button class="btn" id="luckyImageBtn" style="margin-top: 0; background: #334155; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
+                            <button class="btn" id="generateImageBtn" style="margin-top: 0; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); font-size: 0.95rem; padding: 0 10px;">Generate</button>
+                        </div>
+                    </div>
+
+                    <!-- Chroma Keying -->
+                    <div style="margin-top: 10px;">
+                        <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Chroma Keying (Background Removal):</label>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
+                            <label style="display: flex; align-items: center; gap: 4px; color: #cbd5e1; font-size: 0.95rem;"><input type="checkbox" id="enableChromaKey" style="width: auto;"> Enable</label>
+                            
+                            <select id="chromaKeyColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                                <option value="green">Green Key</option>
+                                <option value="blue">Blue Key</option>
+                            </select>
+                            
+                            <select id="backgroundColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                                <option value="white">Replace with White</option>
+                                <option value="transparent">Make Transparent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="generatedImageContainer" style="margin-top: 10px; display: none; text-align: center;">
+                        <img id="generatedImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #334155;">
+                    </div>
+                </div>
+            </details>
+
             <div class="grid">
                 <div class="form-group">
                     <label for="avatarName">Avatar Preset</label>
@@ -186,46 +239,7 @@
                 </div>
             </div>
 
-            <!-- Custom Avatar Creation (Hidden by default) -->
-            <div id="customAvatarSection" style="display: none; margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Create Custom Avatar:</label>
-                <p style="font-size: 0.85rem; color: #94a3b8; margin: 5px 0 10px 0;">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
-                <div style="display: flex; gap: 10px; margin-top: 5px;">
-                    <button class="btn" id="cameraBtn" style="margin-top: 0; flex: 1; background: #475569;">Camera</button>
-                    <button class="btn" id="uploadBtn" style="margin-top: 0; flex: 1; background: #475569;">Upload Image</button>
-                </div>
-                
-                <div style="margin-top: 10px;">
-                    <label for="imagePrompt" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Image Generation Prompt</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <input type="text" id="imagePrompt" placeholder="E.g., A futuristic city with flying cars" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                        <button class="btn" id="luckyImageBtn" style="margin-top: 0; background: #334155; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
-                        <button class="btn" id="generateImageBtn" style="margin-top: 0; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); font-size: 0.95rem; padding: 0 10px;">Generate</button>
-                    </div>
-                </div>
 
-                <!-- Chroma Keying -->
-                <div style="margin-top: 10px;">
-                    <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Chroma Keying (Background Removal):</label>
-                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
-                        <label style="display: flex; align-items: center; gap: 4px; color: #cbd5e1; font-size: 0.95rem;"><input type="checkbox" id="enableChromaKey" style="width: auto;"> Enable</label>
-                        
-                        <select id="chromaKeyColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
-                            <option value="green">Green Key</option>
-                            <option value="blue">Blue Key</option>
-                        </select>
-                        
-                        <select id="backgroundColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
-                            <option value="white">Replace with White</option>
-                            <option value="transparent">Make Transparent</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="generatedImageContainer" style="margin-top: 10px; display: none; text-align: center;">
-                    <img id="generatedImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #334155;">
-                </div>
-            </div>
         </details>
         
         <!-- Actions -->

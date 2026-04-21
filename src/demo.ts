@@ -83,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const barLatency = document.getElementById('barLatency') as HTMLDivElement;
     const statTotalLatency = document.getElementById('statTotalLatency') as HTMLSpanElement;
 
-    const customAvatarSection = document.getElementById('customAvatarSection') as HTMLDivElement;
     const cameraBtn = document.getElementById('cameraBtn') as HTMLButtonElement;
     const uploadBtn = document.getElementById('uploadBtn') as HTMLButtonElement;
 
@@ -95,6 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const cameraVideo = document.getElementById('cameraVideo') as HTMLVideoElement;
     const captureBtn = document.getElementById('captureBtn') as HTMLButtonElement;
     const closeCameraBtn = document.getElementById('closeCameraBtn') as HTMLButtonElement;
+
+    // New Custom Avatar Name
+    const customAvatarName = document.getElementById('customAvatarName') as HTMLInputElement;
+
+    // Map to store custom avatars (name -> dataUrl)
+    const customAvatars: Record<string, string> = {};
 
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
@@ -143,18 +148,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load other settings
     if (localStorage.getItem('gemini_project_id')) projectIdInput.value = localStorage.getItem('gemini_project_id')!;
     if (localStorage.getItem('gemini_location')) locationInput.value = localStorage.getItem('gemini_location')!;
+    
+    // Load custom avatars first!
+    const savedCustomAvatars = localStorage.getItem('gemini_custom_avatars');
+    if (savedCustomAvatars) {
+        Object.assign(customAvatars, JSON.parse(savedCustomAvatars));
+        Object.keys(customAvatars).forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            avatarNameSelect.appendChild(option);
+        });
+    }
+
     if (localStorage.getItem('gemini_avatar_name')) {
-        avatarNameSelect.value = localStorage.getItem('gemini_avatar_name')!;
-        avatar.setPreview(avatarNameSelect.value);
-        if (avatarNameSelect.value === 'Custom') {
-            customAvatarSection.style.display = 'block';
+        const name = localStorage.getItem('gemini_avatar_name')!;
+        avatarNameSelect.value = name;
+        if (customAvatars[name]) {
+            avatar.setAttribute('custom-avatar-url', customAvatars[name]);
+            updateBackground(customAvatars[name]);
+            if (customAvatarName) customAvatarName.value = name;
         } else {
-            const preset = (AVATAR_PRESETS as any)[avatarNameSelect.value];
+            avatar.setPreview(name);
+            const preset = (AVATAR_PRESETS as any)[name];
             if (preset && preset.image) {
                 updateBackground(preset.image);
             }
         }
     }
+    
     if (localStorage.getItem('gemini_size')) {
         sizeSelect.value = localStorage.getItem('gemini_size')!;
         avatar.setAttribute('size', sizeSelect.value);
@@ -386,12 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (avatarNameSelect) {
         avatarNameSelect.onchange = () => {
-            avatar.setPreview(avatarNameSelect.value);
-            if (avatarNameSelect.value === 'Custom') {
-                customAvatarSection.style.display = 'block';
+            const val = avatarNameSelect.value;
+            if (customAvatars[val]) {
+                if (customAvatarName) customAvatarName.value = val;
+                avatar.setAttribute('custom-avatar-url', customAvatars[val]);
+                updateBackground(customAvatars[val]);
             } else {
-                customAvatarSection.style.display = 'none';
-                const preset = (AVATAR_PRESETS as any)[avatarNameSelect.value];
+                avatar.setPreview(val);
+                const preset = (AVATAR_PRESETS as any)[val];
                 if (preset && preset.image) {
                     updateBackground(preset.image);
                 }
@@ -509,6 +533,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (generateImageBtn) {
         generateImageBtn.onclick = async () => {
+            const name = customAvatarName.value.trim();
+            if (!name) {
+                alert('Please enter a name for the custom avatar.');
+                return;
+            }
+
             const userPrompt = imagePromptInput.value;
             if (!userPrompt) {
                 alert('Please enter a prompt or use "I\'m feeling lucky".');
@@ -547,6 +577,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
                     generatedImageContainer.style.display = 'block';
                     
+                    let finalUrl = generatedImg.src;
+
                     // Apply transparency via canvas if needed!
                     if (enableChromaKey.checked && backgroundColor.value === 'transparent') {
                         const img = new Image();
@@ -573,16 +605,23 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                 }
                                 cx.putImageData(imgData, 0, 0);
-                                const transparentUrl = canv.toDataURL('image/png');
-                                generatedImg.src = transparentUrl;
-                                avatar.setAttribute('custom-avatar-url', transparentUrl);
-                                updateBackground(transparentUrl);
+                                finalUrl = canv.toDataURL('image/png');
+                                generatedImg.src = finalUrl;
+                                
+                                // Save and update
+                                customAvatars[name] = finalUrl;
+                                updateDropdown(name);
+                                avatar.setAttribute('custom-avatar-url', finalUrl);
+                                updateBackground(finalUrl);
                             }
                         };
                         img.src = generatedImg.src;
                     } else {
-                        avatar.setAttribute('custom-avatar-url', generatedImg.src);
-                        updateBackground(generatedImg.src);
+                        // Save and update
+                        customAvatars[name] = finalUrl;
+                        updateDropdown(name);
+                        avatar.setAttribute('custom-avatar-url', finalUrl);
+                        updateBackground(finalUrl);
                     }
                 } else if (part.text) {
                     console.log('Generated Content Text:', part.text);
@@ -598,6 +637,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 generateImageBtn.textContent = 'Generate';
             }
         };
+    }
+
+    function updateDropdown(name: string) {
+        let optionExists = false;
+        for (let i = 0; i < avatarNameSelect.options.length; i++) {
+            if (avatarNameSelect.options[i].value === name) {
+                optionExists = true;
+                break;
+            }
+        }
+        
+        if (!optionExists) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            avatarNameSelect.appendChild(option);
+        }
+        
+        avatarNameSelect.value = name;
     }
 
     // Custom Avatar Buttons (Camera & Upload)
@@ -632,6 +690,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (captureBtn) {
         captureBtn.onclick = async () => {
+            const name = customAvatarName.value.trim();
+            if (!name) {
+                alert('Please enter a name for the custom avatar.');
+                return;
+            }
+
             if (cameraVideo) {
                 const canvas = document.createElement('canvas');
                 canvas.width = cameraVideo.videoWidth;
@@ -654,8 +718,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Show preview
                     generatedImg.src = dataUrl;
                     generatedImageContainer.style.display = 'block';
-                    avatar.setAttribute('custom-avatar-url', dataUrl);
-                    updateBackground(dataUrl);
                     
                     // Auto-improvement flow!
                     try {
@@ -681,9 +743,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         if (part.inlineData && part.inlineData.data) {
                             const base64 = part.inlineData.data;
-                            generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
-                            avatar.setAttribute('custom-avatar-url', generatedImg.src);
-                            updateBackground(generatedImg.src);
+                            const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                            generatedImg.src = improvedUrl;
+                            
+                            // Save and update
+                            customAvatars[name] = improvedUrl;
+                            updateDropdown(name);
+                            avatar.setAttribute('custom-avatar-url', improvedUrl);
+                            updateBackground(improvedUrl);
                         } else {
                             alert('Model did not return an image. See console.');
                         }
@@ -701,6 +768,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (uploadBtn) {
         uploadBtn.onclick = () => {
+            const name = customAvatarName.value.trim();
+            if (!name) {
+                alert('Please enter a name for the custom avatar.');
+                return;
+            }
+
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
@@ -712,8 +785,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const dataUrl = re.target.result;
                         generatedImg.src = dataUrl;
                         generatedImageContainer.style.display = 'block';
-                        avatar.setAttribute('custom-avatar-url', dataUrl);
-                        updateBackground(dataUrl);
                         
                         // Auto-improvement flow for upload too!
                         try {
@@ -739,9 +810,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             
                             if (part.inlineData && part.inlineData.data) {
                                 const base64 = part.inlineData.data;
-                                generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
-                                avatar.setAttribute('custom-avatar-url', generatedImg.src);
-                                updateBackground(generatedImg.src);
+                                const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                                generatedImg.src = improvedUrl;
+                                
+                                // Save and update
+                                customAvatars[name] = improvedUrl;
+                                updateDropdown(name);
+                                avatar.setAttribute('custom-avatar-url', improvedUrl);
+                                updateBackground(improvedUrl);
                             } else {
                                 alert('Model did not return an image. See console.');
                             }
