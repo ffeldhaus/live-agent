@@ -600,22 +600,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Auto-improvement flow!
                     try {
                         generateImageBtn.disabled = true;
-                        generateImageBtn.textContent = 'Analyzing...';
+                        generateImageBtn.textContent = 'Improving...';
                         
                         const base64Data = dataUrl.split(',')[1];
-                        const prompt = "Analyze this photo. Describe the person in detail (hair, eyes, clothing, expression) and generate a prompt for an image generation model to create a professional avatar profile picture of this person. Follow best practices for image generation prompts. Return ONLY the generated prompt text.";
+                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style.";
                         
-                        const data = await generateContent('gemini-3.1-flash', prompt, { mimeType: 'image/png', data: base64Data });
-                        const enhancedPrompt = data.candidates[0].content.parts[0].text.trim();
-                        console.log('Enhanced Prompt from Image:', enhancedPrompt);
+                        if (enableChromaKey.checked) {
+                            const color = chromaKeyColor.value;
+                            instruction += ` Replace the background with a solid ${color} color.`;
+                        } else if (backgroundColor.value === 'white') {
+                            instruction += ` Replace the background with a solid white color.`;
+                        } else if (backgroundColor.value === 'transparent') {
+                            instruction += ` Remove the background and make it transparent.`;
+                        }
                         
-                        imagePromptInput.value = enhancedPrompt;
+                        const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: 'image/png', data: base64Data });
                         
-                        // Auto-trigger generation!
-                        generateImageBtn.click();
+                        console.log('Image Gen Response:', data);
+                        const part = data.candidates[0].content.parts[0];
+                        
+                        if (part.inlineData && part.inlineData.data) {
+                            const base64 = part.inlineData.data;
+                            generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
+                            avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                        } else {
+                            alert('Model did not return an image. See console.');
+                        }
                     } catch (e: any) {
-                        console.error('Auto-improvement error:', e);
-                        alert('Failed to auto-improve image: ' + e.message);
+                        console.error('Image improvement error:', e);
+                        alert('Failed to improve image: ' + e.message);
                     } finally {
                         generateImageBtn.disabled = false;
                         generateImageBtn.textContent = 'Generate';
@@ -643,22 +656,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Auto-improvement flow for upload too!
                         try {
                             generateImageBtn.disabled = true;
-                            generateImageBtn.textContent = 'Analyzing...';
+                            generateImageBtn.textContent = 'Improving...';
                             
                             const base64Data = dataUrl.split(',')[1];
-                            const prompt = "Analyze this photo. Describe the person in detail (hair, eyes, clothing, expression) and generate a prompt for an image generation model to create a professional avatar profile picture of this person. Follow best practices for image generation prompts. Return ONLY the generated prompt text.";
+                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style.";
                             
-                            const data = await generateContent('gemini-3.1-flash', prompt, { mimeType: file.type, data: base64Data });
-                            const enhancedPrompt = data.candidates[0].content.parts[0].text.trim();
-                            console.log('Enhanced Prompt from Upload:', enhancedPrompt);
+                            if (enableChromaKey.checked) {
+                                const color = chromaKeyColor.value;
+                                instruction += ` Replace the background with a solid ${color} color.`;
+                            } else if (backgroundColor.value === 'white') {
+                                instruction += ` Replace the background with a solid white color.`;
+                            } else if (backgroundColor.value === 'transparent') {
+                                instruction += ` Remove the background and make it transparent.`;
+                            }
                             
-                            imagePromptInput.value = enhancedPrompt;
+                            const data = await generateContent('gemini-3.1-flash-image-preview', instruction, { mimeType: file.type, data: base64Data });
                             
-                            // Auto-trigger generation!
-                            generateImageBtn.click();
+                            console.log('Image Gen Response:', data);
+                            const part = data.candidates[0].content.parts[0];
+                            
+                            if (part.inlineData && part.inlineData.data) {
+                                const base64 = part.inlineData.data;
+                                generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
+                                avatar.setAttribute('custom-avatar-url', generatedImg.src);
+                            } else {
+                                alert('Model did not return an image. See console.');
+                            }
                         } catch (e: any) {
-                            console.error('Auto-improvement error:', e);
-                            alert('Failed to auto-improve image: ' + e.message);
+                            console.error('Image improvement error:', e);
+                            alert('Failed to improve image: ' + e.message);
                         } finally {
                             generateImageBtn.disabled = false;
                             generateImageBtn.textContent = 'Generate';
