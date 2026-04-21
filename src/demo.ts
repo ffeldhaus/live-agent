@@ -265,7 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLuckyValid = project.length > 0 && loc.length > 0 && token.length > 0;
         if (luckyPersonaBtn) luckyPersonaBtn.disabled = !isLuckyValid;
         if (luckyGreetingBtn) luckyGreetingBtn.disabled = !isLuckyValid;
-        if (luckyImageBtn) luckyImageBtn.disabled = !isLuckyValid;
+        
+        // Custom Avatar validation!
+        const customName = customAvatarName ? customAvatarName.value.trim() : '';
+        const isCustomValid = customName.length > 0;
+        
+        if (cameraBtn) cameraBtn.disabled = !isCustomValid;
+        if (uploadBtn) uploadBtn.disabled = !isCustomValid;
+        if (generateImageBtn) generateImageBtn.disabled = !isCustomValid;
+        if (luckyImageBtn) luckyImageBtn.disabled = !(isLuckyValid && isCustomValid);
     }
 
     const updateVisibleControls = () => {
@@ -399,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Listeners
-    [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
+    [projectIdInput, locationInput, tokenInput, oauthClientIdInput, customAvatarName].forEach(el => {
         el?.addEventListener('input', validateForm);
     });
 
