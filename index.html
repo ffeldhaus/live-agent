@@ -13,52 +13,51 @@
 </head>
 <body>
 
-    <div class="container" style="margin-top: 40px; margin-bottom: 40px; padding: 40px;">
-        <h1>Gemini Live Avatar</h1>
-        <p class="subtitle">Configure and test the Vertex AI Live Avatar component.</p>
+    <div class="max-w-4xl w-11/12 mx-auto my-5 bg-slate-900/20 backdrop-blur-xl border border-white/10 rounded-3xl py-5 px-8 shadow-2xl">
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent text-center mb-4">Gemini Live Avatar</h1>
+        <p class="text-center text-slate-400 mb-8">Configure and test the Vertex AI Live Avatar component.</p>
         
         <!-- External Transcript Section (Hidden by default) -->
-        <div id="externalTranscriptSection" class="form" style="display: none; margin-bottom: 20px;">
-            <h2>Transcript</h2>
-            <div id="externalTranscript" style="max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column-reverse;">
+        <div id="externalTranscriptSection" class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5" style="display: none;">
+            <h2 class="text-xl font-semibold text-slate-200 mb-3">Transcript</h2>
+            <div id="externalTranscript" class="max-h-48 overflow-y-auto bg-black/20 rounded-lg p-3 flex flex-col-reverse">
                 <!-- Appended by script -->
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="externalChatInput" placeholder="Type a message..." style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                <button class="btn" id="externalSendBtn" style="margin-top: 0; padding: 0 20px;">Send</button>
+            <div class="flex gap-2 mt-3">
+                <input type="text" id="externalChatInput" placeholder="Type a message..." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button class="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-2 px-5 rounded-lg transition-all" id="externalSendBtn">Send</button>
             </div>
         </div>
 
-        <!-- Settings Section -->
-        <details open class="form" style="margin-bottom: 20px;">
-            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Settings</summary>
-            <div class="grid">
-                <div class="form-group">
-                    <label for="accessToken">Access Token</label>
-                    <input type="password" id="accessToken" placeholder="Direct access token">
+        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5">
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Settings</summary>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1">
+                    <label for="accessToken" class="text-sm font-medium text-slate-300">Access Token</label>
+                    <input type="password" id="accessToken" placeholder="Direct access token" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div class="form-group">
-                    <label for="oauthClientId">OAuth Client ID</label>
-                    <input type="text" id="oauthClientId" placeholder="For Google Sign-in">
+                <div class="flex flex-col gap-1">
+                    <label for="oauthClientId" class="text-sm font-medium text-slate-300">OAuth Client ID</label>
+                    <input type="text" id="oauthClientId" placeholder="For Google Sign-in" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div class="form-group">
-                    <label for="projectId">Project ID *</label>
-                    <input type="text" id="projectId" placeholder="your-project-id">
+                <div class="flex flex-col gap-1">
+                    <label for="projectId" class="text-sm font-medium text-slate-300">Project ID *</label>
+                    <input type="text" id="projectId" placeholder="your-project-id" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <div class="form-group">
-                    <label for="location">Location *</label>
-                    <input type="text" id="location" value="us-central1">
+                <div class="flex flex-col gap-1">
+                    <label for="location" class="text-sm font-medium text-slate-300">Location *</label>
+                    <input type="text" id="location" value="us-central1" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
             </div>
             
-            <div class="form-group full-width" style="margin-top: 10px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="saveVideoToggle" style="width: auto;">
-                    <label for="saveVideoToggle" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Save and download video session</label>
+            <div class="flex flex-col gap-2 mt-4">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="saveVideoToggle" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="saveVideoToggle" class="text-sm text-slate-300 font-normal">Save and download video session</label>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                    <input type="checkbox" id="recordUserAudio" style="width: auto;">
-                    <label for="recordUserAudio" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Include user audio in download</label>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="recordUserAudio" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="recordUserAudio" class="text-sm text-slate-300 font-normal">Include user audio in download</label>
                 </div>
             </div>
 
@@ -96,92 +95,94 @@
             </details>
         </details>
         
-        <!-- Avatar Section -->
-        <details open class="form" style="margin-bottom: 20px;">
-            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Avatar</summary>
+        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5">
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Avatar</summary>
             
             <!-- Hint always visible -->
-            <p style="font-size: 0.85rem; color: #94a3b8; margin: 5px 0 10px 0;">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
+            <p class="text-xs text-slate-400 mb-4">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
 
             <!-- Collapsible Custom Avatar Section -->
-            <details open style="margin-bottom: 15px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px;">
-                <summary style="cursor: pointer; font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Create Custom Avatar</summary>
+            <details open class="bg-slate-900/40 rounded-xl p-4 mb-4">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-300 mb-2">Create Custom Avatar</summary>
                 
-                <div style="margin-top: 10px;">
-                    <div class="form-group full-width">
-                        <label for="customAvatarName" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Avatar Name *</label>
-                        <input type="text" id="customAvatarName" placeholder="Enter unique name to create preset" style="background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;" required>
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-col gap-1">
+                        <label for="customAvatarName" class="text-sm font-medium text-slate-300">Avatar Name *</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="customAvatarName" placeholder="Enter unique name to create preset" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="newCustomAvatarBtn" style="display: none; white-space: nowrap;">New Custom Avatar</button>
+                        </div>
                     </div>
                     
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="btn" id="cameraBtn" style="margin-top: 0; flex: 1;">Camera</button>
-                        <button class="btn" id="uploadBtn" style="margin-top: 0; flex: 1;">Upload Image</button>
+                    <div class="flex gap-2">
+                        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="cameraBtn">Camera</button>
+                        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="uploadBtn">Upload Image</button>
                     </div>
                     
                     <!-- Image Prompt -->
-                    <div style="margin-top: 10px;">
-                        <label for="imagePrompt" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Image Generation Prompt</label>
-                        <div style="display: flex; gap: 10px; margin-top: 5px;">
-                            <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                            <button class="btn btn-lucky" id="luckyImageBtn" style="margin-top: 0; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
-                            <button class="btn" id="generateImageBtn" style="margin-top: 0; font-size: 0.95rem; padding: 0 10px;">Generate</button>
+                    <div class="flex flex-col gap-1">
+                        <label for="imagePrompt" class="text-sm font-medium text-slate-300">Image Generation Prompt</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
+                            <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate</button>
                         </div>
                     </div>
 
                     <!-- Chroma Keying -->
-                    <div style="margin-top: 10px;">
-                        <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Chroma Keying (Background Removal):</label>
-                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
-                            <label style="display: flex; align-items: center; gap: 4px; color: #cbd5e1; font-size: 0.95rem;"><input type="checkbox" id="enableChromaKey" style="width: auto;"> Enable</label>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm font-medium text-slate-300">Chroma Keying (Background Removal):</label>
+                        <div class="flex gap-2 items-center flex-wrap">
+                            <label class="flex items-center gap-1 text-sm text-slate-300"><input type="checkbox" id="enableChromaKey" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800"> Enable</label>
                             
-                            <select id="chromaKeyColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                            <select id="chromaKeyColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="green">Green Key</option>
                                 <option value="blue">Blue Key</option>
                             </select>
                             
-                            <select id="backgroundColor" style="font-size: 0.95rem; padding: 4px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 4px;">
+                            <select id="backgroundColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 <option value="transparent" selected>Make Transparent</option>
                                 <option value="white">Replace with White</option>
                             </select>
                         </div>
                     </div>
 
-                    <div id="generatedImageContainer" style="margin-top: 10px; display: none; text-align: center;">
-                        <img id="generatedImg" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #334155;">
+                    <div id="generatedImageContainer" class="mt-2 hidden text-center">
+                        <img id="generatedImg" class="max-w-full max-h-48 rounded-lg border border-slate-700 mx-auto">
                     </div>
                 </div>
             </details>
 
-            <div class="grid">
-                <div class="form-group">
-                    <label for="avatarName">Avatar Preset</label>
-                    <select id="avatarName"></select>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1">
+                    <label for="avatarName" class="text-sm font-medium text-slate-300">Avatar Preset</label>
+                    <select id="avatarName" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
                 </div>
-                <div class="form-group">
-                    <label for="voiceSelect">Voice</label>
-                    <select id="voiceSelect"></select>
+                <div class="flex flex-col gap-1">
+                    <label for="voiceSelect" class="text-sm font-medium text-slate-300">Voice</label>
+                    <select id="voiceSelect" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
                 </div>
-                <div class="form-group">
-                    <label for="size">Size</label>
-                    <select id="size">
+                <div class="flex flex-col gap-1">
+                    <label for="size" class="text-sm font-medium text-slate-300">Size</label>
+                    <select id="size" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="300px">Standard (300px)</option>
                         <option value="200px">Small (200px)</option>
                         <option value="400px">Large (400px)</option>
                         <option value="704px">Full Size (704x1280)</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="position">Position</label>
-                    <select id="position">
+                <div class="flex flex-col gap-1">
+                    <label for="position" class="text-sm font-medium text-slate-300">Position</label>
+                    <select id="position" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="bottom-right">Bottom Right</option>
                         <option value="bottom-left">Bottom Left</option>
                         <option value="top-right" selected>Top Right</option>
                         <option value="top-left">Top Left</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="languageSelect">Language</label>
-                    <select id="languageSelect">
+                <div class="flex flex-col gap-1">
+                    <label for="languageSelect" class="text-sm font-medium text-slate-300">Language</label>
+                    <select id="languageSelect" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="en-US" selected>English (US)</option>
                         <option value="en-GB">English (UK)</option>
                         <option value="de-DE">German (Germany)</option>
@@ -204,38 +205,38 @@
                 </div>
             </div>
             
-            <div class="form-group full-width" style="margin-top: 10px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="enableTranscript" style="width: auto;">
-                    <label for="enableTranscript" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Transcript</label>
+            <div class="flex flex-col gap-2 mt-4">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableTranscript" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableTranscript" class="text-sm text-slate-300 font-normal">Enable Transcript</label>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                    <input type="checkbox" id="enableChatInput" style="width: auto;">
-                    <label for="enableChatInput" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Chat Input</label>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableChatInput" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableChatInput" class="text-sm text-slate-300 font-normal">Enable Chat Input</label>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                    <input type="checkbox" id="renderOutsideToggle" style="width: auto;">
-                    <label for="renderOutsideToggle" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Render Transcript Outside Component</label>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="renderOutsideToggle" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="renderOutsideToggle" class="text-sm text-slate-300 font-normal">Render Transcript Outside Component</label>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px;">
-                    <input type="checkbox" id="enableGrounding" style="width: auto;">
-                    <label for="enableGrounding" style="font-size: 0.95rem; font-weight: normal; color: #cbd5e1;">Enable Google Search Grounding</label>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableGrounding" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableGrounding" class="text-sm text-slate-300 font-normal">Enable Google Search Grounding</label>
                 </div>
             </div>
 
-            <div class="form-group full-width" style="margin-top: 20px;">
-                <label for="systemInstruction" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">System Instructions / Persona</label>
-                <div style="display: flex; gap: 10px;">
-                    <textarea id="systemInstruction" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." style="flex: 1; min-height: 60px; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;"></textarea>
-                    <button class="btn btn-lucky" id="luckyPersonaBtn" style="margin-top: 0; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
+            <div class="flex flex-col gap-1 mt-4">
+                <label for="systemInstruction" class="text-sm font-medium text-slate-300">System Instructions / Persona</label>
+                <div class="flex gap-2">
+                    <textarea id="systemInstruction" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px]"></textarea>
+                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn">I'm feeling lucky</button>
                 </div>
             </div>
             
-            <div class="form-group full-width" style="margin-top: 20px;">
-                <label for="defaultGreeting" style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Default Greeting</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="defaultGreeting" placeholder="E.g., Hello! How can I help you today?" style="flex: 1; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;">
-                    <button class="btn btn-lucky" id="luckyGreetingBtn" style="margin-top: 0; font-size: 0.95rem; padding: 0 15px; width: 150px;">I'm feeling lucky</button>
+            <div class="flex flex-col gap-1 mt-4">
+                <label for="defaultGreeting" class="text-sm font-medium text-slate-300">Default Greeting</label>
+                <div class="flex gap-2">
+                    <input type="text" id="defaultGreeting" placeholder="E.g., Hello! How can I help you today?" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn">I'm feeling lucky</button>
                 </div>
             </div>
 
@@ -243,68 +244,66 @@
         </details>
         
         <!-- Actions -->
-        <div style="display: flex; gap: 10px; margin-top: 20px;" class="full-width">
-            <button class="btn" id="saveBtn" style="flex: 1; margin-top: 0;" disabled>Save Configuration</button>
-            <button class="btn" id="streamBtn" style="flex: 1; margin-top: 0; background: linear-gradient(135deg, #10b981 0%, #059669 100%);" disabled>Start</button>
+        <div class="flex gap-2 mt-5">
+            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="saveBtn">Save Configuration</button>
+            <button class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="streamBtn" disabled>Start</button>
         </div>
         
-        <div style="display: flex; gap: 10px; margin-top: 10px;" class="full-width">
-            <button class="btn" id="copyHtmlBtn" style="flex: 1; margin-top: 0; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">Copy Embed Code</button>
-            <button class="btn" id="toggleQaBtn" style="flex: 1; margin-top: 0;">Open Feature Walkthrough</button>
+        <div class="flex gap-2 mt-2">
+            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="copyHtmlBtn">Copy Embed Code</button>
+            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="toggleQaBtn">Open Feature Walkthrough</button>
         </div>
 
         <!-- Session Statistics -->
-        <details open class="form" style="margin-top: 20px;">
-            <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Session Statistics</summary>
-            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95rem; color: #cbd5e1;">
+        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mt-5">
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Session Statistics</summary>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
                 <!-- Latency Visualizer -->
-                <div class="form-group full-width" style="margin-top: 10px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1; white-space: nowrap;">Initialization:</div>
-                        <div id="latencyBar" style="flex: 1; display: flex; height: 20px; background: #334155; border-radius: 10px; overflow: hidden;">
-                            <div id="barSetup" style="background: #3b82f6; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
-                            <div id="barLatency" style="background: #10b981; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
-                        </div>
-                        <div style="font-size: 0.8rem; color: #cbd5e1; white-space: nowrap;">Total: <span id="statTotalLatency">-</span> ms</div>
+                <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+                    <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
+                    <div id="latencyBar" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
+                        <div id="barSetup" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
+                        <div id="barLatency" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
                     </div>
+                    <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
                 </div>
-                <div>Total Packets Received: <span id="statPacketsReceived">0</span></div>
-                <div>Audio Chunks Sent: <span id="statAudioSent">0</span></div>
-                <div>Video Frames Sent: <span id="statVideoSent">0</span></div>
-                <div>Video Packets Received: <span id="statVideoPackets">0</span></div>
-                <div>Total Video Frames: <span id="statTotalFrames">0</span></div>
-                <div>Session Duration: <span id="statSessionDuration">-</span> s</div>
-                <div>Average FPS: <span id="statFps">-</span></div>
-                <div>Downlink: <span id="statDownlink">-</span> Mbps</div>
-                <div>RTT: <span id="statRtt">-</span> ms</div>
-                <div>Connection Type: <span id="statConnType">-</span></div>
+                <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span></div>
+                <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span></div>
+                <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span></div>
+                <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span></div>
+                <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span></div>
+                <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
+                <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span></div>
+                <div>Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
+                <div>RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
+                <div>Connection Type: <span id="statConnType" class="font-medium text-slate-200">-</span></div>
             </div>
         </details>
 
     </div>
 
     <!-- Floating QA Panel -->
-    <div id="qaContainer" style="display: none; position: fixed; width: min(570px, 40vw); height: 100vh; top: 0; bottom: 0; overflow-y: auto; background: rgba(15, 23, 42, 0.2); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; z-index: 1000; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-        <h2 style="font-size: 1.2rem; margin-top: 0; color: #f8fafc;">Feature Walkthrough</h2>
+    <div id="qaContainer" class="hidden fixed w-[min(570px,40vw)] h-screen top-0 bottom-0 overflow-y-auto bg-slate-900/20 backdrop-blur-xl p-5 z-50 shadow-2xl border-r border-white/5">
+        <h2 class="text-xl font-semibold text-slate-100 mb-3">Feature Walkthrough</h2>
         <div id="qaList"></div>
     </div>
 
     <!-- Camera Modal -->
     <div class="modal-overlay" id="cameraModal">
-        <div class="modal-content" style="max-width: 400px;">
-            <h2 class="modal-title" style="background: linear-gradient(to right, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Take Photo</h2>
-            <div style="position: relative; width: 100%; padding-top: 177.77%; /* 9:16 Aspect Ratio */ background: #000; border-radius: 12px; overflow: hidden;">
-                <video id="cameraVideo" autoplay playsinline style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);"></video>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 2px dashed #38bdf8; width: 60%; height: 60%; border-radius: 50%; pointer-events: none;"></div>
-                <p style="position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 0.8rem; color: #38bdf8; margin: 0;">Align mouth to center circle</p>
+        <div class="bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-2xl p-6 max-w-[400px] w-11/12 text-center shadow-2xl transform scale-95 transition-all active:scale-100 mx-auto mt-20">
+            <h2 class="text-xl font-semibold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">Take Photo</h2>
+            <div class="relative w-full pt-[177.77%] bg-black rounded-xl overflow-hidden">
+                <video id="cameraVideo" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-cover scale-x-[-1]"></video>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-sky-400 w-[60%] h-[60%] rounded-full pointer-events-none"></div>
+                <p class="absolute bottom-3 left-0 right-0 text-center text-xs text-sky-400 m-0">Align mouth to center circle</p>
             </div>
-            <div style="margin-top: 15px;">
-                <label for="cameraSelect" style="font-size: 0.9rem; font-weight: bold; color: #cbd5e1; display: block; margin-bottom: 5px;">Switch Camera</label>
-                <select id="cameraSelect" style="width: 100%; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; padding: 8px; font-size: 0.95rem;"></select>
+            <div class="mt-4 text-left">
+                <label for="cameraSelect" class="text-sm font-medium text-slate-300 block mb-1">Switch Camera</label>
+                <select id="cameraSelect" class="w-full bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="modal-btn" id="captureBtn" style="flex: 1;">Capture</button>
-                <button class="modal-btn" id="closeCameraBtn" style="flex: 1; background: #475569;">Cancel</button>
+            <div class="flex gap-2 mt-5">
+                <button class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="captureBtn">Capture</button>
+                <button class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="closeCameraBtn">Cancel</button>
             </div>
         </div>
     </div>
