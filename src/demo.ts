@@ -446,6 +446,9 @@ document.addEventListener('DOMContentLoaded', () => {
             applyTheme(preset.palette, speed);
             avatar.setPreview(avatarName);
         } else if (customAvatars[avatarName]) {
+            if (customAvatarName) customAvatarName.value = avatarName;
+            if (generatedImg) generatedImg.src = customAvatars[avatarName];
+            if (generatedImageContainer) generatedImageContainer.style.display = 'block';
             avatar.setAttribute('custom-avatar-url', customAvatars[avatarName]);
             updateBackground(customAvatars[avatarName]);
         } else {
