@@ -237,6 +237,16 @@
         <details open class="form" style="margin-top: 20px;">
             <summary style="cursor: pointer; font-size: 1.2rem; font-weight: bold; color: #f8fafc; margin-bottom: 10px;">Session Statistics</summary>
             <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.95rem; color: #cbd5e1;">
+                <!-- Latency Visualizer -->
+                <div class="form-group full-width" style="margin-top: 10px;">
+                    <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Latency Visualizer:</label>
+                    <div id="latencyBar" style="display: flex; height: 20px; background: #334155; border-radius: 10px; overflow: hidden; margin-top: 5px;">
+                        <div id="barSetup" style="background: #3b82f6; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
+                        <div id="barLatency" style="background: #10b981; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 5px;">Total Latency: <span id="statTotalLatency">-</span> ms</div>
+                </div>
+
                 <div>Setup Duration: <span id="statSetupDuration">-</span> ms</div>
                 <div>Setup Complete to First Frame Duration: <span id="statLatency">-</span> ms</div>
                 <div>Total Packets Received: <span id="statPacketsReceived">0</span></div>
@@ -249,16 +259,6 @@
                 <div>Downlink: <span id="statDownlink">-</span> Mbps</div>
                 <div>RTT: <span id="statRtt">-</span> ms</div>
                 <div>Connection Type: <span id="statConnType">-</span></div>
-                
-                <!-- Latency Visualizer -->
-                <div class="form-group full-width" style="margin-top: 10px;">
-                    <label style="font-size: 0.95rem; font-weight: bold; color: #cbd5e1;">Latency Visualizer:</label>
-                    <div id="latencyBar" style="display: flex; height: 20px; background: #334155; border-radius: 10px; overflow: hidden; margin-top: 5px;">
-                        <div id="barSetup" style="background: #3b82f6; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
-                        <div id="barLatency" style="background: #10b981; width: 0%; text-align: center; color: white; font-size: 0.8rem; line-height: 20px;"></div>
-                    </div>
-                    <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 5px;">Total Latency: <span id="statTotalLatency">-</span> ms</div>
-                </div>
             </div>
         </details>
 
