@@ -313,7 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // REST API Helper
     async function generateContent(model: string, prompt: string, inlineData?: { mimeType: string, data: string }) {
         const project = projectIdInput.value;
-        const location = locationInput.value || 'us-central1';
+        let location = locationInput.value || 'us-central1';
+        // Force global for specific models!
+        if (model === 'gemini-3-flash-preview' || model === 'gemini-3.1-flash-image-preview') {
+            location = 'global';
+        }
         const token = tokenInput.value;
         
         if (!project || !token) {
@@ -568,9 +572,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 generateImageBtn.disabled = true;
                 generateImageBtn.textContent = 'Enhancing...';
                 
-                // 1. Enhance prompt with gemini-3-flash
+                // 1. Enhance prompt with gemini-3-flash-preview
                 const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
-                const enhanceData = await generateContent('gemini-3-flash', enhancePrompt);
+                const enhanceData = await generateContent('gemini-3-flash-preview', enhancePrompt);
                 const enhancedPrompt = enhanceData.candidates[0].content.parts[0].text.trim();
                 console.log('Enhanced Prompt:', enhancedPrompt);
                 
