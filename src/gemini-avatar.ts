@@ -76,6 +76,9 @@ export class GeminiAvatar extends HTMLElement {
   private silenceInterval: any = null;
   private displayCanvas: HTMLCanvasElement | null = null;
   private chromaKeyLoopId: number | null = null;
+  private transcriptArea: HTMLDivElement | null = null;
+  private chatContainer: HTMLDivElement | null = null;
+  private chatInput: HTMLInputElement | null = null;
   
   // Statistics
   private startTime: number | null = null;
@@ -146,6 +149,32 @@ export class GeminiAvatar extends HTMLElement {
     this.displayCanvas.style.display = "none"; // Hidden by default
     this.container.appendChild(this.displayCanvas);
     this.container.appendChild(this.videoEl);
+
+    this.transcriptArea = document.createElement("div");
+    this.transcriptArea.id = "transcript-area";
+    this.transcriptArea.style.display = "none"; // Hidden by default
+    this.container.appendChild(this.transcriptArea);
+
+    this.chatContainer = document.createElement("div");
+    this.chatContainer.id = "chat-container";
+    this.chatContainer.style.display = "none"; // Hidden by default
+    
+    this.chatInput = document.createElement("input");
+    this.chatInput.id = "chat-input";
+    this.chatInput.placeholder = "Type a message...";
+    this.chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const text = this.chatInput!.value;
+        if (text) {
+          this.sendMessage(text);
+          this.appendTranscript('User', text);
+          this.chatInput!.value = '';
+        }
+      }
+    });
+    
+    this.chatContainer.appendChild(this.chatInput);
+    this.container.appendChild(this.chatContainer);
 
     this.previewImg = document.createElement("img");
     this.previewImg.id = "preview-image";
@@ -293,6 +322,8 @@ export class GeminiAvatar extends HTMLElement {
       "chroma-key-color",
       "enable-chroma-key",
       "background-color",
+      "enable-transcript",
+      "enable-chat-input",
     ];
   }
 
@@ -329,6 +360,14 @@ export class GeminiAvatar extends HTMLElement {
         if (newValue === "true" && !this.isRecording) {
           this.startMic();
         }
+        break;
+      case "enable-transcript":
+        const showTranscript = newValue === "true";
+        if (this.transcriptArea) this.transcriptArea.style.display = showTranscript ? 'block' : 'none';
+        break;
+      case "enable-chat-input":
+        const showChat = newValue === "true";
+        if (this.chatContainer) this.chatContainer.style.display = showChat ? 'flex' : 'none';
         break;
       case "enable-chroma-key":
         const enabled = newValue === "true";
@@ -1031,6 +1070,10 @@ export class GeminiAvatar extends HTMLElement {
     if (response.serverContent && response.serverContent.modelTurn) {
       const parts = response.serverContent.modelTurn.parts;
       for (const part of parts) {
+        if (part.text) {
+          this._log("Received text data in JSON", part.text);
+          this.appendTranscript('Agent', part.text);
+        }
         if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
           this._log("Received audio data in JSON", {
             size: part.inlineData.data.length,
@@ -1250,6 +1293,16 @@ export class GeminiAvatar extends HTMLElement {
       }
     }
     ctx.putImageData(frame, 0, 0);
+  }
+
+  private appendTranscript(sender: string, text: string) {
+    if (!this.transcriptArea) return;
+    const p = document.createElement('p');
+    p.style.margin = '5px 0';
+    p.style.fontSize = '0.95rem';
+    p.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    this.transcriptArea.appendChild(p);
+    this.transcriptArea.scrollTop = this.transcriptArea.scrollHeight;
   }
 
   private processVideoQueue() {
