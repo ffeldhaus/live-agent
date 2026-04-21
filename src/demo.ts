@@ -267,7 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
         if (uploadBtn) uploadBtn.disabled = !isValidForCustom;
         if (generateImageBtn) generateImageBtn.disabled = !isValidForCustom;
-        if (luckyImageBtn) luckyImageBtn.disabled = !isValidForCustom;
+        
+        // Lucky image button only requires project, location, and token!
+        if (luckyImageBtn) luckyImageBtn.disabled = !isLuckyValid;
         
         // Update tooltips
         const missingLucky = [];
@@ -286,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (cameraBtn) cameraBtn.title = "Take a photo with your camera to create a custom avatar." + customMissingStr;
         if (uploadBtn) uploadBtn.title = "Upload an image to create a custom avatar." + customMissingStr;
-        if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + customMissingStr;
+        if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + luckyMissingStr;
         if (generateImageBtn) generateImageBtn.title = "Generate an avatar image from prompt." + customMissingStr;
     }
 
