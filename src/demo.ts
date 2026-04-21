@@ -260,6 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const customName = customAvatarName ? customAvatarName.value.trim() : '';
         const isCustomValid = customName.length > 0;
         
+        console.log('validateForm:', { project, loc, token: token ? '***' : '', customName, isLuckyValid, isCustomValid });
+        
         const isValidForCustom = isLuckyValid && isCustomValid;
         
         if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
