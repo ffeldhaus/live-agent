@@ -46,7 +46,7 @@ export const VOICE_PRESETS: Record<string, { id: string, displayName: string, de
   alnilam: { id: 'alnilam', displayName: 'Alnilam', description: 'Firm' },
   pulcherrima: { id: 'pulcherrima', displayName: 'Pulcherrima', description: 'Forward' },
   vindemiatrix: { id: 'vindemiatrix', displayName: 'Vindemiatrix', description: 'Gentle' },
-  sulafat: { id: 'sulafat', displayName: 'Warm' },
+  sulafat: { id: 'sulafat', displayName: 'Sulafat', description: 'Warm' },
   puck: { id: 'puck', displayName: 'Puck', description: 'Upbeat' },
   zephyr: { id: 'zephyr', displayName: 'Zephyr', description: 'Bright' },
 };
