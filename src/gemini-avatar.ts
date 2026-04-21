@@ -890,7 +890,12 @@ export class GeminiAvatar extends HTMLElement {
     }
 
     if (this.micStream) {
-      this.micStream.getTracks().forEach(track => track.stop());
+      if (typeof this.micStream.getTracks === 'function') {
+        const tracks = this.micStream.getTracks();
+        if (Array.isArray(tracks)) {
+          tracks.forEach(track => track.stop());
+        }
+      }
       this.micStream = null;
     }
     this.isRecording = false;

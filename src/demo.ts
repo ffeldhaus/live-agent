@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioOnlyOption = document.createElement('option');
     audioOnlyOption.value = 'AudioOnly';
     audioOnlyOption.textContent = 'Audio Only';
-    avatarNameSelect.appendChild(option);
+    avatarNameSelect.appendChild(audioOnlyOption);
 
     // Populate Voice Select
     voiceSelect.innerHTML = '';
