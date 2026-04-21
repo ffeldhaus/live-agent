@@ -288,9 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (uploadBtn) uploadBtn.title = "Upload an image to create a custom avatar." + customMissingStr;
         if (luckyImageBtn) luckyImageBtn.title = "Generate a prompt for the avatar image." + luckyMissingStr;
         if (generateImageBtn) generateImageBtn.title = "Generate an avatar image from prompt." + customMissingStr;
-        
-        // Custom validation check for buttons staying disabled
-        console.log('validateForm:', { project, loc, token: token ? '***' : '', customName, isLuckyValid, isCustomValid, isValidForCustom });
     }
 
     const updateVisibleControls = () => {
@@ -468,7 +465,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (customAvatarName) {
         customAvatarName.addEventListener('input', () => {
-            console.log('customAvatarName input:', customAvatarName.value);
             validateForm();
         });
     }
@@ -907,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Failed to improve image: ' + e.message);
                     } finally {
                         captureBtn.disabled = false;
-                        captureBtn.textContent = "Capture";
+                        captureBtn.textContent = originalText;
                     }
                 }
             }
@@ -975,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             alert('Failed to improve image: ' + e.message);
                         } finally {
                             uploadBtn.disabled = false;
-                            uploadBtn.textContent = "Upload Image";
+                            uploadBtn.textContent = originalText;
                         }
                     };
                     reader.readAsDataURL(file);
@@ -1369,6 +1365,60 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial apply
     updateVisibleControls();
     validateForm();
+    
+    // Restore Start button listener!
+    if (streamBtn) {
+        streamBtn.onclick = async () => {
+            if (avatar.isConnected) {
+                const savingVideo = saveVideoToggle.checked;
+                if (savingVideo) {
+                    streamBtn.textContent = 'Processing video...';
+                    streamBtn.disabled = true;
+                }
+                await avatar.stop();
+                streamBtn.textContent = 'Start';
+                streamBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'; // Green!
+                streamBtn.disabled = false;
+                if (statsInterval) {
+                    clearInterval(statsInterval);
+                    statsInterval = null;
+                }
+            } else {
+                // Update attributes!
+                avatar.setAttribute('access-token', tokenInput.value);
+                avatar.setAttribute('project-id', projectIdInput.value);
+                avatar.setAttribute('location', locationInput.value || 'us-central1');
+                avatar.setAttribute('voice', voiceSelect.value);
+                avatar.setAttribute('language', languageSelect.value);
+                avatar.setAttribute('system-instruction', systemInstructionInput.value);
+                avatar.setAttribute('default-greeting', defaultGreetingInput.value);
+                avatar.setAttribute('save-video', saveVideoToggle.checked.toString());
+                avatar.setAttribute('debug', debugToggle.checked.toString());
+                if (recordUserAudioCheckbox) {
+                    avatar.setAttribute('record-user-audio', recordUserAudioCheckbox.checked.toString());
+                }
+                
+                try {
+                    streamBtn.disabled = true;
+                    streamBtn.textContent = 'Connecting...';
+                    
+                    await avatar.start();
+                    
+                    streamBtn.textContent = 'Stop';
+                    streamBtn.style.background = '#ea4335'; // Red!
+                    streamBtn.disabled = false;
+                    
+                    // Start stats interval
+                    statsInterval = setInterval(updateStats, 1000);
+                } catch (e: any) {
+                    alert('Failed to start session: ' + e.message);
+                    streamBtn.textContent = 'Start';
+                    streamBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                    streamBtn.disabled = false;
+                }
+            }
+        };
+    }
 });
 
 function downloadBlob(blob: Blob, filename: string) {
