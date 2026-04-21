@@ -20,6 +20,8 @@ export class GeminiLiveClient {
     private processingQueue = false;
     private isSetupComplete = false;
     private options: GeminiLiveClientOptions;
+    private sessionHandle: string | null = null;
+    private receivedFirstResponse = false;
 
     // Callbacks
     onConnected?: () => void;
@@ -81,7 +83,11 @@ export class GeminiLiveClient {
             this.ws.onclose = () => {
                 this._log("WebSocket Closed", null, true);
                 this.ws = null;
-                if (this.onDisconnected) this.onDisconnected();
+                if (this.shouldResume()) {
+                    this.reconnect();
+                } else {
+                    if (this.onDisconnected) this.onDisconnected();
+                }
             };
         } catch (e) {
             console.error("Failed to create WebSocket:", e);
@@ -123,6 +129,10 @@ export class GeminiLiveClient {
                         },
                         language_code: language,
                     },
+                },
+                sessionResumption: {
+                    handle: this.sessionHandle,
+                    transparent: true
                 },
                 ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
                 ...(enableGrounding ? { tools: [{ google_search: {} }] } : {}),
@@ -195,6 +205,27 @@ export class GeminiLiveClient {
     }
 
     private handleJsonResponse(response: any) {
+        if (response.sessionResumptionUpdate) {
+            const update = response.sessionResumptionUpdate;
+            if (update.resumable && update.newHandle) {
+                this.sessionHandle = update.newHandle;
+                this._log("Received session handle", this.sessionHandle, true);
+            }
+        }
+
+        if (response.goAway) {
+            this._log("Received goAway", response.goAway, true);
+            if (this.shouldResume()) {
+                this._log("Closing connection to trigger resumption", null, true);
+                this.ws?.close();
+            }
+        }
+
+        if (response.serverContent && !this.receivedFirstResponse) {
+            this.receivedFirstResponse = true;
+            this._log("Received first response, session eligible for resumption", null, true);
+        }
+
         if (response.setupComplete) {
             this._log("Setup complete received", response.setupComplete, true);
             this.isSetupComplete = true;
@@ -242,5 +273,15 @@ export class GeminiLiveClient {
 
     public get isConnected(): boolean {
         return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+    }
+
+    private shouldResume(): boolean {
+        return this.isSetupComplete && this.receivedFirstResponse && this.sessionHandle !== null;
+    }
+
+    private reconnect() {
+        this._log("Attempting to reconnect for session resumption...", null, true);
+        this.isSetupComplete = false;
+        this.connect();
     }
 }

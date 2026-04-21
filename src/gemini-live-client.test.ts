@@ -148,4 +148,65 @@ describe('GeminiLiveClient', () => {
         expect(mockWs.close).toHaveBeenCalled();
         expect(client.isConnected).toBe(false);
     });
+
+    it('should store session handle from sessionResumptionUpdate', async () => {
+        client.connect();
+        mockWs.onopen();
+        
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'new-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).sessionHandle).toBe('new-handle');
+        });
+    });
+
+    it('should trigger reconnection on goAway if eligible', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).receivedFirstResponse).toBe(true);
+        });
+
+        mockWs.onmessage({ data: JSON.stringify({ goAway: {} }) });
+        
+        expect(mockWs.close).toHaveBeenCalled();
+    });
+
+    it('should trigger reconnection on close if eligible', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).receivedFirstResponse).toBe(true);
+        });
+
+        mockWs.onclose();
+        
+        expect(global.WebSocket).toHaveBeenCalledTimes(2);
+    });
+
+    it('should send setup with session handle on reconnection', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+             expect((client as any).sessionHandle).toBe('test-handle');
+        });
+
+        mockWs.onclose();
+        
+        mockWs.onopen();
+        
+        expect(mockWs.send).toHaveBeenCalledWith(expect.stringContaining('"handle":"test-handle"'));
+    });
 });
