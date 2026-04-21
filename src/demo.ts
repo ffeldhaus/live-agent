@@ -722,26 +722,66 @@ document.addEventListener('DOMContentLoaded', () => {
         cameraBtn.onclick = async () => {
             if (cameraModal && cameraVideo) {
                 cameraModal.classList.add('active');
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: 'user',
-                            width: { ideal: 1080 },
-                            height: { ideal: 1920 },
-                            aspectRatio: 9/16
-                        } 
-                    });
-                    cameraVideo.srcObject = stream;
-                } catch (e) {
-                    console.error('Camera access error (high res failed, falling back):', e);
-                    try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                        cameraVideo.srcObject = stream;
-                    } catch (e2) {
-                        alert('Failed to access camera: ' + e2);
-                        cameraModal.classList.remove('active');
+                
+                const cameraSelect = document.getElementById('cameraSelect') as HTMLSelectElement;
+                
+                const populateCameras = async () => {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    
+                    if (cameraSelect) {
+                        cameraSelect.innerHTML = '';
+                        videoDevices.forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d.deviceId;
+                            opt.textContent = d.label || `Camera ${cameraSelect.options.length + 1}`;
+                            cameraSelect.appendChild(opt);
+                        });
+                        
+                        cameraSelect.onchange = async () => {
+                            const stream = cameraVideo.srcObject as MediaStream;
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                            await startStream(cameraSelect.value);
+                        };
                     }
-                }
+                };
+
+                const startStream = async (deviceId?: string) => {
+                    try {
+                        const constraints: MediaStreamConstraints = {
+                            video: {
+                                width: { ideal: 1080 },
+                                height: { ideal: 1920 },
+                                aspectRatio: 9/16
+                            }
+                        };
+                        if (deviceId) {
+                            (constraints.video as any).deviceId = { exact: deviceId };
+                        } else {
+                            (constraints.video as any).facingMode = 'user';
+                        }
+                        
+                        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        cameraVideo.srcObject = stream;
+                        
+                        // Labels might only be available AFTER getUserMedia!
+                        await populateCameras();
+                    } catch (e) {
+                        console.error('Camera access error:', e);
+                        // Fallback
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                            cameraVideo.srcObject = stream;
+                        } catch (e2) {
+                            alert('Failed to access camera: ' + e2);
+                            cameraModal.classList.remove('active');
+                        }
+                    }
+                };
+
+                await startStream();
             }
         };
     }
