@@ -1,3 +1,11 @@
+@import "tailwindcss";
+
+@layer base {
+  input[type="checkbox"] {
+    @apply w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800 cursor-pointer;
+  }
+}
+
 :root {
     --bg-color: #0f172a;
     --glass-bg: rgba(255, 255, 255, 0.05);
@@ -121,7 +129,9 @@ button.btn:hover {
 button.btn:disabled {
     opacity: 0.5 !important;
     cursor: not-allowed !important;
-    background: #475569 !important;
+    background: #334155 !important;
+    color: #64748b !important;
+    border: 1px solid #475569 !important;
     background-image: none !important;
 }
 button.btn-lucky {
@@ -239,34 +249,7 @@ select {
     padding-right: 40px;
 }
 
-/* Custom Checkboxes */
-input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s ease;
-}
 
-input[type="checkbox"]:checked {
-    background: #6366f1;
-    border-color: #6366f1;
-}
-
-input[type="checkbox"]:checked::after {
-    content: '\2713';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 12px;
-}
 
 /* Collapsible Details */
 details summary {
@@ -274,4 +257,29 @@ details summary {
 }
 details[open] summary {
     margin-bottom: 10px;
+}
+
+/* Custom Tooltips */
+[data-tooltip] {
+    position: relative;
+}
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000000;
+    color: #f8fafc;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    visibility: hidden;
+    z-index: 50;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+[data-tooltip]:hover::before {
+    visibility: visible;
 }

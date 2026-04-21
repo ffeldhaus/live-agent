@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [basicSsl()],
+  plugins: [tailwindcss(), basicSsl()],
   server: {
     port: 3000,
     https: true,
