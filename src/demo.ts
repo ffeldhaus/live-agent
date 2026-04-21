@@ -461,6 +461,13 @@ document.addEventListener('DOMContentLoaded', () => {
     [projectIdInput, locationInput, tokenInput, oauthClientIdInput].forEach(el => {
         el?.addEventListener('input', validateForm);
     });
+    
+    if (customAvatarName) {
+        customAvatarName.addEventListener('input', () => {
+            console.log('customAvatarName input:', customAvatarName.value);
+            validateForm();
+        });
+    }
 
     if (sizeSelect) sizeSelect.onchange = () => avatar.setAttribute('size', sizeSelect.value);
     if (positionSelect) positionSelect.onchange = () => avatar.setAttribute('position', positionSelect.value);
