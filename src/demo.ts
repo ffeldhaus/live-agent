@@ -557,8 +557,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 generateImageBtn.textContent = 'Generating...';
                 
-                // Add background settings to prompt!
-                let finalPrompt = enhancedPrompt;
+                // Add background settings and resolution to prompt!
+                let finalPrompt = enhancedPrompt + ", resolution 720x1280, aspect ratio 9:16";
                 if (enableChromaKey.checked) {
                     const color = chromaKeyColor.value;
                     finalPrompt += ` with a solid ${color} background.`;
@@ -664,12 +664,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cameraModal && cameraVideo) {
                 cameraModal.classList.add('active');
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 1080 },
+                            height: { ideal: 1920 },
+                            aspectRatio: 9/16
+                        } 
+                    });
                     cameraVideo.srcObject = stream;
                 } catch (e) {
-                    console.error('Camera access error:', e);
-                    alert('Failed to access camera: ' + e);
-                    cameraModal.classList.remove('active');
+                    console.error('Camera access error (high res failed, falling back):', e);
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        cameraVideo.srcObject = stream;
+                    } catch (e2) {
+                        alert('Failed to access camera: ' + e2);
+                        cameraModal.classList.remove('active');
+                    }
                 }
             }
         };
@@ -697,16 +709,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (cameraVideo) {
+                const videoWidth = cameraVideo.videoWidth;
+                const videoHeight = cameraVideo.videoHeight;
+                
+                // Target aspect ratio 9:16
+                const targetRatio = 9 / 16;
+                const currentRatio = videoWidth / videoHeight;
+                
+                let cropWidth = videoWidth;
+                let cropHeight = videoHeight;
+                let startX = 0;
+                let startY = 0;
+                
+                if (currentRatio > targetRatio) {
+                    // Too wide
+                    cropWidth = videoHeight * targetRatio;
+                    startX = (videoWidth - cropWidth) / 2;
+                } else {
+                    // Too tall
+                    cropHeight = videoWidth / targetRatio;
+                    startY = (videoHeight - cropHeight) / 2;
+                }
+
                 const canvas = document.createElement('canvas');
-                canvas.width = cameraVideo.videoWidth;
-                canvas.height = cameraVideo.videoHeight;
+                canvas.width = 720; // 1K resolution for 9:16
+                canvas.height = 1280;
                 const ctx = canvas.getContext('2d');
+                
                 if (ctx) {
                     // Mirror the image!
                     ctx.translate(canvas.width, 0);
                     ctx.scale(-1, 1);
                     
-                    ctx.drawImage(cameraVideo, 0, 0);
+                    // Draw cropped region!
+                    ctx.drawImage(cameraVideo, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
                     
                     // Reset transform
                     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -732,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         generateImageBtn.textContent = 'Improving...';
                         
                         const base64Data = dataUrl.split(',')[1];
-                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style.";
+                        let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio.";
                         
                         if (enableChromaKey.checked) {
                             const color = chromaKeyColor.value;
@@ -799,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             generateImageBtn.textContent = 'Improving...';
                             
                             const base64Data = dataUrl.split(',')[1];
-                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style.";
+                            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio.";
                             
                             if (enableChromaKey.checked) {
                                 const color = chromaKeyColor.value;
