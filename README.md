@@ -5,8 +5,8 @@ A reusable web component to embed the Gemini Live Avatar feature from Vertex AI 
 ## Features
 
 -   **Direct Connection**: Connects to Vertex AI Live API via WebSocket from the browser.
--   **Google Sign-in**: Supports OAuth flow for acquiring access tokens.
--   **Testing Mode**: Allows passing a direct access token to bypass OAuth.
+-   **Access Token Auth**: Web component requires a valid access token for authentication.
+-   **Demo App OAuth**: Demo app demonstrates how to acquire tokens via official Sign-in with Google.
 -   **Customizable**: Configure size, position, avatar preset, voice, and language.
 -   **Transparent Overlay**: Designed to overlay on top of page content.
 -   **MediaSource Decoding**: Uses native `MediaSource` and `SourceBuffer` for high-performance fragmented MP4 decoding (Gemini 3.1+).
@@ -66,8 +66,7 @@ Add the `<gemini-avatar>` tag to your page:
 | `avatar-name` | Preset name (e.g., `Kira`, `Piper`) (default: `Kira`) | No |
 | `size` | Width/Height (e.g., `300px`) | No |
 | `position` | Position on screen (e.g., `top-right`) | No |
-| `oauth-client-id` | Google OAuth Client ID for Sign-in | Conditional (1) |
-| `access-token` | Direct access token for testing | Conditional (1) |
+| `access-token` | Direct access token for authentication | Yes |
 | `record-video` | Set to `"true"` to save session recording | No |
 | `debug` | Set to `"true"` to enable verbose console logs | No |
 | `voice` | Prebuilt voice name (default: `kore`) | No |
@@ -87,14 +86,14 @@ Add the `<gemini-avatar>` tag to your page:
 | `render-transcript-outside` | Set to `"true"` to render transcript outside component | No |
 | `enable-grounding` | Set to `"true"` to enable Google Search Grounding | No |
 
-*(1) At least one of `access-token` or `oauth-client-id` must be provided.*
+*
 
 ## Authentication
 
-The web component handles authentication internally. You must provide either an access token or an OAuth client ID.
+The web component requires a valid access token for authentication. You must provide it via the `access-token` attribute.
 
-### Option 1: Using an Access Token (Testing/Development)
-If you already have an access token (e.g., generated via `gcloud auth print-access-token`), you can pass it directly to the component. This is useful for quick testing but not recommended for production as tokens expire.
+### Option 1: Direct Access Token
+If you already have an access token (e.g., generated via `gcloud auth print-access-token`), you can pass it directly to the component.
 
 ```html
 <gemini-avatar
@@ -103,17 +102,8 @@ If you already have an access token (e.g., generated via `gcloud auth print-acce
 </gemini-avatar>
 ```
 
-### Option 2: Using Google OAuth Client ID (Production)
-For production, you should provide an `oauth-client-id`. The component will automatically load the Google Identity Services script and handle the OAuth flow to acquire an access token for the user.
-
-```html
-<gemini-avatar
-    project-id="your-project-id"
-    oauth-client-id="your-oauth-client-id">
-</gemini-avatar>
-```
-
-The component will attempt to acquire a token silently. If user interaction is required, it will handle the prompt.
+### Option 2: OAuth (Implemented in Application)
+For production applications, you should implement the OAuth flow in your application to acquire an access token for the user, and then pass that token to the web component. The demo app included in this repository demonstrates how to implement this using Google Identity Services.
 
 ## Interactive Controls
 

@@ -7,6 +7,7 @@ import * as path from 'path';
 describe('Demo App', () => {
   let avatar: GeminiAvatar;
   let streamBtn: HTMLButtonElement;
+  let mockTokenClient: any;
 
   beforeEach(() => {
     // @ts-ignore
@@ -24,7 +25,12 @@ describe('Demo App', () => {
 
     // Mock localStorage
     const localStorageMock = {
-      getItem: vi.fn().mockReturnValue(null),
+      getItem: vi.fn().mockImplementation((key) => {
+        if (key === 'gemini_oauth_client_id') return 'test-client-id';
+        if (key === 'gemini_access_token') return 'valid-token';
+        if (key === 'gemini_token_expiry') return (new Date().getTime() + 3600000).toString();
+        return null;
+      }),
       setItem: vi.fn(),
       removeItem: vi.fn(),
       clear: vi.fn()
@@ -76,11 +82,32 @@ describe('Demo App', () => {
     avatar = document.getElementById('my-avatar') as GeminiAvatar;
     streamBtn = document.getElementById('streamBtn') as HTMLButtonElement;
     
-    // Dispatch DOMContentLoaded to run demo.ts logic
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    // Mock alert
+    global.alert = vi.fn();
+
+    // Mock Google Identity Services
+    mockTokenClient = {
+      requestAccessToken: vi.fn()
+    };
+    // @ts-ignore
+    global.google = {
+      accounts: {
+        id: {
+          initialize: vi.fn(),
+          renderButton: vi.fn(),
+        },
+        oauth2: {
+          initTokenClient: vi.fn().mockReturnValue(mockTokenClient),
+        },
+      },
+    };
+
+    const oauthClientIdInput = document.getElementById('oauthClientId') as HTMLInputElement;
+    if (oauthClientIdInput) oauthClientIdInput.value = 'test-client-id';
   });
 
   it('should call avatar.start() when clicked and not connected', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
     const startSpy = vi.spyOn(avatar, 'start').mockResolvedValue(undefined);
     
     // Mock isConnected to return false
@@ -97,6 +124,7 @@ describe('Demo App', () => {
   });
 
   it('should call avatar.stop() when clicked and connected', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
     const stopSpy = vi.spyOn(avatar, 'stop').mockResolvedValue(undefined);
     
     // Mock isConnected to return true
@@ -115,6 +143,7 @@ describe('Demo App', () => {
   });
 
   it('should update avatar-name attribute on start', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
     const startSpy = vi.spyOn(avatar, 'start').mockResolvedValue(undefined);
     vi.spyOn(avatar, 'isConnected', 'get').mockReturnValue(false);
     
@@ -130,6 +159,7 @@ describe('Demo App', () => {
   });
 
   it('should only load from localStorage on page load', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
     // @ts-ignore
     const getItemSpy = global.localStorage.getItem;
     
@@ -142,5 +172,47 @@ describe('Demo App', () => {
     }
     
     expect(getItemSpy).not.toHaveBeenCalled();
+  });
+
+  it('should trigger OAuth flow when clicking start without token', async () => {
+    // Override localStorage mock for this test to return null for token
+    // @ts-ignore
+    global.localStorage.getItem.mockImplementation((key) => {
+        if (key === 'gemini_oauth_client_id') return 'test-client-id';
+        return null;
+    });
+
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    vi.spyOn(avatar, 'isConnected', 'get').mockReturnValue(false);
+    
+    const tokenInput = document.getElementById('accessToken') as HTMLInputElement;
+    if (tokenInput) tokenInput.value = '';
+    
+    streamBtn.disabled = false;
+    streamBtn.click();
+    
+    await vi.waitFor(() => {
+    });
+  });
+
+  it('should trigger OAuth flow when clicking login button', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    const googleSignInBtn = document.getElementById('googleSignInBtn') as HTMLButtonElement;
+    if (googleSignInBtn) {
+        googleSignInBtn.click();
+        expect(mockTokenClient.requestAccessToken).toHaveBeenCalled();
+    }
+  });
+
+  it('should alert on avatar-setup-error', async () => {
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    
+    const alertSpy = vi.spyOn(global, 'alert');
+    
+    avatar.dispatchEvent(new CustomEvent('avatar-setup-error', { detail: { error: new Error('test') } }));
+    
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Something went wrong. Likely causes:'));
   });
 });

@@ -7,7 +7,6 @@ import { MediaManager } from './media-manager';
 export class GeminiAvatar extends HTMLElement {
   private client: GeminiLiveClient | null = null;
   private mediaManager: MediaManager | null = null;
-  private tokenClient: any = null;
 
   private accessToken: string | null = null;
 
@@ -60,7 +59,6 @@ export class GeminiAvatar extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this.loadGoogleIdentityServices();
     const autoRequest = this.getAttribute("mic-auto-request") !== "false";
     if (autoRequest) {
       this.checkMicPermission().then((state) => {
@@ -296,7 +294,6 @@ export class GeminiAvatar extends HTMLElement {
 
   static get observedAttributes() {
     return [
-      "oauth-client-id",
       "project-id",
       "location",
       "avatar-name",
@@ -460,25 +457,6 @@ export class GeminiAvatar extends HTMLElement {
 
     this.mediaManager?.setRecordingVideo(this.isRecordingVideo);
     this.mediaManager?.setupMicRecorder();
-    
-    if (!this.accessToken) {
-      const clientId = this.getAttribute("oauth-client-id");
-      if (clientId) {
-        this._log("No access token available. Attempting to acquire via OAuth...");
-        // @ts-ignore
-        if (window.google?.accounts?.oauth2?.initTokenClient) {
-          if (!this.tokenClient) {
-            this.initGoogleAuth();
-          }
-          this._log("Requesting access token with prompt...");
-          this.tokenClient.requestAccessToken({ prompt: "select_account" });
-          return; // Wait for callback to call tryConnect
-        } else {
-          this._log("Google Identity Services not loaded yet or failed to load.", null, true);
-          return;
-        }
-      }
-    }
     
     await this.tryConnect();
   }
@@ -719,53 +697,6 @@ export class GeminiAvatar extends HTMLElement {
     }
   }
 
-  private loadGoogleIdentityServices() {
-    if (this.accessToken) return;
-    if (document.getElementById("gsi-client-script")) return;
-
-    const script = document.createElement("script");
-    script.id = "gsi-client-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => this.initGoogleAuth();
-    document.head.appendChild(script);
-  }
-
-  private initGoogleAuth() {
-    const clientId = this.getAttribute("oauth-client-id");
-    this._log("initGoogleAuth called", { clientId });
-    if (!clientId) {
-      this._log("No oauth-client-id attribute found.");
-      return;
-    }
-
-    try {
-      // @ts-ignore
-      this.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: "https://www.googleapis.com/auth/cloud-platform",
-        callback: (response: any) => {
-          this._log("OAuth callback received", { error: response.error });
-          if (response.error !== undefined) {
-            console.error("OAuth Error:", response);
-            return;
-          }
-          this._log("Access token acquired");
-          this.accessToken = response.access_token;
-          this.tryConnect();
-        },
-      });
-
-      this._log("Requesting silent token...");
-      // @ts-ignore
-      this.tokenClient.requestAccessToken({ prompt: "none" });
-    } catch (e: any) {
-      console.error("Failed to init Google Auth:", e);
-      this._log("Failed to init Google Auth", { error: e.message }, true);
-    }
-  }
-
   private async tryConnect() {
     if (!this.accessToken) {
       this._log("No access token available. Cannot connect.", null, true);
@@ -820,6 +751,9 @@ export class GeminiAvatar extends HTMLElement {
     this.client.onDisconnected = () => {
         this.client = null;
         this.dispatchEvent(new CustomEvent("avatar-disconnected"));
+    };
+    this.client.onSetupError = (error) => {
+        this.dispatchEvent(new CustomEvent("avatar-setup-error", { detail: { error } }));
     };
     this.client.onSetupComplete = () => {
         this.setupCompleteTime = new Date().getTime();
@@ -877,6 +811,12 @@ export class GeminiAvatar extends HTMLElement {
     }
 
     ctx.drawImage(this.videoEl, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
+    
+    // Skip chroma keying for existing avatar presets
+    const avatarName = this.getAttribute("avatar-name") || "Kira";
+    if (AVATAR_PRESETS.hasOwnProperty(avatarName)) {
+        return;
+    }
     
     const frame = ctx.getImageData(0, 0, this.displayCanvas.width, this.displayCanvas.height);
     const l = frame.data.length / 4;

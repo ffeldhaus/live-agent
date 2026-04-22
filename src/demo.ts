@@ -4,6 +4,8 @@ import { qaScenarios } from './walkthrough-data';
 import { generateContent, updateBackground, applyTheme, applyAvatarTheme, downloadBlob } from './demo-helpers';
 import { handleImageGeneration, handleCameraCapture, handleUpload } from './demo-handlers';
 import { setupWalkthrough } from './demo-walkthrough';
+import { verifyToken, fetchUserProfile, ensureValidToken } from './auth';
+import { loadSettings, saveSettings } from './settings';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Demo script started');
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statTotalFrames = document.getElementById('statTotalFrames') as HTMLSpanElement;
     const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
     const statFps = document.getElementById('statFps') as HTMLSpanElement;
+
     const statDownlink = document.getElementById('statDownlink') as HTMLSpanElement;
     const statRtt = document.getElementById('statRtt') as HTMLSpanElement;
     const statConnType = document.getElementById('statConnType') as HTMLSpanElement;
@@ -100,12 +103,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const captureBtn = document.getElementById('captureBtn') as HTMLButtonElement;
     const closeCameraBtn = document.getElementById('closeCameraBtn') as HTMLButtonElement;
 
+    const googleSignInBtn = document.getElementById('googleSignInBtn') as HTMLDivElement;
+    const userProfile = document.getElementById('userProfile') as HTMLDivElement;
+    const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
+    const userName = document.getElementById('userName') as HTMLSpanElement;
+
     // New Custom Avatar Name
     const customAvatarName = document.getElementById('customAvatarName') as HTMLInputElement;
     const newCustomAvatarBtn = document.getElementById('newCustomAvatarBtn') as HTMLButtonElement;
+    const saveCustomAvatarBtn = document.getElementById('saveCustomAvatarBtn') as HTMLButtonElement;
+    const toggleImageImprovement = document.getElementById('toggleImageImprovement') as HTMLInputElement;
+    const imageProcessingMessage = document.getElementById('imageProcessingMessage') as HTMLParagraphElement;
 
     // Map to store custom avatars (name -> dataUrl)
     const customAvatars: Record<string, string> = {};
+
+    const elements = {
+        tokenInput, userName, userAvatar, userProfile, googleSignInBtn,
+        projectIdInput, locationInput, avatarNameSelect, sizeSelect, positionSelect,
+        oauthClientIdInput, voiceSelect, languageSelect, saveVideoToggle, debugToggle,
+        recordUserAudioCheckbox, micAutoRequestToggle, ctrlMic, ctrlCamera, ctrlScreen,
+        ctrlMute, ctrlSnapshot, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
+        defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor, backgroundColor,
+        enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
+        enableGrounding, customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn,
+        saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, captureBtn, uploadBtn, generateImageBtn, luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn
+    };
 
     // Reactive State Store
     const appState = {
@@ -138,7 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
         enableChatInput: false,
         renderTranscriptOutside: false,
         enableGrounding: false,
-        customAvatarName: ''
+        customAvatarName: '',
+        tokenExpiry: 0,
+        userAvatar: '',
+        userName: ''
     };
 
     const store = new Proxy(appState as any, {
@@ -149,6 +175,56 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
     });
+
+    let tokenClient: any = null;
+
+
+
+    function initGoogleAuth() {
+        const clientId = oauthClientIdInput.value.trim();
+        if (!clientId) return;
+
+        try {
+            // @ts-ignore
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email",
+                callback: async (response: any) => {
+                    console.log('OAuth callback received', response);
+                    if (response.error !== undefined) {
+                        alert('OAuth Error: ' + response.error);
+                        return;
+                    }
+                    store.accessToken = response.access_token;
+                    const now = new Date().getTime();
+                    store.tokenExpiry = now + (response.expires_in * 1000);
+                    
+                    localStorage.setItem('gemini_access_token', response.access_token);
+                    localStorage.setItem('gemini_token_time', now.toString());
+                    localStorage.setItem('gemini_token_expiry', store.tokenExpiry.toString());
+                    
+                    tokenInput.value = response.access_token;
+                    
+                    // Fetch user profile
+                    await fetchUserProfile(response.access_token, elements, store);
+                    
+                    validateForm();
+                },
+            });
+
+            // Add click listener to button
+            if (googleSignInBtn) {
+                googleSignInBtn.onclick = () => {
+                    console.log('Google Sign-in button clicked');
+                    tokenClient.requestAccessToken();
+                };
+            }
+        } catch (e) {
+            console.error('Failed to init Google Auth:', e);
+        }
+    }
+
+
 
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
@@ -180,124 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load from localStorage
-    const savedToken = localStorage.getItem('gemini_access_token');
-    const savedTime = localStorage.getItem('gemini_token_time');
-
-    if (savedToken && savedTime) {
-        const now = new Date().getTime();
-        const oneHour = 60 * 60 * 1000;
-        if (now - parseInt(savedTime) < oneHour) {
-            tokenInput.value = savedToken;
-        } else {
-            localStorage.removeItem('gemini_access_token');
-            localStorage.removeItem('gemini_token_time');
-        }
-    }
-
-    // Load other settings
-    if (localStorage.getItem('gemini_project_id')) projectIdInput.value = localStorage.getItem('gemini_project_id')!;
-    if (localStorage.getItem('gemini_location')) locationInput.value = localStorage.getItem('gemini_location')!;
-    
-    // Load custom avatars first!
-    const savedCustomAvatars = localStorage.getItem('gemini_custom_avatars');
-    if (savedCustomAvatars) {
-        Object.assign(customAvatars, JSON.parse(savedCustomAvatars));
-        Object.keys(customAvatars).forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            avatarNameSelect.appendChild(option);
-        });
-    }
-
-    if (localStorage.getItem('gemini_avatar_name')) {
-        const name = localStorage.getItem('gemini_avatar_name')!;
-        avatarNameSelect.value = name;
-        applyAvatarTheme(name, avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
-        
-        const preset = (AVATAR_PRESETS as any)[name];
-        if (preset && preset.defaultGreeting) {
-            defaultGreetingInput.value = preset.defaultGreeting;
-        }
-    } else {
-        avatarNameSelect.value = 'Kira';
-        applyAvatarTheme('Kira', avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
-        
-        const preset = (AVATAR_PRESETS as any)['Kira'];
-        if (preset && preset.defaultGreeting) {
-            defaultGreetingInput.value = preset.defaultGreeting;
-        }
-    }
-    
-    if (localStorage.getItem('gemini_size')) {
-        sizeSelect.value = localStorage.getItem('gemini_size')!;
-        avatar.setAttribute('size', sizeSelect.value);
-    }
-    if (localStorage.getItem('gemini_position')) {
-        positionSelect.value = localStorage.getItem('gemini_position')!;
-        avatar.setAttribute('position', positionSelect.value);
-    }
-    if (localStorage.getItem('gemini_oauth_client_id')) oauthClientIdInput.value = localStorage.getItem('gemini_oauth_client_id')!;
-    if (localStorage.getItem('gemini_voice')) voiceSelect.value = localStorage.getItem('gemini_voice')!;
-    if (localStorage.getItem('gemini_language')) languageSelect.value = localStorage.getItem('gemini_language')!;
-
-    // Load checkbox states
-    saveVideoToggle.checked = localStorage.getItem('gemini_save_video') === 'true';
-    debugToggle.checked = localStorage.getItem('gemini_debug') === 'true';
-    if (recordUserAudioCheckbox) {
-        recordUserAudioCheckbox.checked = localStorage.getItem('gemini_record_user_audio') === 'true';
-    }
-    
-    if (micAutoRequestToggle) {
-        micAutoRequestToggle.checked = localStorage.getItem('gemini_mic_auto_request') !== 'false'; // Default true
-        avatar.setAttribute('mic-auto-request', micAutoRequestToggle.checked.toString());
-    }
-    
-    const loadCtrlState = (id: string, defaultValue: boolean) => {
-        const saved = localStorage.getItem(`gemini_ctrl_${id}`);
-        return saved !== null ? saved === 'true' : defaultValue;
-    };
-    
-    ctrlMic.checked = loadCtrlState('mic', true);
-    ctrlCamera.checked = loadCtrlState('camera', true);
-    ctrlScreen.checked = loadCtrlState('screen', true);
-    ctrlMute.checked = loadCtrlState('mute', true);
-    ctrlSnapshot.checked = loadCtrlState('snapshot', false); // Default false
-
-    if (localStorage.getItem('gemini_audio_chunk_size')) {
-        audioChunkSizeSlider.value = localStorage.getItem('gemini_audio_chunk_size')!;
-        chunkSizeVal.textContent = audioChunkSizeSlider.value;
-        avatar.setAttribute('audio-chunk-size', audioChunkSizeSlider.value);
-    }
-
-    // Load advanced settings
-    if (localStorage.getItem('gemini_system_instruction')) systemInstructionInput.value = localStorage.getItem('gemini_system_instruction')!;
-    if (localStorage.getItem('gemini_default_greeting')) defaultGreetingInput.value = localStorage.getItem('gemini_default_greeting')!;
-    if (localStorage.getItem('gemini_image_prompt')) imagePromptInput.value = localStorage.getItem('gemini_image_prompt')!;
-
-    // Load Chroma Key settings
-    enableChromaKey.checked = localStorage.getItem('gemini_enable_chroma_key') === 'true';
-    if (localStorage.getItem('gemini_chroma_key_color')) chromaKeyColor.value = localStorage.getItem('gemini_chroma_key_color')!;
-    if (localStorage.getItem('gemini_background_color')) backgroundColor.value = localStorage.getItem('gemini_background_color')!;
-    
-    avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
-    avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
-    avatar.setAttribute('background-color', backgroundColor.value);
-
-    // Load toggle states
-    enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
-    enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
-    
-    renderOutsideToggle.checked = localStorage.getItem('gemini_enable_transcript_outside') === 'true';
-    avatar.setAttribute('render-transcript-outside', renderOutsideToggle.checked.toString());
-    if (externalTranscriptSection) {
-        externalTranscriptSection.style.display = renderOutsideToggle.checked ? 'block' : 'none';
-    }
-
-    // Load grounding setting
-    if (enableGrounding) {
-        enableGrounding.checked = localStorage.getItem('gemini_enable_grounding') === 'true';
-        avatar.setAttribute('enable-grounding', enableGrounding.checked.toString());
+    loadSettings(elements, store, customAvatars, avatar);
+    if (localStorage.getItem('gemini_oauth_client_id')) {
+        initGoogleAuth();
     }
 
     function validateForm() {
@@ -417,60 +378,25 @@ document.addEventListener('DOMContentLoaded', () => {
     projectIdInput.addEventListener('input', () => store.projectId = projectIdInput.value);
     locationInput.addEventListener('input', () => store.location = locationInput.value);
     tokenInput.addEventListener('input', () => store.accessToken = tokenInput.value);
+    tokenInput.addEventListener('change', async () => {
+        const token = tokenInput.value.trim();
+        if (token) {
+            const data = await verifyToken(token);
+            if (data && data.expires_in) {
+                const now = new Date().getTime();
+                store.tokenExpiry = now + (parseInt(data.expires_in) * 1000);
+                console.log('Token verified, set expiry to:', store.tokenExpiry);
+            } else {
+                alert('Invalid token or failed to verify.');
+            }
+        }
+    });
     oauthClientIdInput.addEventListener('input', () => store.oauthClientId = oauthClientIdInput.value);
+    oauthClientIdInput.addEventListener('change', () => initGoogleAuth());
 
     if (saveBtn) {
         saveBtn.onclick = () => {
-            localStorage.setItem('gemini_project_id', projectIdInput.value);
-            localStorage.setItem('gemini_location', locationInput.value);
-            localStorage.setItem('gemini_avatar_name', avatarNameSelect.value);
-            localStorage.setItem('gemini_size', sizeSelect.value);
-            localStorage.setItem('gemini_position', positionSelect.value);
-            localStorage.setItem('gemini_oauth_client_id', oauthClientIdInput.value);
-            localStorage.setItem('gemini_voice', voiceSelect.value);
-            localStorage.setItem('gemini_language', languageSelect.value);
-            
-            const token = tokenInput.value;
-            if (token) {
-                localStorage.setItem('gemini_access_token', token);
-                localStorage.setItem('gemini_token_time', new Date().getTime().toString());
-            } else {
-                localStorage.removeItem('gemini_access_token');
-                localStorage.removeItem('gemini_token_time');
-            }
-            
-            localStorage.setItem('gemini_save_video', saveVideoToggle.checked.toString());
-            localStorage.setItem('gemini_debug', debugToggle.checked.toString());
-            if (recordUserAudioCheckbox) {
-                localStorage.setItem('gemini_record_user_audio', recordUserAudioCheckbox.checked.toString());
-            }
-            if (micAutoRequestToggle) {
-                localStorage.setItem('gemini_mic_auto_request', micAutoRequestToggle.checked.toString());
-            }
-            
-            localStorage.setItem('gemini_ctrl_mic', ctrlMic.checked.toString());
-            localStorage.setItem('gemini_ctrl_camera', ctrlCamera.checked.toString());
-            localStorage.setItem('gemini_ctrl_screen', ctrlScreen.checked.toString());
-            localStorage.setItem('gemini_ctrl_mute', ctrlMute.checked.toString());
-            localStorage.setItem('gemini_ctrl_snapshot', ctrlSnapshot.checked.toString());
-            
-            localStorage.setItem('gemini_audio_chunk_size', audioChunkSizeSlider.value);
-            localStorage.setItem('gemini_system_instruction', systemInstructionInput.value);
-            localStorage.setItem('gemini_default_greeting', defaultGreetingInput.value);
-            localStorage.setItem('gemini_image_prompt', imagePromptInput.value);
-            
-            localStorage.setItem('gemini_enable_chroma_key', enableChromaKey.checked.toString());
-            localStorage.setItem('gemini_chroma_key_color', chromaKeyColor.value);
-            localStorage.setItem('gemini_background_color', backgroundColor.value);
-            
-            localStorage.setItem('gemini_enable_transcript', enableTranscript.checked.toString());
-            localStorage.setItem('gemini_enable_chat_input', enableChatInput.checked.toString());
-            localStorage.setItem('gemini_enable_transcript_outside', renderOutsideToggle.checked.toString());
-            if (enableGrounding) {
-                localStorage.setItem('gemini_enable_grounding', enableGrounding.checked.toString());
-            }
-            
-            localStorage.setItem('gemini_custom_avatars', JSON.stringify(customAvatars));
+            saveSettings(elements, store, customAvatars);
             
             alert('Configuration saved.');
         };
@@ -489,6 +415,12 @@ document.addEventListener('DOMContentLoaded', () => {
         validateForm();
     });
 
+    avatar.addEventListener('avatar-setup-error', (e: any) => {
+        const userName = store.userName || 'The current user';
+        const projectName = store.projectId || 'the project';
+        alert(`Something went wrong. Likely causes: User ${userName} has no permission to use the Gemini Live model in project ${projectName}.`);
+    });
+
     function pollValidation() {
         validateForm();
         setTimeout(pollValidation, 500);
@@ -503,9 +435,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const oldName = avatarNameSelect.value;
             const hasImage = generatedImageContainer && generatedImageContainer.style.display !== 'none';
             
-            // Show/hide New Custom Avatar button
+            // Show/hide New Custom Avatar and Save buttons
             if (newCustomAvatarBtn) {
                 newCustomAvatarBtn.style.display = (newName && hasImage) ? 'inline-block' : 'none';
+            }
+            if (saveCustomAvatarBtn) {
+                saveCustomAvatarBtn.style.display = (newName && hasImage) ? 'inline-block' : 'none';
             }
             
             // Rename custom avatar if conditions are met
@@ -533,7 +468,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (generatedImg) generatedImg.src = '';
             if (generatedImageContainer) generatedImageContainer.style.display = 'none';
             newCustomAvatarBtn.style.display = 'none';
+            if (saveCustomAvatarBtn) saveCustomAvatarBtn.style.display = 'none';
             validateForm();
+        };
+    }
+
+    if (saveCustomAvatarBtn) {
+        saveCustomAvatarBtn.onclick = () => {
+            const name = customAvatarName.value.trim();
+            const imageUrl = generatedImg.src;
+            if (name && imageUrl) {
+                customAvatars[name] = imageUrl;
+                updateDropdown(name);
+                avatar.setAttribute('custom-avatar-url', imageUrl);
+                localStorage.setItem('gemini_custom_avatars', JSON.stringify(customAvatars));
+                alert(`Custom avatar "${name}" saved.`);
+            }
         };
     }
 
@@ -595,6 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lucky buttons
     if (luckyPersonaBtn) {
         luckyPersonaBtn.onclick = async () => {
+            if (!await ensureValidToken(store, tokenClient)) return;
             const name = avatarNameSelect.value;
             const voice = voiceSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -622,6 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (luckyGreetingBtn) {
         luckyGreetingBtn.onclick = async () => {
+            if (!await ensureValidToken(store, tokenClient)) return;
             const persona = systemInstructionInput.value;
             const name = avatarNameSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -654,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (luckyImageBtn) {
         luckyImageBtn.onclick = async () => {
+            if (!await ensureValidToken(store, tokenClient)) return;
             const persona = systemInstructionInput.value;
             const name = avatarNameSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -686,6 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (generateImageBtn) {
         generateImageBtn.onclick = async () => {
+            if (!await ensureValidToken(store, tokenClient)) return;
             await handleImageGeneration(
                 customAvatarName.value.trim(),
                 imagePromptInput.value,
@@ -729,10 +683,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 cameraModal.classList.add('active');
                 
                 const cameraSelect = document.getElementById('cameraSelect') as HTMLSelectElement;
+                const cameraSelectContainer = document.getElementById('cameraSelectContainer') as HTMLDivElement;
                 
                 const populateCameras = async () => {
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                    
+                    if (cameraSelectContainer) {
+                        cameraSelectContainer.style.display = videoDevices.length > 1 ? 'block' : 'none';
+                    }
                     
                     if (cameraSelect) {
                         cameraSelect.innerHTML = '';
@@ -806,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (captureBtn) {
         captureBtn.onclick = async () => {
+            if (!await ensureValidToken(store, tokenClient)) return;
             const name = customAvatarName.value.trim();
             if (!name) {
                 alert('Please enter a name for the custom avatar.');
@@ -817,12 +777,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 enableChromaKey.checked,
                 chromaKeyColor.value,
                 backgroundColor.value,
+                toggleImageImprovement.checked,
                 projectIdInput.value,
                 locationInput.value || 'us-central1',
                 tokenInput.value,
                 customAvatars,
                 avatar,
-                { generatedImg, generatedImageContainer, customAvatarName, captureBtn, cameraModal },
+                { generatedImg, generatedImageContainer, customAvatarName, captureBtn, cameraModal, imageProcessingMessage },
                 updateDropdown
             );
         };
@@ -840,6 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.type = 'file';
             input.accept = 'image/*';
             input.onchange = async (e: any) => {
+                if (!await ensureValidToken(store, tokenClient)) return;
                 const file = e.target.files[0];
                 if (file) {
                     await handleUpload(
@@ -848,12 +810,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         enableChromaKey.checked,
                         chromaKeyColor.value,
                         backgroundColor.value,
+                        toggleImageImprovement.checked,
                         projectIdInput.value,
                         locationInput.value || 'us-central1',
                         tokenInput.value,
                         customAvatars,
                         avatar,
-                        { generatedImg, generatedImageContainer, customAvatarName, uploadBtn },
+                        { generatedImg, generatedImageContainer, customAvatarName, uploadBtn, imageProcessingMessage },
                         updateDropdown
                     );
                 }
@@ -869,6 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleQaBtn) toggleQaBtn.setAttribute('data-tooltip', "Open or close the Feature Walkthrough panel.");
     if (externalSendBtn) externalSendBtn.setAttribute('data-tooltip', "Send message to the avatar.");
     if (newCustomAvatarBtn) newCustomAvatarBtn.setAttribute('data-tooltip', "Clear inputs to create another custom avatar.");
+    if (saveCustomAvatarBtn) saveCustomAvatarBtn.setAttribute('data-tooltip', "Save current custom avatar to presets.");
     if (captureBtn) captureBtn.setAttribute('data-tooltip', "Capture photo from camera.");
     if (closeCameraBtn) closeCameraBtn.setAttribute('data-tooltip', "Close camera modal.");
 
@@ -926,6 +890,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statsInterval = null;
                 }
             } else {
+                if (!await ensureValidToken(store, tokenClient)) return;
                 // Update attributes!
                 avatar.setAttribute('access-token', tokenInput.value);
                 avatar.setAttribute('project-id', projectIdInput.value);

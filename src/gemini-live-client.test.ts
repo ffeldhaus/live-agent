@@ -209,4 +209,16 @@ describe('GeminiLiveClient', () => {
         
         expect(mockWs.send).toHaveBeenCalledWith(expect.stringContaining('"handle":"test-handle"'));
     });
+
+    it('should call onSetupError if close happens before setupComplete', () => {
+        const onSetupError = vi.fn();
+        client.onSetupError = onSetupError;
+        client.connect();
+        mockWs.onopen();
+        
+        // Simulate close before setupComplete
+        mockWs.onclose();
+        
+        expect(onSetupError).toHaveBeenCalled();
+    });
 });

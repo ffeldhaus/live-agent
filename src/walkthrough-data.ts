@@ -19,13 +19,15 @@ export const qaScenarios = [
         title: 'OAuth Sign-in',
         description: 'Verify authentication via Google OAuth.',
         steps: [
-            'Enter a valid OAuth Client ID (leave Access Token empty).',
-            'Click "Save Configuration".',
-            'Click "Start".',
-            'Complete sign-in if prompted.'
+            'Enter a valid OAuth Client ID in the form.',
+            'Click the "Sign in with Google" button that appears.',
+            'Complete the sign-in flow in the popup.',
+            'Verify that your user avatar and name appear.',
+            'Click "Start".'
         ],
         verification: [
-            'A Google sign-in popup appears (if not already authorized).',
+            'A Google sign-in popup appears.',
+            'User avatar and name are displayed upon successful sign-in.',
             'Component connects successfully after acquiring token.'
         ]
     },

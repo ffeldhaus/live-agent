@@ -125,6 +125,7 @@ export async function handleCameraCapture(
     useChromaKey: boolean,
     keyColor: string,
     bgColor: string,
+    useImageImprovement: boolean,
     project: string,
     location: string,
     token: string,
@@ -135,7 +136,8 @@ export async function handleCameraCapture(
         generatedImageContainer: HTMLDivElement,
         customAvatarName: HTMLInputElement,
         captureBtn: HTMLButtonElement,
-        cameraModal: HTMLDivElement
+        cameraModal: HTMLDivElement,
+        imageProcessingMessage?: HTMLParagraphElement
     },
     updateDropdown: (name: string) => void
 ) {
@@ -194,46 +196,56 @@ export async function handleCameraCapture(
         if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
         
         // Auto-improvement flow!
-        try {
-            elements.captureBtn.disabled = true;
-            const originalText = elements.captureBtn.textContent;
-            elements.captureBtn.textContent = 'Improving...';
-            
-            const base64Data = dataUrl.split(',')[1];
-            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
-            
-            if (useChromaKey) {
-                instruction += ` Replace the background with a solid ${keyColor} color.`;
-            } else if (bgColor === 'white') {
-                instruction += ` Replace the background with a solid white color.`;
-            } else if (bgColor === 'transparent') {
-                instruction += ` Remove the background and make it transparent.`;
-            }
-            
-            const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: 'image/png', data: base64Data });
-            
-            console.log('Image Gen Response:', data);
-            const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-            
-            if (part && part.inlineData && part.inlineData.data) {
-                const base64 = part.inlineData.data;
-                const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
-                elements.generatedImg.src = improvedUrl;
+        if (useImageImprovement) {
+            try {
+                elements.captureBtn.disabled = true;
+                const originalText = elements.captureBtn.textContent;
+                elements.captureBtn.textContent = 'Improving...';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
                 
-                // Save and update
-                customAvatars[name] = improvedUrl;
-                updateDropdown(name);
-                avatar.setAttribute('custom-avatar-url', improvedUrl);
-                updateBackground(improvedUrl, applyTheme);
-            } else {
-                alert('Model did not return an image. See console.');
+                const base64Data = dataUrl.split(',')[1];
+                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
+                
+                if (useChromaKey) {
+                    instruction += ` Replace the background with a solid ${keyColor} color.`;
+                } else if (bgColor === 'white') {
+                    instruction += ` Replace the background with a solid white color.`;
+                } else if (bgColor === 'transparent') {
+                    instruction += ` Remove the background and make it transparent.`;
+                }
+                
+                const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: 'image/png', data: base64Data });
+                
+                console.log('Image Gen Response:', data);
+                const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
+                
+                if (part && part.inlineData && part.inlineData.data) {
+                    const base64 = part.inlineData.data;
+                    const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                    elements.generatedImg.src = improvedUrl;
+                    
+                    // Save and update
+                    customAvatars[name] = improvedUrl;
+                    updateDropdown(name);
+                    avatar.setAttribute('custom-avatar-url', improvedUrl);
+                    updateBackground(improvedUrl, applyTheme);
+                } else {
+                    alert('Model did not return an image. See console.');
+                }
+            } catch (e: any) {
+                console.error('Image improvement error:', e);
+                alert('Failed to improve image: ' + e.message);
+            } finally {
+                elements.captureBtn.disabled = false;
+                elements.captureBtn.textContent = originalText;
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
             }
-        } catch (e: any) {
-            console.error('Image improvement error:', e);
-            alert('Failed to improve image: ' + e.message);
-        } finally {
-            elements.captureBtn.disabled = false;
-            elements.captureBtn.textContent = originalText;
+        } else {
+            // Save and update with original image
+            customAvatars[name] = dataUrl;
+            updateDropdown(name);
+            avatar.setAttribute('custom-avatar-url', dataUrl);
+            updateBackground(dataUrl, applyTheme);
         }
     }
 }
@@ -244,6 +256,7 @@ export async function handleUpload(
     useChromaKey: boolean,
     keyColor: string,
     bgColor: string,
+    useImageImprovement: boolean,
     project: string,
     location: string,
     token: string,
@@ -253,7 +266,8 @@ export async function handleUpload(
         generatedImg: HTMLImageElement,
         generatedImageContainer: HTMLDivElement,
         customAvatarName: HTMLInputElement,
-        uploadBtn: HTMLButtonElement
+        uploadBtn: HTMLButtonElement,
+        imageProcessingMessage?: HTMLParagraphElement
     },
     updateDropdown: (name: string) => void
 ) {
@@ -265,46 +279,56 @@ export async function handleUpload(
         if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
         
         // Auto-improvement flow for upload too!
-        try {
-            elements.uploadBtn.disabled = true;
-            const originalText = elements.uploadBtn.textContent;
-            elements.uploadBtn.textContent = 'Improving...';
-            
-            const base64Data = dataUrl.split(',')[1];
-            let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
-            
-            if (useChromaKey) {
-                instruction += ` Replace the background with a solid ${keyColor} color.`;
-            } else if (bgColor === 'white') {
-                instruction += ` Replace the background with a solid white color.`;
-            } else if (bgColor === 'transparent') {
-                instruction += ` Remove the background and make it transparent.`;
-            }
-            
-            const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: file.type, data: base64Data });
-            
-            console.log('Image Gen Response:', data);
-            const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
-            
-            if (part && part.inlineData && part.inlineData.data) {
-                const base64 = part.inlineData.data;
-                const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
-                elements.generatedImg.src = improvedUrl;
+        if (useImageImprovement) {
+            try {
+                elements.uploadBtn.disabled = true;
+                const originalText = elements.uploadBtn.textContent;
+                elements.uploadBtn.textContent = 'Improving...';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
                 
-                // Save and update
-                customAvatars[name] = improvedUrl;
-                updateDropdown(name);
-                avatar.setAttribute('custom-avatar-url', improvedUrl);
-                updateBackground(improvedUrl, applyTheme);
-            } else {
-                alert('Model did not return an image. See console.');
+                const base64Data = dataUrl.split(',')[1];
+                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
+                
+                if (useChromaKey) {
+                    instruction += ` Replace the background with a solid ${keyColor} color.`;
+                } else if (bgColor === 'white') {
+                    instruction += ` Replace the background with a solid white color.`;
+                } else if (bgColor === 'transparent') {
+                    instruction += ` Remove the background and make it transparent.`;
+                }
+                
+                const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: file.type, data: base64Data });
+                
+                console.log('Image Gen Response:', data);
+                const part = data.candidates[0].content.parts.find((p: any) => p.inlineData);
+                
+                if (part && part.inlineData && part.inlineData.data) {
+                    const base64 = part.inlineData.data;
+                    const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                    elements.generatedImg.src = improvedUrl;
+                    
+                    // Save and update
+                    customAvatars[name] = improvedUrl;
+                    updateDropdown(name);
+                    avatar.setAttribute('custom-avatar-url', improvedUrl);
+                    updateBackground(improvedUrl, applyTheme);
+                } else {
+                    alert('Model did not return an image. See console.');
+                }
+            } catch (e: any) {
+                console.error('Image improvement error:', e);
+                alert('Failed to improve image: ' + e.message);
+            } finally {
+                elements.uploadBtn.disabled = false;
+                elements.uploadBtn.textContent = originalText;
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
             }
-        } catch (e: any) {
-            console.error('Image improvement error:', e);
-            alert('Failed to improve image: ' + e.message);
-        } finally {
-            elements.uploadBtn.disabled = false;
-            elements.uploadBtn.textContent = originalText;
+        } else {
+            // Save and update with original image
+            customAvatars[name] = dataUrl;
+            updateDropdown(name);
+            avatar.setAttribute('custom-avatar-url', dataUrl);
+            updateBackground(dataUrl, applyTheme);
         }
     };
     reader.readAsDataURL(file);

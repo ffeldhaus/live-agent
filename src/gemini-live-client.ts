@@ -33,6 +33,7 @@ export class GeminiLiveClient {
     onVideoData?: (base64Data: string, mimeType: string) => void;
     onVideoChunk?: (blob: Blob) => void;
     onLog?: (message: string, data?: any, isImportant?: boolean) => void;
+    onSetupError?: (error: any) => void;
 
     constructor(options: GeminiLiveClientOptions) {
         this.options = options;
@@ -83,6 +84,12 @@ export class GeminiLiveClient {
             this.ws.onclose = () => {
                 this._log("WebSocket Closed", null, true);
                 this.ws = null;
+                
+                if (!this.isSetupComplete) {
+                    this._log("WebSocket closed before setup completion", null, true);
+                    if (this.onSetupError) this.onSetupError(new Error("WebSocket closed before setup completion"));
+                }
+
                 if (this.shouldResume()) {
                     this.reconnect();
                 } else {

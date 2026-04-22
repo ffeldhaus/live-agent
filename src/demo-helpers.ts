@@ -14,6 +14,11 @@ export async function generateContent(
         throw new Error('Project ID and Access Token are required for AI generation features.');
     }
     
+    // Override location for models only available on global endpoint
+    if (model === 'gemini-3.1-flash-image-preview' || model === 'gemini-3-flash-preview') {
+        location = 'global';
+    }
+    
     const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
     const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
     
