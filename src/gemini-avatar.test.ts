@@ -137,8 +137,8 @@ describe('GeminiAvatar', () => {
     anyEl.setupCompleteTime = 2000;
     anyEl.firstFrameTime = 2500;
     anyEl.packetsReceived = 10;
-    anyEl.audioChunksSent = 5;
-    anyEl.videoFramesReceived = 24;
+    anyEl.mediaManager.audioChunksSent = 5;
+    anyEl.mediaManager.videoFramesReceived = 48;
     
     anyEl.videoEl = document.createElement('video');
     anyEl.videoEl.getVideoPlaybackQuality = vi.fn().mockReturnValue({ totalVideoFrames: 48 });

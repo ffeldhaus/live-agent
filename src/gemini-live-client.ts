@@ -1,3 +1,5 @@
+import { AVATAR_PRESETS } from './constants';
+
 export interface GeminiLiveClientOptions {
     projectId: string;
     location?: string;
@@ -123,7 +125,7 @@ export class GeminiLiveClient {
         const setupMessage = {
             setup: {
                 model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
-                avatar_config: (modelName === 'Custom' && this.options.customAvatar) ? {
+                avatar_config: (!AVATAR_PRESETS.hasOwnProperty(modelName) && modelName !== 'AudioOnly' && this.options.customAvatar) ? {
                     customized_avatar: this.options.customAvatar
                 } : {
                     avatar_name: modelName,

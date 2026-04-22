@@ -83,11 +83,10 @@ export function updateBackground(imageUrl: string, onThemeApplied: (colors: stri
                 const color1 = sortedColors[0][0];
                 const color2 = sortedColors[1] ? sortedColors[1][0] : color1;
                 const color3 = sortedColors[2] ? sortedColors[2][0] : color2;
-                const color4 = sortedColors[3] ? sortedColors[3][0] : color3;
                 
-                console.log('Dominant colors detected (bottom half):', color1, color2, color3, color4);
+                console.log('Dominant colors detected (bottom half):', color1, color2, color3);
                 
-                onThemeApplied([color1, color2, color3, color4], '15s');
+                onThemeApplied([color1, color2, color3], '15s');
             }
         }
     };
@@ -100,14 +99,14 @@ export function applyTheme(colors: string[], speed: string) {
     body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
     body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
     body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
-    body.style.setProperty('--c4', colors[3] ? colors[3] + '44' : colors[0] + '44');
+    body.style.setProperty('--c4', colors[2] ? colors[2] + '44' : colors[0] + '44'); // Repeat c3
     body.style.setProperty('--speed', speed);
 }
 
 export function applyAvatarTheme(
     avatarName: string,
     avatar: GeminiAvatar,
-    customAvatars: Record<string, string>,
+    customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }>,
     elements: {
         customAvatarName?: HTMLInputElement,
         generatedImg?: HTMLImageElement,
@@ -125,11 +124,18 @@ export function applyAvatarTheme(
         applyTheme(preset.palette, speed);
         avatar.setPreview(avatarName);
     } else if (customAvatars[avatarName]) {
+        const customAvatar = customAvatars[avatarName];
         if (elements.customAvatarName) elements.customAvatarName.value = avatarName;
-        if (elements.generatedImg) elements.generatedImg.src = customAvatars[avatarName];
+        if (elements.generatedImg) elements.generatedImg.src = customAvatar.image;
         if (elements.generatedImageContainer) elements.generatedImageContainer.style.display = 'block';
-        avatar.setAttribute('custom-avatar-url', customAvatars[avatarName]);
-        updateBackground(customAvatars[avatarName], applyTheme);
+        avatar.setAttribute('custom-avatar-url', customAvatar.image);
+        
+        if (customAvatar.palette) {
+            applyTheme(customAvatar.palette, '15s');
+        } else {
+            updateBackground(customAvatar.image, applyTheme);
+        }
+        
         if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
     } else {
         avatar.setPreview(avatarName);

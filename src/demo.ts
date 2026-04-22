@@ -4,7 +4,7 @@ import { qaScenarios } from './walkthrough-data';
 import { generateContent, updateBackground, applyTheme, applyAvatarTheme, downloadBlob } from './demo-helpers';
 import { handleImageGeneration, handleCameraCapture, handleUpload } from './demo-handlers';
 import { setupWalkthrough } from './demo-walkthrough';
-import { verifyToken, fetchUserProfile, ensureValidToken } from './auth';
+import { verifyToken, fetchUserProfile, ensureValidToken, displayUserProfile } from './auth';
 import { loadSettings, saveSettings } from './settings';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -100,8 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Camera Modal elements
     const cameraModal = document.getElementById('cameraModal') as HTMLDivElement;
     const cameraVideo = document.getElementById('cameraVideo') as HTMLVideoElement;
+    const cameraVideoContainer = document.getElementById('cameraVideoContainer') as HTMLDivElement;
     const captureBtn = document.getElementById('captureBtn') as HTMLButtonElement;
     const closeCameraBtn = document.getElementById('closeCameraBtn') as HTMLButtonElement;
+
+    const updateVideoContainerWidth = () => {
+        if (cameraVideoContainer && cameraModal.classList.contains('active')) {
+            const height = cameraVideoContainer.offsetHeight;
+            const width = height * (704 / 1280);
+            cameraVideoContainer.style.width = `${width}px`;
+        }
+    };
+
+    window.addEventListener('resize', updateVideoContainerWidth);
 
     const googleSignInBtn = document.getElementById('googleSignInBtn') as HTMLDivElement;
     const userProfile = document.getElementById('userProfile') as HTMLDivElement;
@@ -116,7 +127,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageProcessingMessage = document.getElementById('imageProcessingMessage') as HTMLParagraphElement;
 
     // Map to store custom avatars (name -> dataUrl)
-    const customAvatars: Record<string, string> = {};
+    const customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }> = {};
+    let detectedPalette: string[] = [];
 
     const elements = {
         tokenInput, userName, userAvatar, userProfile, googleSignInBtn,
@@ -267,6 +279,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = store.accessToken.trim();
         const oauth = store.oauthClientId.trim();
 
+        // Show/hide Google Sign-in button based on OAuth Client ID availability
+        if (googleSignInBtn) {
+            googleSignInBtn.classList.toggle('hidden', oauth.length === 0);
+        }
+
         const isValid = project.length > 0 && loc.length > 0 && (token.length > 0 || oauth.length > 0);
 
         if (!avatar.isConnected && streamBtn) {
@@ -386,6 +403,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const now = new Date().getTime();
                 store.tokenExpiry = now + (parseInt(data.expires_in) * 1000);
                 console.log('Token verified, set expiry to:', store.tokenExpiry);
+                
+                const fallbackName = data.email || 'User';
+                
+                // Fetch user profile when manual token is valid
+                await fetchUserProfile(token, elements, store);
+                
+                // If name was not set by fetchUserProfile, use email as fallback
+                if (!store.userName) {
+                    store.userName = fallbackName;
+                    displayUserProfile(fallbackName, store.userAvatar || '', elements);
+                }
             } else {
                 alert('Invalid token or failed to verify.');
             }
@@ -478,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = customAvatarName.value.trim();
             const imageUrl = generatedImg.src;
             if (name && imageUrl) {
-                customAvatars[name] = imageUrl;
+                customAvatars[name] = { image: imageUrl, type: 'custom', palette: detectedPalette };
                 updateDropdown(name);
                 avatar.setAttribute('custom-avatar-url', imageUrl);
                 localStorage.setItem('gemini_custom_avatars', JSON.stringify(customAvatars));
@@ -652,7 +680,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 customAvatars,
                 avatar,
                 { generateImageBtn, generatedImg, generatedImageContainer, customAvatarName },
-                updateDropdown
+                updateDropdown,
+                (colors) => { detectedPalette = colors; }
             );
         };
     }
@@ -681,11 +710,13 @@ document.addEventListener('DOMContentLoaded', () => {
         cameraBtn.onclick = async () => {
             if (cameraModal && cameraVideo) {
                 cameraModal.classList.add('active');
+                // Wait for layout to finish before reading offsetHeight
+                setTimeout(updateVideoContainerWidth, 0);
                 
                 const cameraSelect = document.getElementById('cameraSelect') as HTMLSelectElement;
                 const cameraSelectContainer = document.getElementById('cameraSelectContainer') as HTMLDivElement;
                 
-                const populateCameras = async () => {
+                const populateCameras = async (currentDeviceId?: string) => {
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(d => d.kind === 'videoinput');
                     
@@ -702,6 +733,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             cameraSelect.appendChild(opt);
                         });
                         
+                        if (currentDeviceId) {
+                            cameraSelect.value = currentDeviceId;
+                        }
+                        
                         cameraSelect.onchange = async () => {
                             const stream = cameraVideo.srcObject as MediaStream;
                             if (stream) {
@@ -716,9 +751,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const constraints: MediaStreamConstraints = {
                             video: {
-                                width: { ideal: 1080 },
-                                height: { ideal: 1920 },
-                                aspectRatio: 9/16
+                                width: { ideal: 704 },
+                                height: { ideal: 1280 },
+                                aspectRatio: 704/1280
                             }
                         };
                         if (deviceId) {
@@ -731,7 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         cameraVideo.srcObject = stream;
                         
                         // Labels might only be available AFTER getUserMedia!
-                        await populateCameras();
+                        const actualDeviceId = deviceId || stream.getVideoTracks()[0]?.getSettings().deviceId;
+                        await populateCameras(actualDeviceId);
                     } catch (e) {
                         console.error('Camera access error:', e);
                         // Fallback
@@ -784,7 +820,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 customAvatars,
                 avatar,
                 { generatedImg, generatedImageContainer, customAvatarName, captureBtn, cameraModal, imageProcessingMessage },
-                updateDropdown
+                updateDropdown,
+                (colors) => { detectedPalette = colors; }
             );
         };
     }
@@ -817,7 +854,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         customAvatars,
                         avatar,
                         { generatedImg, generatedImageContainer, customAvatarName, uploadBtn, imageProcessingMessage },
-                        updateDropdown
+                        updateDropdown,
+                        (colors) => { detectedPalette = colors; }
                     );
                 }
             };

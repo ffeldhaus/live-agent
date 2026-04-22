@@ -1,5 +1,5 @@
 // Asset URLs
-export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string, palette: string[], texture: string, mood: string, defaultGreeting: string }> = {
+export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, style: string, image: string, palette: string[], texture: string, mood: string, defaultGreeting: string, type: 'preset' }> = {
   Hana: { 
     id: 'Hana', 
     displayName: 'Hana', 
@@ -8,7 +8,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#2a3b52', '#8fa4b4', '#b53d3d'],
     texture: 'Soft studio gradient, matte fabric',
     mood: 'Studious, calm, disciplined',
-    defaultGreeting: 'Hello. I am ready to assist you with your queries.'
+    defaultGreeting: 'Hello. I am ready to assist you with your queries.',
+    type: 'preset'
   },
   Ben: { 
     id: 'Ben', 
@@ -18,7 +19,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#344e52', '#5b6b4e', '#d4a38a'],
     texture: 'Deep mesh gradient, diffused light',
     mood: 'Friendly, modern, approachable',
-    defaultGreeting: 'Hey there! Great to meet you. How can I help?'
+    defaultGreeting: 'Hey there! Great to meet you. How can I help?',
+    type: 'preset'
   },
   Carmen: { 
     id: 'Carmen', 
@@ -28,7 +30,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#2d5a9e', '#4a614d', '#c29a75'],
     texture: 'Blurred classroom, cork & slate textures',
     mood: 'Wise, nurturing, academic',
-    defaultGreeting: 'Welcome. What knowledge shall we seek today?'
+    defaultGreeting: 'Welcome. What knowledge shall we seek today?',
+    type: 'preset'
   },
   Ingrid: { 
     id: 'Ingrid', 
@@ -38,7 +41,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#1e2a4a', '#d1d5db', '#a82e2e'],
     texture: 'Hard stone background, sharp suit lines',
     mood: 'Formal, authoritative, precise',
-    defaultGreeting: 'Good day. Please state your inquiry.'
+    defaultGreeting: 'Good day. Please state your inquiry.',
+    type: 'preset'
   },
   Jay: { 
     id: 'Jay', 
@@ -48,7 +52,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#3f444d', '#d9c8b2', '#93c5fd'],
     texture: 'Corporate office blur, clean professional lines',
     mood: 'Executive, reliable, corporate',
-    defaultGreeting: "Hello. Let's get down to business. What do you need?"
+    defaultGreeting: "Hello. Let's get down to business. What do you need?",
+    type: 'preset'
   },
   Kai: { 
     id: 'Kai', 
@@ -58,7 +63,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#ca8a04', '#7dd3fc', '#4d7c0f'],
     texture: 'Overexposed bokeh, sunny park vibe',
     mood: 'Breezy, youthful, optimistic',
-    defaultGreeting: "Hi! Awesome day, isn't it? What's up?"
+    defaultGreeting: "Hi! Awesome day, isn't it? What's up?",
+    type: 'preset'
   },
   Kira: { 
     id: 'Kira', 
@@ -68,7 +74,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#254a65', '#9ca3af', '#fde68a'],
     texture: 'Industrial neutral, soft directional light',
     mood: 'Practical, grounded, industrious',
-    defaultGreeting: "Hello. Let's get to work. How can I help?"
+    defaultGreeting: "Hello. Let's get to work. How can I help?",
+    type: 'preset'
   },
   Leo: { 
     id: 'Leo', 
@@ -78,7 +85,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#78350f', '#4338ca', '#facc15'],
     texture: 'Rustic, paint-splattered denim, warm clay',
     mood: 'Creative, artisanal, vintage',
-    defaultGreeting: "Hey! Let's create something amazing today!"
+    defaultGreeting: "Hey! Let's create something amazing today!",
+    type: 'preset'
   },
   Paul: { 
     id: 'Paul', 
@@ -88,7 +96,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#334155', '#f8fafc', '#1e3a8a'],
     texture: 'Classic studio vignette, high-contrast formal',
     mood: 'Traditional, senior, dignified',
-    defaultGreeting: 'Greetings. How may I be of service?'
+    defaultGreeting: 'Greetings. How may I be of service?',
+    type: 'preset'
   },
   Piper: { 
     id: 'Piper', 
@@ -98,7 +107,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#0d9488', '#f59e0b', '#166534'],
     texture: 'Impressionist studio blur, floral & denim',
     mood: 'Artistic, vibrant, soulful',
-    defaultGreeting: 'Hello! Excited to explore new ideas with you.'
+    defaultGreeting: 'Hello! Excited to explore new ideas with you.',
+    type: 'preset'
   },
   Sam: { 
     id: 'Sam', 
@@ -108,7 +118,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#92400e', '#14532d', '#bfdbfe'],
     texture: 'Blurred library shelves, warm textures',
     mood: 'Intellectual, smart-casual, cozy',
-    defaultGreeting: 'Hi. Looking forward to a thoughtful conversation.'
+    defaultGreeting: 'Hi. Looking forward to a thoughtful conversation.',
+    type: 'preset'
   },
   Vera: { 
     id: 'Vera', 
@@ -118,7 +129,8 @@ export const AVATAR_PRESETS: Record<string, { id: string, displayName: string, s
     palette: ['#000000', '#94a3b8', '#1e293b'],
     texture: 'Solid depth, metallic shimmer, luxury velvet',
     mood: 'Elegant, sophisticated, musical',
-    defaultGreeting: 'Good day. It is a pleasure to assist you.'
+    defaultGreeting: 'Good day. It is a pleasure to assist you.',
+    type: 'preset'
   },
 };
 

@@ -1,5 +1,6 @@
 import { applyAvatarTheme, updateBackground, applyTheme } from './demo-helpers';
 import { AVATAR_PRESETS } from './constants';
+import { displayUserProfile } from './auth';
 
 export function loadSettings(elements: any, store: any, customAvatars: Record<string, string>, avatar: any) {
     const savedToken = localStorage.getItem('gemini_access_token');
@@ -18,20 +19,24 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
         if (savedUserName && savedUserAvatar) {
             store.userName = savedUserName;
             store.userAvatar = savedUserAvatar;
-            if (elements.userName) elements.userName.textContent = savedUserName;
-            if (elements.userAvatar) elements.userAvatar.src = savedUserAvatar;
-            if (elements.userProfile) elements.userProfile.classList.remove('hidden');
-            if (elements.googleSignInBtn) elements.googleSignInBtn.classList.add('hidden');
+            displayUserProfile(savedUserName, savedUserAvatar, elements);
         }
     }
 
     if (localStorage.getItem('gemini_project_id')) elements.projectIdInput.value = localStorage.getItem('gemini_project_id')!;
     if (localStorage.getItem('gemini_location')) elements.locationInput.value = localStorage.getItem('gemini_location')!;
+    if (localStorage.getItem('gemini_oauth_client_id')) elements.oauthClientIdInput.value = localStorage.getItem('gemini_oauth_client_id')!;
     
     const savedCustomAvatars = localStorage.getItem('gemini_custom_avatars');
     if (savedCustomAvatars) {
-        Object.assign(customAvatars, JSON.parse(savedCustomAvatars));
-        Object.keys(customAvatars).forEach(name => {
+        const data = JSON.parse(savedCustomAvatars);
+        Object.keys(data).forEach(name => {
+            const val = data[name];
+            const imageUrl = typeof val === 'string' ? val : val.image;
+            const type = typeof val === 'string' ? 'custom' : val.type;
+            
+            customAvatars[name] = { image: imageUrl, type: type as 'custom' };
+            
             const option = document.createElement('option');
             option.value = name;
             option.textContent = name;

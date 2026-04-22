@@ -10,7 +10,7 @@ export async function handleImageGeneration(
     project: string,
     location: string,
     token: string,
-    customAvatars: Record<string, string>,
+    customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }>,
     avatar: GeminiAvatar,
     elements: {
         generateImageBtn: HTMLButtonElement,
@@ -18,7 +18,8 @@ export async function handleImageGeneration(
         generatedImageContainer: HTMLDivElement,
         customAvatarName: HTMLInputElement
     },
-    updateDropdown: (name: string) => void
+    updateDropdown: (name: string) => void,
+    onColorsDetected?: (colors: string[]) => void
 ) {
     if (!name) {
         alert('Please enter a name for the custom avatar.');
@@ -43,11 +44,11 @@ export async function handleImageGeneration(
         elements.generateImageBtn.textContent = 'Generating...';
         
         // Add background settings and resolution to prompt!
-        let finalPrompt = enhancedPrompt + ", resolution 720x1280, aspect ratio 9:16";
+        let finalPrompt = enhancedPrompt + ", resolution 704x1280 in PNG format";
         if (useChromaKey) {
             finalPrompt += ` with a solid ${keyColor} background.`;
-        } else if (bgColor === 'white') {
-            finalPrompt += ` with a solid white background.`;
+        } else {
+            finalPrompt += ` with a nice, unobtrusive uniform background.`;
         }
         
         // 2. Generate image with gemini-3.1-flash-image-preview
@@ -92,20 +93,20 @@ export async function handleImageGeneration(
                         finalUrl = canv.toDataURL('image/png');
                         elements.generatedImg.src = finalUrl;
                         
-                        // Save and update
-                        customAvatars[name] = finalUrl;
-                        updateDropdown(name);
-                        avatar.setAttribute('custom-avatar-url', finalUrl);
-                        updateBackground(finalUrl, applyTheme);
+                        // Update background preview and detect palette
+                        updateBackground(finalUrl, (colors, speed) => {
+                            applyTheme(colors, speed);
+                            if (onColorsDetected) onColorsDetected(colors);
+                        });
                     }
                 };
                 img.src = elements.generatedImg.src;
             } else {
-                // Save and update
-                customAvatars[name] = finalUrl;
-                updateDropdown(name);
-                avatar.setAttribute('custom-avatar-url', finalUrl);
-                updateBackground(finalUrl, applyTheme);
+                // Update background preview and detect palette
+                updateBackground(finalUrl, (colors, speed) => {
+                    applyTheme(colors, speed);
+                    if (onColorsDetected) onColorsDetected(colors);
+                });
             }
         } else {
             alert('Failed to generate image (no image data in response). See console.');
@@ -129,7 +130,7 @@ export async function handleCameraCapture(
     project: string,
     location: string,
     token: string,
-    customAvatars: Record<string, string>,
+    customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }>,
     avatar: GeminiAvatar,
     elements: {
         generatedImg: HTMLImageElement,
@@ -139,13 +140,14 @@ export async function handleCameraCapture(
         cameraModal: HTMLDivElement,
         imageProcessingMessage?: HTMLParagraphElement
     },
-    updateDropdown: (name: string) => void
+    updateDropdown: (name: string) => void,
+    onColorsDetected?: (colors: string[]) => void
 ) {
     const videoWidth = videoEl.videoWidth;
     const videoHeight = videoEl.videoHeight;
     
-    // Target aspect ratio 9:16
-    const targetRatio = 9 / 16;
+    // Target aspect ratio 704:1280
+    const targetRatio = 704 / 1280;
     const currentRatio = videoWidth / videoHeight;
     
     let cropWidth = videoWidth;
@@ -164,7 +166,7 @@ export async function handleCameraCapture(
     }
 
     const canvas = document.createElement('canvas');
-    canvas.width = 720; // 1K resolution for 9:16
+    canvas.width = 704;
     canvas.height = 1280;
     const ctx = canvas.getContext('2d');
     
@@ -201,17 +203,15 @@ export async function handleCameraCapture(
                 elements.captureBtn.disabled = true;
                 const originalText = elements.captureBtn.textContent;
                 elements.captureBtn.textContent = 'Improving...';
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'block';
                 
                 const base64Data = dataUrl.split(',')[1];
-                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
+                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
                 
                 if (useChromaKey) {
                     instruction += ` Replace the background with a solid ${keyColor} color.`;
-                } else if (bgColor === 'white') {
-                    instruction += ` Replace the background with a solid white color.`;
-                } else if (bgColor === 'transparent') {
-                    instruction += ` Remove the background and make it transparent.`;
+                } else {
+                    instruction += ` Use a nice, unobtrusive uniform background.`;
                 }
                 
                 const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: 'image/png', data: base64Data });
@@ -224,11 +224,11 @@ export async function handleCameraCapture(
                     const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
                     elements.generatedImg.src = improvedUrl;
                     
-                    // Save and update
-                    customAvatars[name] = improvedUrl;
-                    updateDropdown(name);
-                    avatar.setAttribute('custom-avatar-url', improvedUrl);
-                    updateBackground(improvedUrl, applyTheme);
+                    // Update background preview and detect palette
+                    updateBackground(improvedUrl, (colors, speed) => {
+                        applyTheme(colors, speed);
+                        if (onColorsDetected) onColorsDetected(colors);
+                    });
                 } else {
                     alert('Model did not return an image. See console.');
                 }
@@ -238,14 +238,14 @@ export async function handleCameraCapture(
             } finally {
                 elements.captureBtn.disabled = false;
                 elements.captureBtn.textContent = originalText;
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'none';
             }
         } else {
-            // Save and update with original image
-            customAvatars[name] = dataUrl;
-            updateDropdown(name);
-            avatar.setAttribute('custom-avatar-url', dataUrl);
-            updateBackground(dataUrl, applyTheme);
+            // Update background preview and detect palette
+            updateBackground(dataUrl, (colors, speed) => {
+                applyTheme(colors, speed);
+                if (onColorsDetected) onColorsDetected(colors);
+            });
         }
     }
 }
@@ -260,7 +260,7 @@ export async function handleUpload(
     project: string,
     location: string,
     token: string,
-    customAvatars: Record<string, string>,
+    customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }>,
     avatar: GeminiAvatar,
     elements: {
         generatedImg: HTMLImageElement,
@@ -269,7 +269,8 @@ export async function handleUpload(
         uploadBtn: HTMLButtonElement,
         imageProcessingMessage?: HTMLParagraphElement
     },
-    updateDropdown: (name: string) => void
+    updateDropdown: (name: string) => void,
+    onColorsDetected?: (colors: string[]) => void
 ) {
     const reader = new FileReader();
     reader.onload = async (re: any) => {
@@ -284,17 +285,15 @@ export async function handleUpload(
                 elements.uploadBtn.disabled = true;
                 const originalText = elements.uploadBtn.textContent;
                 elements.uploadBtn.textContent = 'Improving...';
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'block';
                 
                 const base64Data = dataUrl.split(',')[1];
-                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 720x1280 with 9:16 aspect ratio. Do NOT modify the person's features (e.g., hair, face, eyes).";
+                let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
                 
                 if (useChromaKey) {
                     instruction += ` Replace the background with a solid ${keyColor} color.`;
-                } else if (bgColor === 'white') {
-                    instruction += ` Replace the background with a solid white color.`;
-                } else if (bgColor === 'transparent') {
-                    instruction += ` Remove the background and make it transparent.`;
+                } else {
+                    instruction += ` Use a nice, unobtrusive uniform background.`;
                 }
                 
                 const data = await generateContent('gemini-3.1-flash-image-preview', instruction, project, location, token, { mimeType: file.type, data: base64Data });
@@ -307,11 +306,11 @@ export async function handleUpload(
                     const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
                     elements.generatedImg.src = improvedUrl;
                     
-                    // Save and update
-                    customAvatars[name] = improvedUrl;
-                    updateDropdown(name);
-                    avatar.setAttribute('custom-avatar-url', improvedUrl);
-                    updateBackground(improvedUrl, applyTheme);
+                    // Update background preview and detect palette
+                    updateBackground(improvedUrl, (colors, speed) => {
+                        applyTheme(colors, speed);
+                        if (onColorsDetected) onColorsDetected(colors);
+                    });
                 } else {
                     alert('Model did not return an image. See console.');
                 }
@@ -321,14 +320,48 @@ export async function handleUpload(
             } finally {
                 elements.uploadBtn.disabled = false;
                 elements.uploadBtn.textContent = originalText;
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'none';
             }
         } else {
-            // Save and update with original image
-            customAvatars[name] = dataUrl;
-            updateDropdown(name);
-            avatar.setAttribute('custom-avatar-url', dataUrl);
-            updateBackground(dataUrl, applyTheme);
+            // Resize/crop to 704x1280 and convert to PNG
+            const img = new Image();
+            await new Promise((resolve) => {
+                img.onload = resolve;
+                img.src = dataUrl;
+            });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 704;
+            canvas.height = 1280;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                const targetRatio = 704 / 1280;
+                const currentRatio = img.width / img.height;
+                let cropWidth = img.width;
+                let cropHeight = img.height;
+                let startX = 0;
+                let startY = 0;
+                
+                if (currentRatio > targetRatio) {
+                    cropWidth = img.height * targetRatio;
+                    startX = (img.width - cropWidth) / 2;
+                } else {
+                    cropHeight = img.width / targetRatio;
+                    startY = (img.height - cropHeight) / 2;
+                }
+                
+                ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+                const processedUrl = canvas.toDataURL('image/png');
+                
+                // Update preview with processed image
+                elements.generatedImg.src = processedUrl;
+                
+                // Update background preview and detect palette
+                updateBackground(processedUrl, (colors, speed) => {
+                    applyTheme(colors, speed);
+                    if (onColorsDetected) onColorsDetected(colors);
+                });
+            }
         }
     };
     reader.readAsDataURL(file);

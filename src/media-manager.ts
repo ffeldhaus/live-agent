@@ -347,6 +347,7 @@ export class MediaManager {
             `;
 
             const dataUri = 'data:text/javascript;base64,' + btoa(workletCode);
+            const currentContext = this.audioContext;
             try {
                 await this.audioContext.audioWorklet.addModule(dataUri);
                 this._log("AudioWorklet module added successfully");
@@ -356,9 +357,9 @@ export class MediaManager {
                 return false;
             }
 
-            if (!this.audioContext) {
-                this._log("Mic start aborted (context cleared)");
-                return;
+            if (this.audioContext !== currentContext || !this.audioContext) {
+                this._log("Mic start aborted (context changed or cleared)");
+                return false;
             }
 
             this.processor = new AudioWorkletNode(this.audioContext, "audio-processor");
@@ -376,14 +377,12 @@ export class MediaManager {
                 const base64Data = this.arrayBufferToBase64(pcmData.buffer);
 
                 if (this.isSetupComplete) {
-                    if (this.receivedFirstVideoFrame) {
-                        if (this.onAudioChunk) this.onAudioChunk(base64Data);
-                        
-                        if (this.isRecordingVideo) {
-                            this.accumulatedPcmData.push(pcmData);
-                        }
-                        this.audioChunksSent++;
+                    if (this.onAudioChunk) this.onAudioChunk(base64Data);
+                    
+                    if (this.isRecordingVideo) {
+                        this.accumulatedPcmData.push(pcmData);
                     }
+                    this.audioChunksSent++;
                 }
             };
 

@@ -1,6 +1,9 @@
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 export async function verifyToken(token: string) {
     try {
-        const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${token}`);
+        const tokenInfoUrl = isLocal ? `/tokeninfo` : `https://oauth2.googleapis.com/tokeninfo`;
+        const response = await fetch(`${tokenInfoUrl}?access_token=${token}`);
         if (!response.ok) {
             throw new Error(`Token verification failed: ${response.statusText}`);
         }
@@ -13,9 +16,17 @@ export async function verifyToken(token: string) {
     }
 }
 
+export function displayUserProfile(name: string, pictureUrl: string, elements: { userName: HTMLSpanElement | null, userAvatar: HTMLImageElement | null, userProfile: HTMLDivElement | null, googleSignInBtn: HTMLButtonElement | null }) {
+    if (elements.userName) elements.userName.textContent = name;
+    if (elements.userAvatar) elements.userAvatar.src = pictureUrl;
+    if (elements.userProfile) elements.userProfile.classList.remove('hidden');
+    if (elements.googleSignInBtn) elements.googleSignInBtn.classList.add('hidden');
+}
+
 export async function fetchUserProfile(token: string, elements: { userName: HTMLSpanElement | null, userAvatar: HTMLImageElement | null, userProfile: HTMLDivElement | null, googleSignInBtn: HTMLButtonElement | null }, store: any) {
     try {
-        const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        const userInfoUrl = isLocal ? '/oauth2/v3/userinfo' : 'https://www.googleapis.com/oauth2/v3/userinfo';
+        const response = await fetch(userInfoUrl, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -27,17 +38,17 @@ export async function fetchUserProfile(token: string, elements: { userName: HTML
         console.log('User info:', data);
         
         store.userName = data.name;
-        store.userAvatar = data.picture;
         
-        if (elements.userName) elements.userName.textContent = data.name;
-        if (elements.userAvatar) elements.userAvatar.src = data.picture;
+        const pictureUrl = (isLocal && data.picture.startsWith('https://lh3.googleusercontent.com'))
+            ? data.picture.replace('https://lh3.googleusercontent.com', '/lh3')
+            : data.picture;
+            
+        store.userAvatar = pictureUrl;
         
-        // Replace login button with user avatar information
-        if (elements.userProfile) elements.userProfile.classList.remove('hidden');
-        if (elements.googleSignInBtn) elements.googleSignInBtn.classList.add('hidden');
+        displayUserProfile(data.name, pictureUrl, elements);
         
         localStorage.setItem('gemini_user_name', data.name);
-        localStorage.setItem('gemini_user_avatar', data.picture);
+        localStorage.setItem('gemini_user_avatar', pictureUrl);
     } catch (e) {
         console.error('Error fetching user profile:', e);
     }

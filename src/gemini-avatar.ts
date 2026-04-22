@@ -346,6 +346,20 @@ export class GeminiAvatar extends HTMLElement {
         break;
       case "custom-avatar-url":
         this.setPreview(this.getAttribute("avatar-name") || "Kira");
+        if (newValue && newValue.startsWith('data:')) {
+            const parts = newValue.split(',');
+            const mimePart = parts[0];
+            const base64Data = parts[1];
+            const mimeType = mimePart.split(';')[0].split(':')[1];
+            
+            this.customAvatar = {
+                image_data: base64Data,
+                image_mime_type: mimeType.replace('image/', '')
+            };
+            this._log("Updated custom avatar data", { mimeType });
+        } else {
+            this.customAvatar = null;
+        }
         break;
       case "visible-controls":
         this.updateControlsVisibility(newValue);
@@ -376,15 +390,8 @@ export class GeminiAvatar extends HTMLElement {
         if (this.chatContainer) this.chatContainer.style.display = (showC && !outside) ? 'flex' : 'none';
         break;
       case "enable-chroma-key":
-        const enabled = newValue === "true";
-        if (this.displayCanvas) this.displayCanvas.style.display = enabled ? 'block' : 'none';
-        if (this.videoEl) this.videoEl.style.display = enabled ? 'none' : 'block';
-        
-        if (enabled) {
-          this.startChromaKeyLoop();
-        } else {
-          this.stopChromaKeyLoop();
-        }
+      case "background-color":
+        this.updateChromaKeyState();
         break;
     }
   }
@@ -417,13 +424,7 @@ export class GeminiAvatar extends HTMLElement {
   private updateSize(size: string) {
     if (!this.container) return;
     this.style.width = size;
-    if (size.endsWith("px")) {
-      const width = parseFloat(size);
-      const height = Math.round((width * 1280) / 704);
-      this.style.height = `${height}px`;
-    } else {
-      this.style.height = size;
-    }
+    this.style.height = 'auto';
   }
 
   private updatePosition(pos: string) {
@@ -531,12 +532,12 @@ export class GeminiAvatar extends HTMLElement {
     const now = new Date().getTime();
     const setupDurationMs = this.setupCompleteTime && this.startTime ? this.setupCompleteTime - this.startTime : null;
     const setupToFirstFrameDurationMs = this.firstFrameTime && this.setupCompleteTime ? this.firstFrameTime - this.setupCompleteTime : null;
-    const sessionDurationMs = this.firstFrameTime ? now - this.firstFrameTime : null;
     
-    // Get actual frames from video element if supported
-    const totalFrames = this.videoEl && 'getVideoPlaybackQuality' in this.videoEl
-      ? (this.videoEl as any).getVideoPlaybackQuality().totalVideoFrames
-      : 0;
+    const sessionStart = this.firstFrameTime || this.setupCompleteTime;
+    const sessionDurationMs = sessionStart ? now - sessionStart : null;
+    
+    // Use frames received from media manager as fallback or primary for stats
+    const totalFrames = this.mediaManager ? this.mediaManager.videoFramesReceived : 0;
 
     const averageFps = sessionDurationMs && sessionDurationMs > 0 && totalFrames > 0
       ? (totalFrames / (sessionDurationMs / 1000))
@@ -553,9 +554,9 @@ export class GeminiAvatar extends HTMLElement {
       setupDurationMs,
       setupToFirstFrameDurationMs,
       packetsReceived: this.packetsReceived,
-      audioChunksSent: this.audioChunksSent,
-      videoFramesSent: this.videoFramesSent,
-      videoPacketsReceived: this.videoFramesReceived,
+      audioChunksSent: this.mediaManager ? this.mediaManager.audioChunksSent : 0,
+      videoFramesSent: this.mediaManager ? this.mediaManager.videoFramesSent : 0,
+      videoPacketsReceived: this.mediaManager ? this.mediaManager.videoFramesReceived : 0,
       totalVideoFrames: totalFrames,
       sessionDurationMs,
       averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
@@ -798,8 +799,26 @@ export class GeminiAvatar extends HTMLElement {
     }
   }
 
+  private updateChromaKeyState() {
+    const enabled = this.getAttribute("enable-chroma-key") === "true";
+    const bgColor = this.getAttribute("background-color");
+    const shouldChromaKey = enabled || bgColor === "transparent";
+    
+    if (this.displayCanvas) this.displayCanvas.style.display = shouldChromaKey ? 'block' : 'none';
+    if (this.videoEl) this.videoEl.style.display = shouldChromaKey ? 'none' : 'block';
+    
+    if (shouldChromaKey) {
+      this.startChromaKeyLoop();
+    } else {
+      this.stopChromaKeyLoop();
+    }
+  }
+
   private computeFrame() {
     if (!this.videoEl || !this.displayCanvas) return;
+    if (this.videoEl.videoWidth === 0 || this.videoEl.videoHeight === 0) return;
+    
+    if (typeof this.displayCanvas.getContext !== 'function') return;
     
     const ctx = this.displayCanvas.getContext('2d');
     if (!ctx) return;

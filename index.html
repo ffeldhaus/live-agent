@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gemini Live Avatar Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -309,9 +310,9 @@
 
     <!-- Camera Modal -->
     <div class="modal-overlay" id="cameraModal">
-        <div class="bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-2xl p-6 max-w-[400px] w-11/12 text-center shadow-2xl transform scale-95 transition-all active:scale-100 mx-auto my-5 h-[calc(100vh-40px)] flex flex-col">
+        <div class="bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-2xl p-6 text-center shadow-2xl transform scale-95 transition-all active:scale-100 mx-auto my-5 h-[calc(100vh-40px)] flex flex-col w-fit justify-center">
             <h2 class="text-xl font-semibold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4 flex-none">Take Photo</h2>
-            <div class="relative w-full flex-1 bg-black rounded-xl overflow-hidden min-h-0">
+            <div id="cameraVideoContainer" class="relative flex-1 bg-black rounded-xl overflow-hidden min-h-0 mx-auto" style="aspect-ratio: 704/1280;">
                 <video id="cameraVideo" autoplay playsinline class="absolute top-0 left-0 w-full h-full object-cover scale-x-[-1]"></video>
                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-2 border-dashed border-sky-400 w-[60%] h-[60%] rounded-full pointer-events-none"></div>
                 <p class="absolute bottom-3 left-0 right-0 text-center text-xs text-sky-400 m-0">Align mouth to center circle</p>
