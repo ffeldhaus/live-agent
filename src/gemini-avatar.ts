@@ -20,6 +20,7 @@ export class GeminiAvatar extends HTMLElement {
   private selectedVideoDeviceId = '';
   private receivedFirstVideoFrame = false;
   private chromaKeyLoopId: number | null = null;
+  private resizeListener: (() => void) | null = null;
   
   // UI Elements
   private container!: HTMLDivElement;
@@ -79,10 +80,16 @@ export class GeminiAvatar extends HTMLElement {
     this.updateSize(this.getAttribute("size") || "300px");
     this.updatePosition(this.getAttribute("position") || "top-right");
     this.setPreview(this.getAttribute("avatar-name") || "Kira");
+    
+    this.resizeListener = () => this.updateSize(this.getAttribute("size") || "300px");
+    window.addEventListener('resize', this.resizeListener);
   }
 
   disconnectedCallback() {
     this.stop();
+    if (this.resizeListener) {
+        window.removeEventListener('resize', this.resizeListener);
+    }
   }
 
   private render() {
@@ -318,6 +325,7 @@ export class GeminiAvatar extends HTMLElement {
       "enable-chat-input",
       "render-transcript-outside",
       "enable-grounding",
+      "enable-session-resumption",
     ];
   }
 
@@ -399,8 +407,9 @@ export class GeminiAvatar extends HTMLElement {
   public setPreview(avatarName: string) {
     if (!this.previewImg) return;
     
+    const preset = (AVATAR_PRESETS as any)[avatarName];
     const customUrl = this.getAttribute("custom-avatar-url");
-    if (customUrl) {
+    if (!preset && customUrl) {
       this.previewImg.src = customUrl;
       this.previewImg.style.display = 'block';
       return;
@@ -411,7 +420,6 @@ export class GeminiAvatar extends HTMLElement {
       return;
     }
 
-    const preset = (AVATAR_PRESETS as any)[avatarName];
     const url = preset ? preset.image : null;
     if (url) {
       this.previewImg.src = url;
@@ -423,8 +431,24 @@ export class GeminiAvatar extends HTMLElement {
 
   private updateSize(size: string) {
     if (!this.container) return;
-    this.style.width = size;
-    this.style.height = 'auto';
+    
+    const maxH = window.innerHeight - 40;
+    const maxW = window.innerWidth - 40;
+    
+    let w = parseFloat(size) || 300;
+    let h = w * (1280 / 704);
+    
+    if (h > maxH) {
+        h = maxH;
+        w = h * (704 / 1280);
+    }
+    if (w > maxW) {
+        w = maxW;
+        h = w * (1280 / 704);
+    }
+    
+    this.style.width = `${w}px`;
+    this.style.height = `${h}px`;
   }
 
   private updatePosition(pos: string) {
@@ -473,6 +497,8 @@ export class GeminiAvatar extends HTMLElement {
       this.micRecorder.stop();
       this._log("Microphone recording stopped");
     }
+    this.mediaManager?.stopVideoStreaming();
+    this.mediaManager?.resetMediaSource();
     this.disconnect();
   }
 
@@ -602,38 +628,9 @@ export class GeminiAvatar extends HTMLElement {
     }
   }
 
-  private startVideoStreaming(stream: MediaStream) {
-    this.videoInputStream = stream;
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.play();
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    this.videoInputInterval = setInterval(() => {
-      if (video.videoWidth > 0 && video.videoHeight > 0 && ctx) {
-        canvas.width = Math.min(video.videoWidth, 768);
-        canvas.height = (canvas.width * video.videoHeight) / video.videoWidth;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const base64Data = canvas.toDataURL("image/jpeg", 0.5).split(",")[1];
-        if (this.isSetupComplete && this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const message = { realtimeInput: { video: { mimeType: "image/jpeg", data: base64Data } } };
-          this.ws.send(JSON.stringify(message));
-          this.videoFramesSent++;
-        }
-      }
-    }, 1000);
-  }
-
-  private stopVideoStreaming() {
-    if (this.videoInputInterval) clearInterval(this.videoInputInterval);
-    if (this.videoInputStream) this.videoInputStream.getTracks().forEach((track) => track.stop());
-    this.videoInputStream = null;
-    this._log("Video streaming stopped");
-  }
-
   private async toggleCamera() {
     if (this.isStreamingCamera) {
-      this.stopVideoStreaming();
+      this.mediaManager?.stopVideoStreaming();
       this.isStreamingCamera = false;
       this.camBtn.classList.add("off");
       return;
@@ -644,7 +641,7 @@ export class GeminiAvatar extends HTMLElement {
     try {
       this._log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      this.startVideoStreaming(stream);
+      this.mediaManager?.startVideoStreaming(stream);
       this.isStreamingCamera = true;
       this.camBtn.classList.remove("off");
       this._log("Camera streaming started");
@@ -656,7 +653,7 @@ export class GeminiAvatar extends HTMLElement {
 
   private async toggleScreenShare() {
     if (this.isStreamingScreen) {
-      this.stopVideoStreaming();
+      this.mediaManager?.stopVideoStreaming();
       this.isStreamingScreen = false;
       this.screenBtn.classList.add("off");
       return;
@@ -667,13 +664,13 @@ export class GeminiAvatar extends HTMLElement {
     try {
       this._log("Requesting screen share access...");
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      this.startVideoStreaming(stream);
+      this.mediaManager?.startVideoStreaming(stream);
       this.isStreamingScreen = true;
       this.screenBtn.classList.remove("off");
       this._log("Screen sharing started");
 
       stream.getVideoTracks()[0].onended = () => {
-        this.stopVideoStreaming();
+        this.mediaManager?.stopVideoStreaming();
         this.isStreamingScreen = false;
       };
     } catch (err) {
@@ -743,7 +740,8 @@ export class GeminiAvatar extends HTMLElement {
         outputMode: (this.getAttribute("output-mode") as 'audio' | 'video') || "video",
         customAvatar: this.customAvatar,
         defaultGreeting: this.getAttribute("default-greeting"),
-        debug: this.getAttribute("debug") === "true"
+        debug: this.getAttribute("debug") === "true",
+        enableSessionResumption: this.getAttribute("enable-session-resumption") !== "false"
     });
 
     this.client.onConnected = () => {
@@ -755,6 +753,10 @@ export class GeminiAvatar extends HTMLElement {
     };
     this.client.onSetupError = (error) => {
         this.dispatchEvent(new CustomEvent("avatar-setup-error", { detail: { error } }));
+    };
+    this.client.onReconnect = () => {
+        this._log("Reconnecting, resetting media source", null, true);
+        this.mediaManager?.resetMediaSource();
     };
     this.client.onSetupComplete = () => {
         this.setupCompleteTime = new Date().getTime();

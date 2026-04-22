@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // UI Overhaul Part 2 elements
     const enableTranscript = document.getElementById('enableTranscript') as HTMLInputElement;
     const enableChatInput = document.getElementById('enableChatInput') as HTMLInputElement;
+    const enableSessionResumption = document.getElementById('enableSessionResumption') as HTMLInputElement;
     const renderOutsideToggle = document.getElementById('renderOutsideToggle') as HTMLInputElement;
     const externalTranscriptSection = document.getElementById('externalTranscriptSection') as HTMLDivElement;
     const externalTranscript = document.getElementById('externalTranscript') as HTMLDivElement;
@@ -139,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor, backgroundColor,
         enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
         enableGrounding, customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn,
-        saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, captureBtn, uploadBtn, generateImageBtn, luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn
+        saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, captureBtn, uploadBtn, generateImageBtn, luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,
+        enableSessionResumption
     };
 
     // Reactive State Store
@@ -171,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         backgroundColor: 'white',
         enableTranscript: false,
         enableChatInput: false,
+        enableSessionResumption: false,
         renderTranscriptOutside: false,
         enableGrounding: false,
         customAvatarName: '',
@@ -522,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
         avatarNameSelect.onchange = () => {
             const val = avatarNameSelect.value;
             applyAvatarTheme(val, avatar, customAvatars, { customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn });
+            avatar.setAttribute('avatar-name', val);
             
             const preset = (AVATAR_PRESETS as any)[val];
             if (preset && preset.defaultGreeting) {
@@ -555,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle Listeners
     if (enableTranscript) enableTranscript.onchange = () => avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
     if (enableChatInput) enableChatInput.onchange = () => avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
+    if (enableSessionResumption) enableSessionResumption.onchange = () => avatar.setAttribute('enable-session-resumption', enableSessionResumption.checked.toString());
     
     if (renderOutsideToggle) {
         renderOutsideToggle.onchange = () => {
@@ -573,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lucky buttons
     if (luckyPersonaBtn) {
         luckyPersonaBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient)) return;
+            if (!await ensureValidToken(store, tokenClient, elements)) return;
             const name = avatarNameSelect.value;
             const voice = voiceSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -601,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (luckyGreetingBtn) {
         luckyGreetingBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient)) return;
+            if (!await ensureValidToken(store, tokenClient, elements)) return;
             const persona = systemInstructionInput.value;
             const name = avatarNameSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -634,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (luckyImageBtn) {
         luckyImageBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient)) return;
+            if (!await ensureValidToken(store, tokenClient, elements)) return;
             const persona = systemInstructionInput.value;
             const name = avatarNameSelect.value;
             const preset = (AVATAR_PRESETS as any)[name];
@@ -667,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (generateImageBtn) {
         generateImageBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient)) return;
+            if (!await ensureValidToken(store, tokenClient, elements)) return;
             await handleImageGeneration(
                 customAvatarName.value.trim(),
                 imagePromptInput.value,
@@ -801,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (captureBtn) {
         captureBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient)) return;
+            if (!await ensureValidToken(store, tokenClient, elements)) return;
             const name = customAvatarName.value.trim();
             if (!name) {
                 alert('Please enter a name for the custom avatar.');
@@ -838,7 +843,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.type = 'file';
             input.accept = 'image/*';
             input.onchange = async (e: any) => {
-                if (!await ensureValidToken(store, tokenClient)) return;
+                if (!await ensureValidToken(store, tokenClient, elements)) return;
                 const file = e.target.files[0];
                 if (file) {
                     await handleUpload(
@@ -928,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statsInterval = null;
                 }
             } else {
-                if (!await ensureValidToken(store, tokenClient)) return;
+                if (!await ensureValidToken(store, tokenClient, elements)) return;
                 // Update attributes!
                 avatar.setAttribute('access-token', tokenInput.value);
                 avatar.setAttribute('project-id', projectIdInput.value);

@@ -9,17 +9,26 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
     const savedUserAvatar = localStorage.getItem('gemini_user_avatar');
 
     if (savedToken) {
-        store.accessToken = savedToken;
-        elements.tokenInput.value = savedToken;
+        const now = new Date().getTime();
+        const expiry = savedExpiry ? parseInt(savedExpiry) : 0;
         
-        if (savedExpiry) {
-            store.tokenExpiry = parseInt(savedExpiry);
-        }
-        
-        if (savedUserName && savedUserAvatar) {
-            store.userName = savedUserName;
-            store.userAvatar = savedUserAvatar;
-            displayUserProfile(savedUserName, savedUserAvatar, elements);
+        if (now >= expiry) {
+            localStorage.removeItem('gemini_access_token');
+            localStorage.removeItem('gemini_token_expiry');
+            localStorage.removeItem('gemini_token_time');
+            localStorage.removeItem('gemini_user_name');
+            localStorage.removeItem('gemini_user_avatar');
+            store.accessToken = '';
+        } else {
+            store.accessToken = savedToken;
+            elements.tokenInput.value = savedToken;
+            store.tokenExpiry = expiry;
+            
+            if (savedUserName && savedUserAvatar) {
+                store.userName = savedUserName;
+                store.userAvatar = savedUserAvatar;
+                displayUserProfile(savedUserName, savedUserAvatar, elements);
+            }
         }
     }
 
@@ -47,6 +56,7 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
     if (localStorage.getItem('gemini_avatar_name')) {
         const name = localStorage.getItem('gemini_avatar_name')!;
         elements.avatarNameSelect.value = name;
+        avatar.setAttribute('avatar-name', name);
         applyAvatarTheme(name, avatar, customAvatars, elements);
         
         const preset = (AVATAR_PRESETS as any)[name];
@@ -117,6 +127,10 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
     elements.enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
     elements.enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
     
+    const savedResumption = localStorage.getItem('gemini_enable_session_resumption');
+    elements.enableSessionResumption.checked = savedResumption !== null ? savedResumption === 'true' : false;
+    avatar.setAttribute('enable-session-resumption', elements.enableSessionResumption.checked.toString());
+    
     elements.renderOutsideToggle.checked = localStorage.getItem('gemini_enable_transcript_outside') === 'true';
     avatar.setAttribute('render-transcript-outside', elements.renderOutsideToggle.checked.toString());
     if (elements.externalTranscriptSection) {
@@ -180,6 +194,7 @@ export function saveSettings(elements: any, store: any, customAvatars: Record<st
     
     localStorage.setItem('gemini_enable_transcript', elements.enableTranscript.checked.toString());
     localStorage.setItem('gemini_enable_chat_input', elements.enableChatInput.checked.toString());
+    localStorage.setItem('gemini_enable_session_resumption', elements.enableSessionResumption.checked.toString());
     localStorage.setItem('gemini_enable_transcript_outside', elements.renderOutsideToggle.checked.toString());
     if (elements.enableGrounding) {
         localStorage.setItem('gemini_enable_grounding', elements.enableGrounding.checked.toString());

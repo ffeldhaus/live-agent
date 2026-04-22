@@ -54,13 +54,19 @@ export async function fetchUserProfile(token: string, elements: { userName: HTML
     }
 }
 
-export async function ensureValidToken(store: any, tokenClient: any) {
+export async function ensureValidToken(store: any, tokenClient: any, elements?: any) {
     const token = store.accessToken;
     const expiry = store.tokenExpiry;
     const now = new Date().getTime();
 
     if (!token || now >= expiry) {
         console.log('Token missing or expired, requesting new one...');
+        
+        if (elements && elements.tokenInput) {
+            elements.tokenInput.value = '';
+        }
+        store.accessToken = '';
+        
         if (tokenClient) {
             tokenClient.requestAccessToken();
             return false;

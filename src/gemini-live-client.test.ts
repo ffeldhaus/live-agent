@@ -19,7 +19,8 @@ describe('GeminiLiveClient', () => {
         client = new GeminiLiveClient({
             projectId: 'test-project',
             accessToken: 'test-token',
-            debug: true
+            debug: true,
+            enableSessionResumption: true // Enable for tests that assume it
         });
     });
 
@@ -173,7 +174,9 @@ describe('GeminiLiveClient', () => {
 
         mockWs.onmessage({ data: JSON.stringify({ goAway: {} }) });
         
-        expect(mockWs.close).toHaveBeenCalled();
+        await vi.waitFor(() => {
+            expect(mockWs.close).toHaveBeenCalled();
+        });
     });
 
     it('should trigger reconnection on close if eligible', async () => {
@@ -187,7 +190,7 @@ describe('GeminiLiveClient', () => {
             expect((client as any).receivedFirstResponse).toBe(true);
         });
 
-        mockWs.onclose();
+        mockWs.onclose({ code: 1000, reason: 'test' });
         
         expect(global.WebSocket).toHaveBeenCalledTimes(2);
     });
@@ -203,7 +206,7 @@ describe('GeminiLiveClient', () => {
              expect((client as any).sessionHandle).toBe('test-handle');
         });
 
-        mockWs.onclose();
+        mockWs.onclose({ code: 1000, reason: 'test' });
         
         mockWs.onopen();
         
@@ -217,8 +220,142 @@ describe('GeminiLiveClient', () => {
         mockWs.onopen();
         
         // Simulate close before setupComplete
-        mockWs.onclose();
+        mockWs.onclose({ code: 1000, reason: 'test' });
         
         expect(onSetupError).toHaveBeenCalled();
+    });
+
+    it('should delay reconnection on goAway if queue is not empty', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).receivedFirstResponse).toBe(true);
+        });
+
+        const onModelTranscript = vi.fn();
+        client.onModelTranscript = onModelTranscript;
+        
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'msg1' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ goAway: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'msg2' }] } } }) });
+        
+        await vi.waitFor(() => {
+            expect(onModelTranscript).toHaveBeenCalledWith('msg2');
+            expect(mockWs.close).toHaveBeenCalled();
+        });
+    });
+
+    it('should delay reconnection on close if queue is not empty', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).receivedFirstResponse).toBe(true);
+        });
+
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'msg1' }] } } }) });
+        
+        mockWs.onclose({ code: 1000, reason: 'test' });
+        
+        // Should not reconnect immediately
+        expect(global.WebSocket).toHaveBeenCalledTimes(1);
+        
+        // Should reconnect after queue processing
+        await vi.waitFor(() => {
+            expect(global.WebSocket).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it('should track sent messages in history', () => {
+        client.connect();
+        mockWs.onopen();
+        
+        client.sendText('hello');
+        client.sendAudio('audio-data');
+        client.sendVideo('video-data');
+        
+        const sentMessages = (client as any).sentMessages;
+        expect(sentMessages.length).toBe(3);
+        expect(sentMessages[0].index).toBe(1);
+        expect(sentMessages[0].message.realtime_input.text).toBe('hello');
+        expect(sentMessages[1].index).toBe(2);
+        expect(sentMessages[2].index).toBe(3);
+    });
+
+    it('should clear message history on new session handle', async () => {
+        client.connect();
+        mockWs.onopen();
+        
+        client.sendText('hello');
+        expect((client as any).sentMessages.length).toBe(1);
+        
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'new-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).sentMessages.length).toBe(0);
+        });
+    });
+
+    it('should purge message history based on lastConsumedClientMessageIndex', async () => {
+        client.connect();
+        mockWs.onopen();
+        
+        client.sendText('msg1'); // index 1
+        client.sendText('msg2'); // index 2
+        client.sendText('msg3'); // index 3
+        
+        expect((client as any).sentMessages.length).toBe(3);
+        
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'new-handle', lastConsumedClientMessageIndex: '2' } }) });
+        
+        await vi.waitFor(() => {
+            const sentMessages = (client as any).sentMessages;
+            expect(sentMessages.length).toBe(1);
+            expect(sentMessages[0].index).toBe(3);
+            expect(sentMessages[0].message.realtime_input.text).toBe('msg3');
+        });
+    });
+
+    it('should not trigger reconnection on explicit disconnect', async () => {
+        client.connect();
+        mockWs.onopen();
+        mockWs.onmessage({ data: JSON.stringify({ setupComplete: {} }) });
+        mockWs.onmessage({ data: JSON.stringify({ serverContent: { modelTurn: { parts: [{ text: 'hi' }] } } }) });
+        mockWs.onmessage({ data: JSON.stringify({ sessionResumptionUpdate: { resumable: true, newHandle: 'test-handle' } }) });
+        
+        await vi.waitFor(() => {
+            expect((client as any).receivedFirstResponse).toBe(true);
+        });
+
+        const onDisconnected = vi.fn();
+        client.onDisconnected = onDisconnected;
+
+        client.disconnect();
+        
+        mockWs.onclose({ code: 1000, reason: 'test' });
+        
+        expect(global.WebSocket).toHaveBeenCalledTimes(1);
+        expect(onDisconnected).toHaveBeenCalled();
+    });
+
+    it('should not enable session resumption by default', () => {
+        const defaultClient = new GeminiLiveClient({
+            projectId: 'test-project',
+            accessToken: 'test-token'
+        });
+        // Reset mock to clear calls from beforeEach client
+        global.WebSocket = vi.fn().mockImplementation(() => mockWs) as any;
+        
+        defaultClient.connect();
+        mockWs.onopen();
+        
+        expect(mockWs.send).not.toHaveBeenCalledWith(expect.stringContaining('"sessionResumption"'));
     });
 });

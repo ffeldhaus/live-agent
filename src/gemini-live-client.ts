@@ -14,6 +14,7 @@ export interface GeminiLiveClientOptions {
     customAvatar?: { image_data: string; image_mime_type: string } | null;
     defaultGreeting?: string;
     debug?: boolean;
+    enableSessionResumption?: boolean;
 }
 
 export class GeminiLiveClient {
@@ -24,10 +25,15 @@ export class GeminiLiveClient {
     private options: GeminiLiveClientOptions;
     private sessionHandle: string | null = null;
     private receivedFirstResponse = false;
+    private pendingReconnection = false;
+    private sentMessages: Array<{ index: number; message: any }> = [];
+    private currentMessageIndex = 0;
+    private explicitDisconnect = false;
 
     // Callbacks
     onConnected?: () => void;
     onDisconnected?: () => void;
+    onReconnect?: () => void;
     onSetupComplete?: () => void;
     onUserTranscript?: (text: string) => void;
     onModelTranscript?: (text: string) => void;
@@ -53,6 +59,8 @@ export class GeminiLiveClient {
 
     public connect() {
         if (this.ws) return;
+
+        this.isSetupComplete = false;
 
         const location = this.options.location || "us-central1";
         const project = this.options.projectId;
@@ -83,9 +91,15 @@ export class GeminiLiveClient {
                 this._log("WebSocket Error", error, true);
             };
 
-            this.ws.onclose = () => {
-                this._log("WebSocket Closed", null, true);
+            this.ws.onclose = (event: CloseEvent) => {
+                this._log(`WebSocket Closed (code: ${event.code}, reason: ${event.reason})`, null, true);
                 this.ws = null;
+                
+                if (this.explicitDisconnect) {
+                    this.explicitDisconnect = false;
+                    if (this.onDisconnected) this.onDisconnected();
+                    return;
+                }
                 
                 if (!this.isSetupComplete) {
                     this._log("WebSocket closed before setup completion", null, true);
@@ -93,7 +107,12 @@ export class GeminiLiveClient {
                 }
 
                 if (this.shouldResume()) {
-                    this.reconnect();
+                    if (this.messageQueue.length > 0 || this.processingQueue) {
+                        this._log("Queue not empty, delaying reconnection", null, true);
+                        this.pendingReconnection = true;
+                    } else {
+                        this.reconnect();
+                    }
                 } else {
                     if (this.onDisconnected) this.onDisconnected();
                 }
@@ -106,10 +125,10 @@ export class GeminiLiveClient {
 
     public disconnect() {
         if (this.ws) {
+            this.explicitDisconnect = true;
             this.ws.close();
             this.ws = null;
         }
-        this.isSetupComplete = false;
     }
 
     private sendSetup() {
@@ -139,10 +158,12 @@ export class GeminiLiveClient {
                         language_code: language,
                     },
                 },
-                sessionResumption: {
-                    handle: this.sessionHandle,
-                    transparent: true
-                },
+                ...(this.options.enableSessionResumption === true ? {
+                    sessionResumption: {
+                        handle: this.sessionHandle,
+                        transparent: true
+                    }
+                } : {}),
                 ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
                 ...(enableGrounding ? { tools: [{ google_search: {} }] } : {}),
                 ...(enableTranscript ? {
@@ -163,18 +184,30 @@ export class GeminiLiveClient {
                 text: text,
             },
         };
+        
+        this.currentMessageIndex++;
+        this.sentMessages.push({ index: this.currentMessageIndex, message });
+        
         this.ws.send(JSON.stringify(message));
     }
 
     public sendAudio(base64Data: string) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         const message = { realtimeInput: { audio: { mimeType: "audio/pcm;rate=16000", data: base64Data } } };
+        
+        this.currentMessageIndex++;
+        this.sentMessages.push({ index: this.currentMessageIndex, message });
+        
         this.ws.send(JSON.stringify(message));
     }
 
     public sendVideo(base64Data: string) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         const message = { realtimeInput: { video: { mimeType: "image/jpeg", data: base64Data } } };
+        
+        this.currentMessageIndex++;
+        this.sentMessages.push({ index: this.currentMessageIndex, message });
+        
         this.ws.send(JSON.stringify(message));
     }
 
@@ -191,6 +224,17 @@ export class GeminiLiveClient {
             await this.processMessageData(data);
         }
         this.processingQueue = false;
+        
+        if (this.pendingReconnection) {
+            this.pendingReconnection = false;
+            if (this.ws) {
+                this._log("Queue empty, closing socket to reconnect", null, true);
+                this.ws.close();
+            } else {
+                this._log("Queue empty, proceeding with delayed reconnection", null, true);
+                this.reconnect();
+            }
+        }
     }
 
     private async processMessageData(data: any) {
@@ -214,28 +258,39 @@ export class GeminiLiveClient {
     }
 
     private handleJsonResponse(response: any) {
+        let handled = false;
+        
         if (response.sessionResumptionUpdate) {
+            handled = true;
             const update = response.sessionResumptionUpdate;
+            console.warn("[GeminiLiveClient] Full sessionResumptionUpdate:", JSON.stringify(update, null, 2));
             if (update.resumable && update.newHandle) {
                 this.sessionHandle = update.newHandle;
                 this._log("Received session handle", this.sessionHandle, true);
+                
+                if (update.lastConsumedClientMessageIndex) {
+                    const lastConsumedIndex = parseInt(update.lastConsumedClientMessageIndex, 10);
+                    this._log(`Purging message history up to index ${lastConsumedIndex}`, null, true);
+                    this.sentMessages = this.sentMessages.filter(msg => msg.index > lastConsumedIndex);
+                } else {
+                    this._log(`Clearing all message history up to index ${this.currentMessageIndex}`, null, true);
+                    this.sentMessages = [];
+                }
             }
         }
 
         if (response.goAway) {
+            handled = true;
+            console.warn("[GeminiLiveClient] Received goAway message from server. Server may not close connection immediately.", response.goAway);
             this._log("Received goAway", response.goAway, true);
             if (this.shouldResume()) {
-                this._log("Closing connection to trigger resumption", null, true);
-                this.ws?.close();
+                this._log("Resumption requested, will reconnect after queue is empty", null, true);
+                this.pendingReconnection = true;
             }
         }
 
-        if (response.serverContent && !this.receivedFirstResponse) {
-            this.receivedFirstResponse = true;
-            this._log("Received first response, session eligible for resumption", null, true);
-        }
-
         if (response.setupComplete) {
+            handled = true;
             this._log("Setup complete received", response.setupComplete, true);
             this.isSetupComplete = true;
             if (this.onSetupComplete) this.onSetupComplete();
@@ -246,37 +301,50 @@ export class GeminiLiveClient {
             }
         }
 
-        if (response.serverContent && response.serverContent.userTurn) {
-            const parts = response.serverContent.userTurn.parts;
-            for (const part of parts) {
-                if (part.text) {
-                    this._log("Received user transcript in JSON", part.text);
-                    if (this.onUserTranscript) this.onUserTranscript(part.text);
+        if (response.serverContent) {
+            handled = true;
+            if (!this.receivedFirstResponse) {
+                this.receivedFirstResponse = true;
+                this._log("Received first response, session eligible for resumption", null, true);
+            }
+            
+            if (response.serverContent.userTurn) {
+                const parts = response.serverContent.userTurn.parts;
+                for (const part of parts) {
+                    if (part.text) {
+                        this._log("Received user transcript in JSON", part.text);
+                        if (this.onUserTranscript) this.onUserTranscript(part.text);
+                    }
+                }
+            }
+
+            if (response.serverContent.modelTurn) {
+                const parts = response.serverContent.modelTurn.parts;
+                for (const part of parts) {
+                    if (part.text) {
+                        this._log("Received text data in JSON", part.text);
+                        if (this.onModelTranscript) this.onModelTranscript(part.text);
+                    }
+                    if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
+                        this._log("Received audio data in JSON", {
+                            size: part.inlineData.data.length,
+                        });
+                        if (this.onAudioData) this.onAudioData(part.inlineData.data);
+                    }
+                    if (part.inlineData && part.inlineData.mimeType.startsWith("video/")) {
+                        this._log("Received video data in JSON", {
+                            size: part.inlineData.data.length,
+                            mimeType: part.inlineData.mimeType,
+                        });
+                        if (this.onVideoData) this.onVideoData(part.inlineData.data, part.inlineData.mimeType);
+                    }
                 }
             }
         }
-
-        if (response.serverContent && response.serverContent.modelTurn) {
-            const parts = response.serverContent.modelTurn.parts;
-            for (const part of parts) {
-                if (part.text) {
-                    this._log("Received text data in JSON", part.text);
-                    if (this.onModelTranscript) this.onModelTranscript(part.text);
-                }
-                if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
-                    this._log("Received audio data in JSON", {
-                        size: part.inlineData.data.length,
-                    });
-                    if (this.onAudioData) this.onAudioData(part.inlineData.data);
-                }
-                if (part.inlineData && part.inlineData.mimeType.startsWith("video/")) {
-                    this._log("Received video data in JSON", {
-                        size: part.inlineData.data.length,
-                        mimeType: part.inlineData.mimeType,
-                    });
-                    if (this.onVideoData) this.onVideoData(part.inlineData.data, part.inlineData.mimeType);
-                }
-            }
+        
+        if (!handled) {
+            console.warn("[GeminiLiveClient] Received unhandled JSON response:", response);
+            this._log("Received unhandled JSON response", response, true);
         }
     }
 
@@ -291,6 +359,7 @@ export class GeminiLiveClient {
     private reconnect() {
         this._log("Attempting to reconnect for session resumption...", null, true);
         this.isSetupComplete = false;
+        if (this.onReconnect) this.onReconnect();
         this.connect();
     }
 }

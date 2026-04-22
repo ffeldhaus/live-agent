@@ -5,9 +5,9 @@ describe('GeminiAvatar', () => {
   let element: GeminiAvatar;
 
   beforeEach(() => {
-    // Mock global APIs if needed
+    // Mock MediaSource on window
     // @ts-ignore
-    global.MediaSource = vi.fn().mockImplementation(() => ({
+    window.MediaSource = vi.fn().mockImplementation(() => ({
       addEventListener: vi.fn(),
       readyState: 'closed',
       addSourceBuffer: vi.fn().mockReturnValue({
@@ -15,6 +15,8 @@ describe('GeminiAvatar', () => {
         appendBuffer: vi.fn(),
       }),
     }));
+    // @ts-ignore
+    global.MediaSource = window.MediaSource;
 
     // Mock URL.createObjectURL
     URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-url');
@@ -174,7 +176,8 @@ describe('GeminiAvatar', () => {
         setRecordingVideo: vi.fn(),
         setupMicRecorder: vi.fn(),
         stopMic: vi.fn(),
-        stopVideoStreaming: vi.fn()
+        stopVideoStreaming: vi.fn(),
+        resetMediaSource: vi.fn()
     };
     anyEl.tryConnect = vi.fn().mockResolvedValue(undefined);
 

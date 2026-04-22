@@ -109,35 +109,37 @@ export class MediaManager {
         this.sourceBuffer = null;
         this.videoEl.src = URL.createObjectURL(this.mediaSource);
 
-        this.mediaSource.addEventListener("sourceopen", () => {
-            this._log("MediaSource opened");
-            try {
-                const types = [
-                    'video/mp4; codecs="avc1.42C01E, mp4a.40.2"',
-                    'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-                    'video/mp4; codecs="avc1.64001E, mp4a.40.2"',
-                    'video/mp4; codecs="avc1.42C01E"',
-                    'video/mp4; codecs="avc1.42E01E"',
-                    'video/mp4; codecs="avc1.64001E"',
-                    "video/mp4",
-                ];
-                let added = false;
-                for (const type of types) {
-                    if (MediaSource.isTypeSupported(type)) {
-                        this.sourceBuffer = this.mediaSource!.addSourceBuffer(type);
-                        this._log("SourceBuffer added successfully", { type });
-                        added = true;
-                        break;
+        if (typeof this.mediaSource.addEventListener === 'function') {
+            this.mediaSource.addEventListener("sourceopen", () => {
+                this._log("MediaSource opened");
+                try {
+                    const types = [
+                        'video/mp4; codecs="avc1.42C01E, mp4a.40.2"',
+                        'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
+                        'video/mp4; codecs="avc1.64001E, mp4a.40.2"',
+                        'video/mp4; codecs="avc1.42C01E"',
+                        'video/mp4; codecs="avc1.42E01E"',
+                        'video/mp4; codecs="avc1.64001E"',
+                        "video/mp4",
+                    ];
+                    let added = false;
+                    for (const type of types) {
+                        if (MediaSource.isTypeSupported(type)) {
+                            this.sourceBuffer = this.mediaSource!.addSourceBuffer(type);
+                            this._log("SourceBuffer added successfully", { type });
+                            added = true;
+                            break;
+                        }
                     }
+                    if (!added) {
+                        throw new Error("None of the common video/mp4 codecs are supported by this browser.");
+                    }
+                    this.sourceBuffer!.addEventListener("updateend", () => this.processVideoQueue());
+                } catch (e) {
+                    console.error("Failed to add SourceBuffer:", e);
                 }
-                if (!added) {
-                    throw new Error("None of the common video/mp4 codecs are supported by this browser.");
-                }
-                this.sourceBuffer!.addEventListener("updateend", () => this.processVideoQueue());
-            } catch (e) {
-                console.error("Failed to add SourceBuffer:", e);
-            }
-        });
+            });
+        }
 
         this.recordedChunks = [];
         this.videoChunkQueue = [];
