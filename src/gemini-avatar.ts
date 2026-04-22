@@ -18,6 +18,7 @@ export class GeminiAvatar extends HTMLElement {
   private isMicMuted = false;
   private selectedAudioDeviceId = '';
   private selectedVideoDeviceId = '';
+  private selectedSpeakerDeviceId = '';
   private receivedFirstVideoFrame = false;
   private chromaKeyLoopId: number | null = null;
   private resizeListener: (() => void) | null = null;
@@ -63,19 +64,17 @@ export class GeminiAvatar extends HTMLElement {
     const autoRequest = this.getAttribute("mic-auto-request") !== "false";
     if (autoRequest) {
       this.checkMicPermission().then((state) => {
+        this._log("Mic permission state on load:", state);
         if (state === "granted") {
           const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
           this.mediaManager?.startMic(audioChunkSize).then(started => {
               if (started) this.isRecording = true;
           });
-        } else {
+        } else if (state === "denied") {
           this.isRecording = false;
-          if (this.micBtn) this.micBtn.classList.add("off");
+          this.isMicMuted = true;
         }
       });
-    } else {
-      this.isMicMuted = true;
-      if (this.micBtn) this.micBtn.classList.add("off");
     }
     this.updateSize(this.getAttribute("size") || "300px");
     this.updatePosition(this.getAttribute("position") || "top-right");
@@ -169,7 +168,6 @@ export class GeminiAvatar extends HTMLElement {
     controls.className = "controls";
 
     this.micBtn = this.createButton("Toggle Microphone", `<svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`, () => this.toggleMic());
-    this.micBtn.classList.add("off");
     controls.appendChild(this.micBtn);
 
     this.camBtn = this.createButton("Toggle Camera", `<svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>`, () => this.toggleCamera());
@@ -192,12 +190,13 @@ export class GeminiAvatar extends HTMLElement {
     this.settingsModal = document.createElement("div");
     this.settingsModal.className = "settings-modal";
     this.settingsModal.innerHTML = `
-      <button class="close-btn">&times;</button>
       <h3>Device Settings</h3>
       <label for="audioDeviceSelect">Microphone</label>
       <select id="audioDeviceSelect"></select>
       <label for="videoDeviceSelect">Camera</label>
       <select id="videoDeviceSelect"></select>
+      <label for="speakerDeviceSelect">Speaker</label>
+      <select id="speakerDeviceSelect"></select>
     `;
     this.container.appendChild(this.settingsModal);
     
@@ -223,16 +222,41 @@ export class GeminiAvatar extends HTMLElement {
     
     const useMpegts = this.getAttribute("use-mpegts") === "true";
     this.mediaManager.init(useMpegts);
+    this.updateLayout();
+  }
+
+  private updateLayout() {
+    const showTranscript = this.getAttribute("enable-transcript") === "true";
+    const showChat = this.getAttribute("enable-chat-input") === "true";
+    const renderOutside = this.getAttribute("render-transcript-outside") === "true";
+
+    const isTranscriptVisible = showTranscript && !renderOutside;
+    const isChatVisible = showChat && !renderOutside;
+
+    if (this.transcriptArea) {
+      this.transcriptArea.style.display = isTranscriptVisible ? 'flex' : 'none';
+    }
+    if (this.chatContainer) {
+      this.chatContainer.style.display = isChatVisible ? 'flex' : 'none';
+    }
+
+    if (isTranscriptVisible) {
+      if (isChatVisible) {
+        this.transcriptArea!.style.bottom = '95px';
+      } else {
+        this.transcriptArea!.style.bottom = '60px';
+      }
+    }
   }
 
   private updateControlsVisibility(visibleControls: string) {
     const list = visibleControls.split(',').map(s => s.trim());
-    if (this.micBtn) this.micBtn.style.display = list.includes('mic') ? 'flex' : 'none';
-    if (this.camBtn) this.camBtn.style.display = list.includes('camera') ? 'flex' : 'none';
-    if (this.screenBtn) this.screenBtn.style.display = list.includes('screen') ? 'flex' : 'none';
-    if (this.muteBtn) this.muteBtn.style.display = list.includes('mute') ? 'flex' : 'none';
-    if (this.snapshotBtn) this.snapshotBtn.style.display = list.includes('snapshot') ? 'flex' : 'none';
-    if (this.settingsBtn) this.settingsBtn.style.display = list.includes('settings') ? 'flex' : 'none';
+    if (this.micBtn) this.micBtn.style.display = list.includes('mic') ? '' : 'none';
+    if (this.camBtn) this.camBtn.style.display = list.includes('camera') ? '' : 'none';
+    if (this.screenBtn) this.screenBtn.style.display = list.includes('screen') ? '' : 'none';
+    if (this.muteBtn) this.muteBtn.style.display = list.includes('mute') ? '' : 'none';
+    if (this.snapshotBtn) this.snapshotBtn.style.display = list.includes('snapshot') ? '' : 'none';
+    if (this.settingsBtn) this.settingsBtn.style.display = list.includes('settings') ? '' : 'none';
   }
 
   private createButton(title: string, iconSVG: string, onClick: () => void): HTMLButtonElement {
@@ -245,6 +269,7 @@ export class GeminiAvatar extends HTMLElement {
 
   private toggleSettings() {
     const isActive = this.settingsModal.classList.toggle('active');
+    this.settingsBtn.classList.toggle('off', isActive);
     if (isActive) {
         this.populateDevices();
     }
@@ -254,6 +279,7 @@ export class GeminiAvatar extends HTMLElement {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioSelect = this.settingsModal.querySelector('#audioDeviceSelect') as HTMLSelectElement;
       const videoSelect = this.settingsModal.querySelector('#videoDeviceSelect') as HTMLSelectElement;
+      const speakerSelect = this.settingsModal.querySelector('#speakerDeviceSelect') as HTMLSelectElement;
       
       if (audioSelect) {
           audioSelect.innerHTML = '';
@@ -263,6 +289,9 @@ export class GeminiAvatar extends HTMLElement {
               opt.textContent = d.label || `Mic ${audioSelect.options.length + 1}`;
               audioSelect.appendChild(opt);
           });
+          if (!this.selectedAudioDeviceId && audioSelect.options.length > 0) {
+              this.selectedAudioDeviceId = audioSelect.options[0].value;
+          }
           audioSelect.value = this.selectedAudioDeviceId;
           audioSelect.onchange = () => {
               this.selectedAudioDeviceId = audioSelect.value;
@@ -277,10 +306,51 @@ export class GeminiAvatar extends HTMLElement {
               opt.textContent = d.label || `Camera ${videoSelect.options.length + 1}`;
               videoSelect.appendChild(opt);
           });
+          if (!this.selectedVideoDeviceId && videoSelect.options.length > 0) {
+              this.selectedVideoDeviceId = videoSelect.options[0].value;
+          }
           videoSelect.value = this.selectedVideoDeviceId;
           videoSelect.onchange = () => {
               this.selectedVideoDeviceId = videoSelect.value;
           };
+      }
+
+      if (speakerSelect) {
+          speakerSelect.innerHTML = '';
+          devices.filter(d => d.kind === 'audiooutput').forEach(d => {
+              const opt = document.createElement('option');
+              opt.value = d.deviceId;
+              opt.textContent = d.label || `Speaker ${speakerSelect.options.length + 1}`;
+              speakerSelect.appendChild(opt);
+          });
+          if (!this.selectedSpeakerDeviceId && speakerSelect.options.length > 0) {
+              this.selectedSpeakerDeviceId = speakerSelect.options[0].value;
+          }
+          speakerSelect.value = this.selectedSpeakerDeviceId;
+          speakerSelect.onchange = async () => {
+              this.selectedSpeakerDeviceId = speakerSelect.value;
+              await this.updateSpeakerDevice(speakerSelect.value);
+          };
+      }
+  }
+
+  private async updateSpeakerDevice(deviceId: string) {
+      this._log("Updating speaker device to:", deviceId);
+      if (this.videoEl && (this.videoEl as any).setSinkId) {
+          try {
+              await (this.videoEl as any).setSinkId(deviceId);
+              this._log("Speaker device updated for video element");
+          } catch (e) {
+              console.error("Failed to setSinkId on video element:", e);
+          }
+      }
+      if (this.playbackAudioContext && (this.playbackAudioContext as any).setSinkId) {
+          try {
+              await (this.playbackAudioContext as any).setSinkId(deviceId);
+              this._log("Speaker device updated for AudioContext");
+          } catch (e) {
+              console.error("Failed to setSinkId on AudioContext:", e);
+          }
       }
   }
 
@@ -381,21 +451,9 @@ export class GeminiAvatar extends HTMLElement {
         }
         break;
       case "enable-transcript":
-        const showTranscript = newValue === "true";
-        const renderOutside = this.getAttribute("render-transcript-outside") === "true";
-        if (this.transcriptArea) this.transcriptArea.style.display = (showTranscript && !renderOutside) ? 'flex' : 'none';
-        break;
       case "enable-chat-input":
-        const showChat = newValue === "true";
-        const renderOutsideChat = this.getAttribute("render-transcript-outside") === "true";
-        if (this.chatContainer) this.chatContainer.style.display = (showChat && !renderOutsideChat) ? 'flex' : 'none';
-        break;
       case "render-transcript-outside":
-        const outside = newValue === "true";
-        const showT = this.getAttribute("enable-transcript") === "true";
-        const showC = this.getAttribute("enable-chat-input") === "true";
-        if (this.transcriptArea) this.transcriptArea.style.display = (showT && !outside) ? 'flex' : 'none';
-        if (this.chatContainer) this.chatContainer.style.display = (showC && !outside) ? 'flex' : 'none';
+        this.updateLayout();
         break;
       case "enable-chroma-key":
       case "background-color":
@@ -736,7 +794,7 @@ export class GeminiAvatar extends HTMLElement {
         language: this.getAttribute("language") || "en-US",
         systemInstruction: this.getAttribute("system-instruction"),
         enableGrounding: this.getAttribute("enable-grounding") === "true",
-        enableTranscript: this.getAttribute("enable-transcript") === "true",
+        enableTranscript: this.getAttribute("enable-transcript") === "true" || (this as any).enableTranscript === true,
         outputMode: (this.getAttribute("output-mode") as 'audio' | 'video') || "video",
         customAvatar: this.customAvatar,
         defaultGreeting: this.getAttribute("default-greeting"),
@@ -880,32 +938,41 @@ export class GeminiAvatar extends HTMLElement {
 
     if (!this.transcriptArea) return;
     
-    const p = document.createElement('p');
-    p.style.margin = '5px 0';
-    p.style.fontSize = '0.95rem';
-    p.style.padding = '5px 10px';
-    p.style.borderRadius = '8px';
-    p.style.maxWidth = '80%';
-    p.style.wordBreak = 'break-word';
-    
-    const isUser = sender === 'User';
-    const icon = isUser ? '👤' : '🤖';
-    
-    p.innerHTML = `<span>${icon}</span> ${text}`;
-    
-    if (isUser) {
-      p.style.alignSelf = 'flex-end';
-      p.style.background = 'rgba(99, 102, 241, 0.3)';
-      p.style.marginLeft = 'auto';
-      p.style.color = '#f8fafc';
+    const lastChild = this.transcriptArea.lastElementChild;
+    if (lastChild && lastChild.getAttribute('data-sender') === sender) {
+      lastChild.innerHTML += " " + text;
     } else {
-      p.style.alignSelf = 'flex-start';
-      p.style.background = 'rgba(255, 255, 255, 0.1)';
-      p.style.marginRight = 'auto';
-      p.style.color = '#cbd5e1';
+      const p = document.createElement('p');
+      p.setAttribute('data-sender', sender);
+      p.style.margin = '5px 0';
+      p.style.fontSize = '0.95rem';
+      p.style.padding = '5px 10px';
+      p.style.borderRadius = '8px';
+      p.style.maxWidth = '80%';
+      p.style.wordBreak = 'break-word';
+      
+      const isUser = sender === 'User';
+      const icon = isUser ? '👤' : '🤖';
+      
+      p.innerHTML = `<span>${icon}</span> ${text}`;
+      
+      if (isUser) {
+        p.style.alignSelf = 'flex-end';
+        p.style.background = 'rgba(99, 102, 241, 0.3)';
+        p.style.marginLeft = 'auto';
+        p.style.color = '#f8fafc';
+      } else {
+        p.style.alignSelf = 'flex-start';
+        p.style.background = 'rgba(255, 255, 255, 0.1)';
+        p.style.marginRight = 'auto';
+        p.style.color = '#cbd5e1';
+      }
+      
+      this.transcriptArea.appendChild(p);
     }
     
-    this.transcriptArea.appendChild(p);
+    // Scroll to bottom
+    this.transcriptArea.scrollTop = this.transcriptArea.scrollHeight;
   }
 
 }

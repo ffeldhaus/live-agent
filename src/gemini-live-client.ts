@@ -142,35 +142,50 @@ export class GeminiLiveClient {
         const enableTranscript = this.options.enableTranscript;
 
         const setupMessage = {
-            setup: {
-                model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
-                avatarConfig: (!AVATAR_PRESETS.hasOwnProperty(modelName) && modelName !== 'AudioOnly' && this.options.customAvatar) ? {
-                    customizedAvatar: this.options.customAvatar
-                } : {
+          setup: {
+            model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
+            avatarConfig:
+              !AVATAR_PRESETS.hasOwnProperty(modelName) &&
+              modelName !== "AudioOnly" &&
+              this.options.customAvatar
+                ? {
+                    customizedAvatar: this.options.customAvatar,
+                  }
+                : {
                     avatarName: modelName,
+                  },
+            generationConfig: {
+              responseModalities: [
+                ...(this.options.outputMode === "audio"
+                  ? ["AUDIO"]
+                  : ["VIDEO"]),
+              ],
+              speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: voice },
                 },
-                generationConfig: {
-                    responseModalities: this.options.outputMode === "audio" ? ["AUDIO"] : ["VIDEO"],
-                    speechConfig: {
-                        voiceConfig: {
-                            prebuiltVoiceConfig: { voiceName: voice },
-                        },
-                        languageCode: language,
-                    },
-                },
-                ...(this.options.enableSessionResumption === true ? {
-                    sessionResumption: {
-                        handle: this.sessionHandle,
-                        transparent: true
-                    }
-                } : {}),
-                ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-                ...(enableGrounding ? { tools: [{ googleSearch: {} }] } : {}),
-                ...(enableTranscript ? {
-                    inputAudioTranscription: {},
-                    outputAudioTranscription: {}
-                } : {})
+                languageCode: language,
+              },
             },
+            ...(this.options.enableSessionResumption === true
+              ? {
+                  sessionResumption: {
+                    handle: this.sessionHandle,
+                    transparent: true,
+                  },
+                }
+              : {}),
+            ...(systemInstruction
+              ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+              : {}),
+            ...(enableGrounding ? { tools: [{ googleSearch: {} }] } : {}),
+            ...(enableTranscript
+              ? {
+                  inputAudioTranscription: {},
+                  outputAudioTranscription: {},
+                }
+              : {}),
+          },
         };
 
         this._log("Sending setup", setupMessage, true);
@@ -308,6 +323,18 @@ export class GeminiLiveClient {
                 this._log("Received first response, session eligible for resumption", null, true);
             }
             
+            if (response.serverContent.outputTranscription) {
+                const text = response.serverContent.outputTranscription.text;
+                this._log("Received output transcription:", text);
+                if (this.onModelTranscript) this.onModelTranscript(text);
+            }
+
+            if (response.serverContent.inputTranscription) {
+                const text = response.serverContent.inputTranscription.text;
+                this._log("Received input transcription:", text);
+                if (this.onUserTranscript) this.onUserTranscript(text);
+            }
+
             if (response.serverContent.userTurn) {
                 const parts = response.serverContent.userTurn.parts;
                 for (const part of parts) {

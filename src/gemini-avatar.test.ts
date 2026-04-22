@@ -165,7 +165,7 @@ describe('GeminiAvatar', () => {
     expect(micBtn.style.display).toBe('');
     expect(camBtn.style.display).toBe('none');
     expect(screenBtn.style.display).toBe('none');
-    expect(muteBtn.style.display).toBe('flex');
+    expect(muteBtn.style.display).toBe('');
     expect(snapshotBtn.style.display).toBe('none');
   });
 

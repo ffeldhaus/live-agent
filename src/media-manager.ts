@@ -146,6 +146,7 @@ export class MediaManager {
         this.messageQueue = [];
         this.processingQueue = false;
         this.nextPlaybackTime = 0;
+        this.receivedFirstVideoFrame = false;
     }
 
     private initMpegts() {
@@ -378,7 +379,7 @@ export class MediaManager {
                 
                 const base64Data = this.arrayBufferToBase64(pcmData.buffer);
 
-                if (this.isSetupComplete) {
+                if (this.isSetupComplete && this.receivedFirstVideoFrame) {
                     if (this.onAudioChunk) this.onAudioChunk(base64Data);
                     
                     if (this.isRecordingVideo) {

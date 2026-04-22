@@ -86,6 +86,8 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
 
     elements.saveVideoToggle.checked = localStorage.getItem('gemini_save_video') === 'true';
     elements.debugToggle.checked = localStorage.getItem('gemini_debug') === 'true';
+    avatar.setAttribute('debug', elements.debugToggle.checked.toString());
+    avatar.setAttribute('record-video', elements.saveVideoToggle.checked.toString());
     if (elements.recordUserAudioCheckbox) {
         elements.recordUserAudioCheckbox.checked = localStorage.getItem('gemini_record_user_audio') === 'true';
     }
@@ -105,6 +107,7 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
     elements.ctrlScreen.checked = loadCtrlState('screen', true);
     elements.ctrlMute.checked = loadCtrlState('mute', true);
     elements.ctrlSnapshot.checked = loadCtrlState('snapshot', false);
+    elements.ctrlSettings.checked = loadCtrlState('settings', true);
 
     if (localStorage.getItem('gemini_audio_chunk_size')) {
         elements.audioChunkSizeSlider.value = localStorage.getItem('gemini_audio_chunk_size')!;
@@ -126,6 +129,8 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
 
     elements.enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
     elements.enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
+    avatar.setAttribute('enable-transcript', elements.enableTranscript.checked.toString());
+    avatar.setAttribute('enable-chat-input', elements.enableChatInput.checked.toString());
     
     const savedResumption = localStorage.getItem('gemini_enable_session_resumption');
     elements.enableSessionResumption.checked = savedResumption !== null ? savedResumption === 'true' : false;
@@ -182,6 +187,7 @@ export function saveSettings(elements: any, store: any, customAvatars: Record<st
     localStorage.setItem('gemini_ctrl_screen', elements.ctrlScreen.checked.toString());
     localStorage.setItem('gemini_ctrl_mute', elements.ctrlMute.checked.toString());
     localStorage.setItem('gemini_ctrl_snapshot', elements.ctrlSnapshot.checked.toString());
+    localStorage.setItem('gemini_ctrl_settings', elements.ctrlSettings.checked.toString());
     
     localStorage.setItem('gemini_audio_chunk_size', elements.audioChunkSizeSlider.value);
     localStorage.setItem('gemini_system_instruction', elements.systemInstructionInput.value);

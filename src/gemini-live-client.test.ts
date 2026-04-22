@@ -358,4 +358,20 @@ describe('GeminiLiveClient', () => {
         
         expect(mockWs.send).not.toHaveBeenCalledWith(expect.stringContaining('"sessionResumption"'));
     });
+
+    it('should include transcription settings when enabled', () => {
+        const clientWithTranscript = new GeminiLiveClient({
+            projectId: 'test-project',
+            accessToken: 'test-token',
+            enableTranscript: true
+        });
+        global.WebSocket = vi.fn().mockImplementation(() => mockWs) as any;
+        
+        clientWithTranscript.connect();
+        mockWs.onopen();
+        
+        expect(mockWs.send).toHaveBeenCalledWith(expect.stringContaining('"inputAudioTranscription":{}'));
+        expect(mockWs.send).toHaveBeenCalledWith(expect.stringContaining('"outputAudioTranscription":{}'));
+        expect(mockWs.send).not.toHaveBeenCalledWith(expect.stringContaining('"TEXT"'));
+    });
 });

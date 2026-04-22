@@ -35,11 +35,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctrlScreen = document.getElementById('ctrlScreen') as HTMLInputElement;
     const ctrlMute = document.getElementById('ctrlMute') as HTMLInputElement;
     const ctrlSnapshot = document.getElementById('ctrlSnapshot') as HTMLInputElement;
+    const ctrlSettings = document.getElementById('ctrlSettings') as HTMLInputElement;
     
     // Slider
     const audioChunkSizeSlider = document.getElementById('audioChunkSize') as HTMLInputElement;
     const chunkSizeVal = document.getElementById('chunkSizeVal') as HTMLSpanElement;
-
     // Stats elements
     const statSetupDuration = document.getElementById('statSetupDuration') as HTMLSpanElement;
     const statLatency = document.getElementById('statLatency') as HTMLSpanElement;
@@ -50,34 +50,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const statTotalFrames = document.getElementById('statTotalFrames') as HTMLSpanElement;
     const statSessionDuration = document.getElementById('statSessionDuration') as HTMLSpanElement;
     const statFps = document.getElementById('statFps') as HTMLSpanElement;
-
     const statDownlink = document.getElementById('statDownlink') as HTMLSpanElement;
     const statRtt = document.getElementById('statRtt') as HTMLSpanElement;
     const statConnType = document.getElementById('statConnType') as HTMLSpanElement;
-
     // Advanced Customization elements
     const systemInstructionInput = document.getElementById('systemInstruction') as HTMLTextAreaElement;
     const defaultGreetingInput = document.getElementById('defaultGreeting') as HTMLInputElement;
     const imagePromptInput = document.getElementById('imagePrompt') as HTMLInputElement;
-    
     const luckyPersonaBtn = document.getElementById('luckyPersonaBtn') as HTMLButtonElement;
     const luckyGreetingBtn = document.getElementById('luckyGreetingBtn') as HTMLButtonElement;
     const luckyImageBtn = document.getElementById('luckyImageBtn') as HTMLButtonElement;
     const generateImageBtn = document.getElementById('generateImageBtn') as HTMLButtonElement;
-    
     const generatedImageContainer = document.getElementById('generatedImageContainer') as HTMLDivElement;
     const generatedImg = document.getElementById('generatedImg') as HTMLImageElement;
-
     // Chroma Keying elements
     const enableChromaKey = document.getElementById('enableChromaKey') as HTMLInputElement;
     const chromaKeyColor = document.getElementById('chromaKeyColor') as HTMLSelectElement;
     const backgroundColor = document.getElementById('backgroundColor') as HTMLSelectElement;
-
     // QA elements
     const qaContainer = document.getElementById('qaContainer') as HTMLDivElement;
     const qaList = document.getElementById('qaList') as HTMLDivElement;
     const toggleQaBtn = document.getElementById('toggleQaBtn') as HTMLButtonElement;
-
     // UI Overhaul Part 2 elements
     const enableTranscript = document.getElementById('enableTranscript') as HTMLInputElement;
     const enableChatInput = document.getElementById('enableChatInput') as HTMLInputElement;
@@ -87,17 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const externalTranscript = document.getElementById('externalTranscript') as HTMLDivElement;
     const externalChatInput = document.getElementById('externalChatInput') as HTMLInputElement;
     const externalSendBtn = document.getElementById('externalSendBtn') as HTMLButtonElement;
-    
     const barSetup = document.getElementById('barSetup') as HTMLDivElement;
     const barLatency = document.getElementById('barLatency') as HTMLDivElement;
     const statTotalLatency = document.getElementById('statTotalLatency') as HTMLSpanElement;
-
     const cameraBtn = document.getElementById('cameraBtn') as HTMLButtonElement;
     const uploadBtn = document.getElementById('uploadBtn') as HTMLButtonElement;
-
     // New Grounding element
     const enableGrounding = document.getElementById('enableGrounding') as HTMLInputElement;
-
     // Camera Modal elements
     const cameraModal = document.getElementById('cameraModal') as HTMLDivElement;
     const cameraVideo = document.getElementById('cameraVideo') as HTMLVideoElement;
@@ -114,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.addEventListener('resize', updateVideoContainerWidth);
-
     const googleSignInBtn = document.getElementById('googleSignInBtn') as HTMLDivElement;
     const userProfile = document.getElementById('userProfile') as HTMLDivElement;
     const userAvatar = document.getElementById('userAvatar') as HTMLImageElement;
@@ -136,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         projectIdInput, locationInput, avatarNameSelect, sizeSelect, positionSelect,
         oauthClientIdInput, voiceSelect, languageSelect, saveVideoToggle, debugToggle,
         recordUserAudioCheckbox, micAutoRequestToggle, ctrlMic, ctrlCamera, ctrlScreen,
-        ctrlMute, ctrlSnapshot, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
+        ctrlMute, ctrlSnapshot, ctrlSettings, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
         defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor, backgroundColor,
         enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
         enableGrounding, customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn,
@@ -190,15 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }
     });
-
     let tokenClient: any = null;
-
-
-
     function initGoogleAuth() {
         const clientId = oauthClientIdInput.value.trim();
         if (!clientId) return;
-
         try {
             // @ts-ignore
             tokenClient = google.accounts.oauth2.initTokenClient({
@@ -238,9 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Failed to init Google Auth:', e);
         }
     }
-
-
-
     // Populate Avatar Select
     avatarNameSelect.innerHTML = '';
     Object.values(AVATAR_PRESETS).forEach(preset => {
@@ -254,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
     audioOnlyOption.value = 'AudioOnly';
     audioOnlyOption.textContent = 'Audio Only';
     avatarNameSelect.appendChild(audioOnlyOption);
-
     // Populate Voice Select
     voiceSelect.innerHTML = '';
     Object.values(VOICE_PRESETS).forEach(preset => {
@@ -263,19 +242,16 @@ document.addEventListener('DOMContentLoaded', () => {
         option.textContent = `${preset.displayName} (${preset.description})`;
         voiceSelect.appendChild(option);
     });
-
     // Show connection type on load
     const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
     if (conn && statConnType) {
         statConnType.textContent = conn.type || '-';
     }
-
     // Load from localStorage
     loadSettings(elements, store, customAvatars, avatar);
     if (localStorage.getItem('gemini_oauth_client_id')) {
         initGoogleAuth();
     }
-
     function validateForm() {
         const project = store.projectId.trim();
         const loc = store.location.trim();
@@ -355,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ctrlScreen.checked) list.push('screen');
         if (ctrlMute.checked) list.push('mute');
         if (ctrlSnapshot.checked) list.push('snapshot');
+        if (ctrlSettings && ctrlSettings.checked) list.push('settings');
         avatar.setAttribute('visible-controls', list.join(','));
     };
 
@@ -391,9 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
             barLatency.textContent = latency > 0 ? `${latency}ms` : '';
         }
     };
-
-
-
     // Listeners
     projectIdInput.addEventListener('input', () => store.projectId = projectIdInput.value);
     locationInput.addEventListener('input', () => store.location = locationInput.value);
@@ -450,6 +424,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const userName = store.userName || 'The current user';
         const projectName = store.projectId || 'the project';
         alert(`Something went wrong. Likely causes: User ${userName} has no permission to use the Gemini Live model in project ${projectName}.`);
+    });
+
+    avatar.addEventListener('transcript-item', (e: any) => {
+        const { sender, text } = e.detail;
+        if (renderOutsideToggle && renderOutsideToggle.checked && externalTranscript) {
+            const lastChild = externalTranscript.lastElementChild;
+            if (lastChild && lastChild.getAttribute('data-sender') === sender) {
+                lastChild.innerHTML += " " + text;
+            } else {
+                const p = document.createElement('p');
+                p.setAttribute('data-sender', sender);
+                p.style.margin = '5px 0';
+                p.style.fontSize = '0.95rem';
+                p.style.padding = '5px 10px';
+                p.style.borderRadius = '8px';
+                p.style.maxWidth = '80%';
+                p.style.wordBreak = 'break-word';
+                
+                const isUser = sender === 'User';
+                const icon = isUser ? '👤' : '🤖';
+                
+                p.innerHTML = `<span>${icon}</span> ${text}`;
+                
+                if (isUser) {
+                    p.style.alignSelf = 'flex-end';
+                    p.style.background = 'rgba(99, 102, 241, 0.3)';
+                    p.style.marginLeft = 'auto';
+                    p.style.color = '#f8fafc';
+                } else {
+                    p.style.alignSelf = 'flex-start';
+                    p.style.background = 'rgba(255, 255, 255, 0.1)';
+                    p.style.marginRight = 'auto';
+                    p.style.color = '#cbd5e1';
+                }
+                
+                externalTranscript.appendChild(p);
+            }
+            // Scroll to bottom
+            externalTranscript.scrollTop = externalTranscript.scrollHeight;
+        }
     });
 
     function pollValidation() {
@@ -540,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         micAutoRequestToggle.onchange = () => avatar.setAttribute('mic-auto-request', micAutoRequestToggle.checked.toString());
     }
     
-    [ctrlMic, ctrlCamera, ctrlScreen, ctrlMute, ctrlSnapshot].forEach(el => {
+    [ctrlMic, ctrlCamera, ctrlScreen, ctrlMute, ctrlSnapshot, ctrlSettings].forEach(el => {
         if (el) el.onchange = updateVisibleControls;
     });
 
@@ -557,7 +571,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backgroundColor) backgroundColor.onchange = () => avatar.setAttribute('background-color', backgroundColor.value);
 
     // Toggle Listeners
-    if (enableTranscript) enableTranscript.onchange = () => avatar.setAttribute('enable-transcript', enableTranscript.checked.toString());
+    if (enableTranscript) {
+        enableTranscript.onchange = () => {
+            const val = enableTranscript.checked.toString();
+            console.log('[Demo] Setting enable-transcript to:', val);
+            avatar.setAttribute('enable-transcript', val);
+        };
+    }
     if (enableChatInput) enableChatInput.onchange = () => avatar.setAttribute('enable-chat-input', enableChatInput.checked.toString());
     if (enableSessionResumption) enableSessionResumption.onchange = () => avatar.setAttribute('enable-session-resumption', enableSessionResumption.checked.toString());
     
@@ -943,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 avatar.setAttribute('language', languageSelect.value);
                 avatar.setAttribute('system-instruction', systemInstructionInput.value);
                 avatar.setAttribute('default-greeting', defaultGreetingInput.value);
-                avatar.setAttribute('save-video', saveVideoToggle.checked.toString());
+                avatar.setAttribute('record-video', saveVideoToggle.checked.toString());
                 avatar.setAttribute('debug', debugToggle.checked.toString());
                 if (recordUserAudioCheckbox) {
                     avatar.setAttribute('record-user-audio', recordUserAudioCheckbox.checked.toString());
