@@ -297,7 +297,7 @@ export class GeminiLiveClient {
             
             if (this.options.defaultGreeting) {
                 this._log("Sending default greeting:", this.options.defaultGreeting);
-                this.sendText(this.options.defaultGreeting);
+                this.sendText(`Greet the user with: "${this.options.defaultGreeting}"`);
             }
         }
 
