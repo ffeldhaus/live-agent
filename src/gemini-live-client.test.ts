@@ -284,7 +284,7 @@ describe('GeminiLiveClient', () => {
         const sentMessages = (client as any).sentMessages;
         expect(sentMessages.length).toBe(3);
         expect(sentMessages[0].index).toBe(1);
-        expect(sentMessages[0].message.realtime_input.text).toBe('hello');
+        expect(sentMessages[0].message.realtimeInput.text).toBe('hello');
         expect(sentMessages[1].index).toBe(2);
         expect(sentMessages[2].index).toBe(3);
     });
@@ -319,7 +319,7 @@ describe('GeminiLiveClient', () => {
             const sentMessages = (client as any).sentMessages;
             expect(sentMessages.length).toBe(1);
             expect(sentMessages[0].index).toBe(3);
-            expect(sentMessages[0].message.realtime_input.text).toBe('msg3');
+            expect(sentMessages[0].message.realtimeInput.text).toBe('msg3');
         });
     });
 

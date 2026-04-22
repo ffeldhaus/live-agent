@@ -144,18 +144,18 @@ export class GeminiLiveClient {
         const setupMessage = {
             setup: {
                 model: `projects/${project}/locations/${location}/publishers/google/models/gemini-3.1-flash-live-preview-04-2026`,
-                avatar_config: (!AVATAR_PRESETS.hasOwnProperty(modelName) && modelName !== 'AudioOnly' && this.options.customAvatar) ? {
-                    customized_avatar: this.options.customAvatar
+                avatarConfig: (!AVATAR_PRESETS.hasOwnProperty(modelName) && modelName !== 'AudioOnly' && this.options.customAvatar) ? {
+                    customizedAvatar: this.options.customAvatar
                 } : {
-                    avatar_name: modelName,
+                    avatarName: modelName,
                 },
-                generation_config: {
-                    response_modalities: this.options.outputMode === "audio" ? ["AUDIO"] : ["VIDEO"],
-                    speech_config: {
-                        voice_config: {
-                            prebuilt_voice_config: { voice_name: voice },
+                generationConfig: {
+                    responseModalities: this.options.outputMode === "audio" ? ["AUDIO"] : ["VIDEO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: voice },
                         },
-                        language_code: language,
+                        languageCode: language,
                     },
                 },
                 ...(this.options.enableSessionResumption === true ? {
@@ -165,10 +165,10 @@ export class GeminiLiveClient {
                     }
                 } : {}),
                 ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
-                ...(enableGrounding ? { tools: [{ google_search: {} }] } : {}),
+                ...(enableGrounding ? { tools: [{ googleSearch: {} }] } : {}),
                 ...(enableTranscript ? {
-                    input_audio_transcription: {},
-                    output_audio_transcription: {}
+                    inputAudioTranscription: {},
+                    outputAudioTranscription: {}
                 } : {})
             },
         };
@@ -180,7 +180,7 @@ export class GeminiLiveClient {
     public sendText(text: string) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         const message = {
-            realtime_input: {
+            realtimeInput: {
                 text: text,
             },
         };
