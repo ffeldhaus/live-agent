@@ -152,6 +152,22 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
         elements.externalTranscriptSection.style.display = elements.renderOutsideToggle.checked ? 'block' : 'none';
     }
 
+    const savedBg = localStorage.getItem('gemini_background_image');
+    if (savedBg) {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const finalUrl = isLocal && savedBg.startsWith('http') ? `/proxy?url=${encodeURIComponent(savedBg)}` : savedBg;
+        
+        document.body.style.backgroundImage = `url(${finalUrl})`;
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundPosition = 'center center';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundSize = 'cover';
+        document.body.classList.remove('animated-bg');
+        if (elements.bgImageUrl) elements.bgImageUrl.value = savedBg.startsWith('data:') ? "Stored Image" : savedBg;
+    } else {
+        document.body.classList.add('animated-bg');
+    }
+
     if (elements.enableGrounding) {
         elements.enableGrounding.checked = localStorage.getItem('gemini_enable_grounding') === 'true';
         avatar.setAttribute('enable-grounding', elements.enableGrounding.checked.toString());
@@ -167,6 +183,11 @@ export function saveSettings(elements: any, store: any, customAvatars: Record<st
     localStorage.setItem('gemini_oauth_client_id', elements.oauthClientIdInput.value);
     localStorage.setItem('gemini_voice', elements.voiceSelect.value);
     localStorage.setItem('gemini_language', elements.languageSelect.value);
+    
+    const bgUrl = elements.bgImageUrl.value;
+    if (bgUrl && (bgUrl.startsWith('http') || bgUrl.startsWith('data:'))) {
+        localStorage.setItem('gemini_background_image', bgUrl);
+    }
     
     const token = elements.tokenInput.value;
     if (token) {

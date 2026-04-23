@@ -3,7 +3,47 @@ import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), basicSsl()],
+  plugins: [
+    tailwindcss(), 
+    basicSsl(),
+    {
+      name: 'local-cors-proxy',
+      configureServer(server) {
+        server.middlewares.use('/proxy', async (req, res, next) => {
+          const urlObj = new URL(req.url!, `https://${req.headers.host}`);
+          const targetUrl = urlObj.searchParams.get('url');
+          
+          if (!targetUrl) {
+            res.statusCode = 400;
+            res.end('Missing url parameter');
+            return;
+          }
+          
+          try {
+            console.log(`[Proxy] Fetching: ${targetUrl}`);
+            const response = await fetch(targetUrl);
+            
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            
+            const contentType = response.headers.get('content-type');
+            if (contentType) {
+                res.setHeader('Content-Type', contentType);
+            }
+            
+            const buffer = await response.arrayBuffer();
+            res.writeHead(response.status);
+            res.end(Buffer.from(buffer));
+            console.log(`[Proxy] Success: ${targetUrl}`);
+          } catch (e: any) {
+            console.error(`[Proxy] Error: ${e.message}`);
+            res.statusCode = 500;
+            res.end(e.message);
+          }
+        });
+      }
+    }
+  ],
   server: {
     port: 3000,
     https: true,

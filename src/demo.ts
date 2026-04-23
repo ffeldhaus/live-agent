@@ -604,6 +604,57 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // Background Listeners
+    if (bgImageUrl) {
+        bgImageUrl.onchange = () => {
+            const url = bgImageUrl.value;
+            if (url) {
+                const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                const finalUrl = isLocal && url.startsWith('http') ? `/proxy?url=${encodeURIComponent(url)}` : url;
+                
+                document.body.style.backgroundImage = `url(${finalUrl})`;
+                document.body.style.backgroundRepeat = 'no-repeat';
+                document.body.style.backgroundPosition = 'center center';
+                document.body.style.backgroundAttachment = 'fixed';
+                document.body.style.backgroundSize = 'cover';
+                document.body.classList.remove('animated-bg');
+                localStorage.setItem('gemini_background_image', url);
+            }
+        };
+    }
+
+    if (uploadBgBtn && bgImageUpload) {
+        uploadBgBtn.onclick = () => bgImageUpload.click();
+        bgImageUpload.onchange = (e) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (file) {
+                handleBackgroundUpload(file, elements);
+            }
+        };
+    }
+
+    if (generateBgBtn) {
+        generateBgBtn.onclick = () => {
+            const prompt = elements.bgImagePrompt.value;
+            handleBackgroundGeneration(prompt, elements.projectIdInput.value, elements.locationInput.value || 'us-central1', elements.tokenInput.value, elements);
+        };
+    }
+
+    if (clearBgBtn) {
+        clearBgBtn.onclick = () => {
+            document.body.style.backgroundImage = '';
+            document.body.classList.add('animated-bg');
+            localStorage.removeItem('gemini_background_image');
+            bgImageUrl.value = '';
+            const name = elements.avatarNameSelect.value;
+            applyAvatarTheme(name, avatar, customAvatars, elements);
+        };
+    }
+
+    if (luckyBgPromptBtn) {
+        luckyBgPromptBtn.onclick = () => handleLuckyBgPrompt(store, tokenClient, elements);
+    }
+
     // Lucky buttons
     if (luckyPersonaBtn) {
       luckyPersonaBtn.onclick = async () => {
