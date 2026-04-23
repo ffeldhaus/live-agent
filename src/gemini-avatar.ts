@@ -3,6 +3,7 @@ import styles from './styles/gemini-avatar.css?inline';
 import { AVATAR_PRESETS } from './constants';
 import { GeminiLiveClient } from './gemini-live-client';
 import { MediaManager } from './media-manager';
+import { applyChromaKey } from './chroma-key';
 
 export class GeminiAvatar extends HTMLElement {
   private client: GeminiLiveClient | null = null;
@@ -79,6 +80,7 @@ export class GeminiAvatar extends HTMLElement {
     this.updateSize(this.getAttribute("size") || "300px");
     this.updatePosition(this.getAttribute("position") || "top-right");
     this.setPreview(this.getAttribute("avatar-name") || "Kira");
+    this.updateChromaKeyState();
     
     this.resizeListener = () => this.updateSize(this.getAttribute("size") || "300px");
     window.addEventListener('resize', this.resizeListener);
@@ -142,6 +144,10 @@ export class GeminiAvatar extends HTMLElement {
     this.previewImg = document.createElement("img");
     this.previewImg.id = "preview-image";
     this.container.appendChild(this.previewImg);
+    this.previewImg.onload = () => {
+      this._log("Preview image loaded, triggering computeFrame");
+      this.computeFrame();
+    };
 
     this.audioAnim = document.createElement("div");
     this.audioAnim.className = "audio-animation";
@@ -396,6 +402,7 @@ export class GeminiAvatar extends HTMLElement {
       "render-transcript-outside",
       "enable-grounding",
       "enable-session-resumption",
+      "chroma-key-tolerance",
     ];
   }
 
@@ -467,21 +474,21 @@ export class GeminiAvatar extends HTMLElement {
     
     const preset = (AVATAR_PRESETS as any)[avatarName];
     const customUrl = this.getAttribute("custom-avatar-url");
+    
+    let url = null;
     if (!preset && customUrl) {
-      this.previewImg.src = customUrl;
-      this.previewImg.style.display = 'block';
-      return;
+      url = customUrl;
+    } else if (avatarName === 'AudioOnly' || avatarName === 'Custom') {
+      url = null;
+    } else {
+      url = preset ? preset.image : null;
     }
 
-    if (avatarName === 'AudioOnly' || avatarName === 'Custom') {
-      this.previewImg.style.display = 'none';
-      return;
-    }
-
-    const url = preset ? preset.image : null;
     if (url) {
       this.previewImg.src = url;
-      this.previewImg.style.display = 'block';
+      const enabled = this.getAttribute("enable-chroma-key") === "true";
+      const shouldChromaKey = enabled;
+      this.previewImg.style.display = shouldChromaKey ? 'none' : 'block';
     } else {
       this.previewImg.style.display = 'none';
     }
@@ -861,75 +868,72 @@ export class GeminiAvatar extends HTMLElement {
 
   private updateChromaKeyState() {
     const enabled = this.getAttribute("enable-chroma-key") === "true";
-    const bgColor = this.getAttribute("background-color");
-    const shouldChromaKey = enabled || bgColor === "transparent";
+    const shouldChromaKey = enabled;
     
     if (this.displayCanvas) this.displayCanvas.style.display = shouldChromaKey ? 'block' : 'none';
-    if (this.videoEl) this.videoEl.style.display = shouldChromaKey ? 'none' : 'block';
     
     if (shouldChromaKey) {
+      if (this.videoEl) this.videoEl.style.display = 'none';
+      if (this.previewImg) this.previewImg.style.display = 'none';
       this.startChromaKeyLoop();
     } else {
+      if (this.videoEl) this.videoEl.style.display = this.receivedFirstVideoFrame ? 'block' : 'none';
+      if (this.previewImg) this.previewImg.style.display = this.receivedFirstVideoFrame ? 'none' : 'block';
       this.stopChromaKeyLoop();
     }
   }
 
   private computeFrame() {
-    if (!this.videoEl || !this.displayCanvas) return;
-    if (this.videoEl.videoWidth === 0 || this.videoEl.videoHeight === 0) return;
+    if (!this.displayCanvas) return;
+    
+    let width = 0;
+    let height = 0;
+    
+    if (!this.receivedFirstVideoFrame && this.previewImg && this.previewImg.complete && this.previewImg.naturalWidth > 0) {
+      width = this.previewImg.naturalWidth;
+      height = this.previewImg.naturalHeight;
+    } else if (this.videoEl && this.videoEl.videoWidth > 0) {
+      width = this.videoEl.videoWidth;
+      height = this.videoEl.videoHeight;
+    }
+    
+    if (width === 0 || height === 0) return;
     
     if (typeof this.displayCanvas.getContext !== 'function') return;
     
     const ctx = this.displayCanvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size to match video
-    if (this.displayCanvas.width !== this.videoEl.videoWidth) {
-      this.displayCanvas.width = this.videoEl.videoWidth;
-      this.displayCanvas.height = this.videoEl.videoHeight;
+    if (this.displayCanvas.width !== width) {
+      this.displayCanvas.width = width;
+      this.displayCanvas.height = height;
     }
 
-    ctx.drawImage(this.videoEl, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
-    
-    // Skip chroma keying for existing avatar presets
-    const avatarName = this.getAttribute("avatar-name") || "Kira";
-    if (AVATAR_PRESETS.hasOwnProperty(avatarName)) {
-        return;
+    if (!this.receivedFirstVideoFrame && this.previewImg) {
+      ctx.drawImage(this.previewImg, 0, 0, width, height);
+    } else if (this.videoEl) {
+      ctx.drawImage(this.videoEl, 0, 0, width, height);
     }
+    
+
     
     const frame = ctx.getImageData(0, 0, this.displayCanvas.width, this.displayCanvas.height);
     const l = frame.data.length / 4;
 
     const chromaKeyColor = this.getAttribute("chroma-key-color") || "green";
-    const bgColor = this.getAttribute("background-color") || "white";
+    const bgColor = this.getAttribute("background-color") || "transparent";
 
-    // Parse target color
-    let targetR = 0, targetG = 255, targetB = 0; // Default green
-    if (chromaKeyColor === "blue") {
-      targetR = 0; targetG = 0; targetB = 255;
-    }
 
-    const tolerance = 30;
+    
 
-    for (let i = 0; i < l; i++) {
-      const r = frame.data[i * 4 + 0];
-      const g = frame.data[i * 4 + 1];
-      const b = frame.data[i * 4 + 2];
-      
-      if (Math.abs(r - targetR) < tolerance &&
-          Math.abs(g - targetG) < tolerance &&
-          Math.abs(b - targetB) < tolerance) {
-        
-        if (bgColor === "white") {
-          frame.data[i * 4 + 0] = 255;
-          frame.data[i * 4 + 1] = 255;
-          frame.data[i * 4 + 2] = 255;
-        } else if (bgColor === "transparent") {
-          frame.data[i * 4 + 3] = 0;
-        }
-      }
-    }
-    ctx.putImageData(frame, 0, 0);
+    
+
+
+    const toleranceAttr = this.getAttribute("chroma-key-tolerance");
+    const tolerance = toleranceAttr ? parseInt(toleranceAttr) : 60;
+
+    const updatedFrame = applyChromaKey(frame, chromaKeyColor, tolerance, bgColor);
+    ctx.putImageData(updatedFrame, 0, 0);
   }
 
   private appendTranscript(sender: string, text: string) {

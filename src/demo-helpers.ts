@@ -1,6 +1,8 @@
 import { AVATAR_PRESETS } from './constants';
 import { GeminiAvatar } from './gemini-avatar';
 
+
+
 // REST API Helper
 export async function generateContent(
     model: string, 
@@ -48,7 +50,7 @@ export async function generateContent(
 }
 
 // Background Color Adaptation
-export function updateBackground(imageUrl: string, onThemeApplied: (colors: string[], speed: string) => void) {
+export function updateBackground(imageUrl: string, keyColor: string, tolerance: number, onThemeApplied: (colors: string[], speed: string) => void) {
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.onload = () => {
@@ -63,6 +65,18 @@ export function updateBackground(imageUrl: string, onThemeApplied: (colors: stri
             const imgData = ctx.getImageData(0, 50, 100, 50);
             const data = imgData.data;
             
+            let targetR = 0, targetG = 177, targetB = 64; // Default bright green (#00b140)
+            if (keyColor === "blue") {
+                targetR = 0; targetG = 71; targetB = 187; // Blue (#0047bb)
+            } else if (keyColor && keyColor.startsWith("#")) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(keyColor);
+                if (result) {
+                    targetR = parseInt(result[1], 16);
+                    targetG = parseInt(result[2], 16);
+                    targetB = parseInt(result[3], 16);
+                }
+            }
+
             // Count color frequencies
             const colors: Record<string, number> = {};
             for (let i = 0; i < data.length; i += 4) {
@@ -71,6 +85,13 @@ export function updateBackground(imageUrl: string, onThemeApplied: (colors: stri
                 const b = data[i+2];
                 
                 if (data[i+3] < 128) continue; // Ignore transparent
+                
+                // Ignore chroma key color
+                if (Math.abs(r - targetR) < tolerance &&
+                    Math.abs(g - targetG) < tolerance &&
+                    Math.abs(b - targetB) < tolerance) {
+                    continue;
+                }
                 
                 const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
                 colors[hex] = (colors[hex] || 0) + 1;
@@ -126,7 +147,9 @@ export function applyAvatarTheme(
     } else if (customAvatars[avatarName]) {
         const customAvatar = customAvatars[avatarName];
         if (elements.customAvatarName) elements.customAvatarName.value = avatarName;
+        
         if (elements.generatedImg) elements.generatedImg.src = customAvatar.image;
+        
         if (elements.generatedImageContainer) elements.generatedImageContainer.style.display = 'block';
         avatar.setAttribute('custom-avatar-url', customAvatar.image);
         

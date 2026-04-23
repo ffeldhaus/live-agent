@@ -53,6 +53,21 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
         });
     }
 
+    elements.enableChromaKey.checked = localStorage.getItem('gemini_enable_chroma_key') === 'true';
+    if (localStorage.getItem('gemini_chroma_key_color')) elements.chromaKeyColor.value = localStorage.getItem('gemini_chroma_key_color')!;
+
+    
+    const savedTolerance = localStorage.getItem('gemini_chroma_key_tolerance') || '60';
+    if (elements.chromaKeyToleranceSlider) {
+        elements.chromaKeyToleranceSlider.value = savedTolerance;
+        if (elements.toleranceVal) elements.toleranceVal.textContent = savedTolerance;
+        avatar.setAttribute('chroma-key-tolerance', savedTolerance);
+    }
+    
+    avatar.setAttribute('enable-chroma-key', elements.enableChromaKey.checked.toString());
+    avatar.setAttribute('chroma-key-color', elements.chromaKeyColor.value);
+
+
     if (localStorage.getItem('gemini_avatar_name')) {
         const name = localStorage.getItem('gemini_avatar_name')!;
         elements.avatarNameSelect.value = name;
@@ -119,13 +134,7 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
     if (localStorage.getItem('gemini_default_greeting')) elements.defaultGreetingInput.value = localStorage.getItem('gemini_default_greeting')!;
     if (localStorage.getItem('gemini_image_prompt')) elements.imagePromptInput.value = localStorage.getItem('gemini_image_prompt')!;
 
-    elements.enableChromaKey.checked = localStorage.getItem('gemini_enable_chroma_key') === 'true';
-    if (localStorage.getItem('gemini_chroma_key_color')) elements.chromaKeyColor.value = localStorage.getItem('gemini_chroma_key_color')!;
-    if (localStorage.getItem('gemini_background_color')) elements.backgroundColor.value = localStorage.getItem('gemini_background_color')!;
-    
-    avatar.setAttribute('enable-chroma-key', elements.enableChromaKey.checked.toString());
-    avatar.setAttribute('chroma-key-color', elements.chromaKeyColor.value);
-    avatar.setAttribute('background-color', elements.backgroundColor.value);
+
 
     elements.enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
     elements.enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
@@ -196,7 +205,10 @@ export function saveSettings(elements: any, store: any, customAvatars: Record<st
     
     localStorage.setItem('gemini_enable_chroma_key', elements.enableChromaKey.checked.toString());
     localStorage.setItem('gemini_chroma_key_color', elements.chromaKeyColor.value);
-    localStorage.setItem('gemini_background_color', elements.backgroundColor.value);
+
+    if (elements.chromaKeyToleranceSlider) {
+        localStorage.setItem('gemini_chroma_key_tolerance', elements.chromaKeyToleranceSlider.value);
+    }
     
     localStorage.setItem('gemini_enable_transcript', elements.enableTranscript.checked.toString());
     localStorage.setItem('gemini_enable_chat_input', elements.enableChatInput.checked.toString());

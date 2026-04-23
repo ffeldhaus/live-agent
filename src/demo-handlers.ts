@@ -1,5 +1,8 @@
 import { GeminiAvatar } from './gemini-avatar';
 import { generateContent, updateBackground, applyTheme } from './demo-helpers';
+import { ensureValidToken } from './auth';
+import { AVATAR_PRESETS } from './constants';
+
 
 export async function handleImageGeneration(
     name: string,
@@ -7,6 +10,7 @@ export async function handleImageGeneration(
     useChromaKey: boolean,
     keyColor: string,
     bgColor: string,
+    tolerance: number,
     project: string,
     location: string,
     token: string,
@@ -46,7 +50,8 @@ export async function handleImageGeneration(
         // Add background settings and resolution to prompt!
         let finalPrompt = enhancedPrompt + ", resolution 704x1280 in PNG format";
         if (useChromaKey) {
-            finalPrompt += ` with a solid ${keyColor} background.`;
+            const colorDesc = keyColor === 'green' ? 'bright green (#00b140)' : (keyColor === 'blue' ? 'blue (#0047bb)' : keyColor);
+            finalPrompt += ` with a solid ${colorDesc} background.`;
         } else {
             finalPrompt += ` with a nice, unobtrusive uniform background.`;
         }
@@ -65,49 +70,13 @@ export async function handleImageGeneration(
             
             let finalUrl = elements.generatedImg.src;
 
-            // Apply transparency via canvas if needed!
-            if (useChromaKey && bgColor === 'transparent') {
-                const img = new Image();
-                img.onload = () => {
-                    const canv = document.createElement('canvas');
-                    canv.width = img.width;
-                    canv.height = img.height;
-                    const cx = canv.getContext('2d');
-                    if (cx) {
-                        cx.drawImage(img, 0, 0);
-                        const imgData = cx.getImageData(0, 0, canv.width, canv.height);
-                        const data = imgData.data;
-                        
-                        for (let i = 0; i < data.length; i += 4) {
-                            const r = data[i];
-                            const g = data[i+1];
-                            const b = data[i+2];
-                            
-                            if (keyColor === 'green' && g > r && g > b) {
-                                data[i+3] = 0; // Transparent!
-                            } else if (keyColor === 'blue' && b > r && b > g) {
-                                data[i+3] = 0; // Transparent!
-                            }
-                        }
-                        cx.putImageData(imgData, 0, 0);
-                        finalUrl = canv.toDataURL('image/png');
-                        elements.generatedImg.src = finalUrl;
-                        
-                        // Update background preview and detect palette
-                        updateBackground(finalUrl, (colors, speed) => {
-                            applyTheme(colors, speed);
-                            if (onColorsDetected) onColorsDetected(colors);
-                        });
-                    }
-                };
-                img.src = elements.generatedImg.src;
-            } else {
-                // Update background preview and detect palette
-                updateBackground(finalUrl, (colors, speed) => {
-                    applyTheme(colors, speed);
-                    if (onColorsDetected) onColorsDetected(colors);
-                });
-            }
+
+            
+            // Update background preview and detect palette
+            updateBackground(finalUrl, keyColor, tolerance, (colors, speed) => {
+                applyTheme(colors, speed);
+                if (onColorsDetected) onColorsDetected(colors);
+            });
         } else {
             alert('Failed to generate image (no image data in response). See console.');
         }
@@ -126,6 +95,7 @@ export async function handleCameraCapture(
     useChromaKey: boolean,
     keyColor: string,
     bgColor: string,
+    tolerance: number,
     useImageImprovement: boolean,
     project: string,
     location: string,
@@ -203,13 +173,14 @@ export async function handleCameraCapture(
                 elements.captureBtn.disabled = true;
                 const originalText = elements.captureBtn.textContent;
                 elements.captureBtn.textContent = 'Improving...';
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'block';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
                 
                 const base64Data = dataUrl.split(',')[1];
                 let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
                 
                 if (useChromaKey) {
-                    instruction += ` Replace the background with a solid ${keyColor} color.`;
+                    const colorDesc = keyColor === 'green' ? 'bright green (#00b140)' : (keyColor === 'blue' ? 'blue (#0047bb)' : keyColor);
+                    instruction += ` Replace the background with a solid ${colorDesc} color.`;
                 } else {
                     instruction += ` Use a nice, unobtrusive uniform background.`;
                 }
@@ -222,10 +193,11 @@ export async function handleCameraCapture(
                 if (part && part.inlineData && part.inlineData.data) {
                     const base64 = part.inlineData.data;
                     const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                    
                     elements.generatedImg.src = improvedUrl;
                     
                     // Update background preview and detect palette
-                    updateBackground(improvedUrl, (colors, speed) => {
+                    updateBackground(improvedUrl, keyColor, tolerance, (colors, speed) => {
                         applyTheme(colors, speed);
                         if (onColorsDetected) onColorsDetected(colors);
                     });
@@ -238,11 +210,11 @@ export async function handleCameraCapture(
             } finally {
                 elements.captureBtn.disabled = false;
                 elements.captureBtn.textContent = originalText;
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'none';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
             }
         } else {
             // Update background preview and detect palette
-            updateBackground(dataUrl, (colors, speed) => {
+            updateBackground(dataUrl, keyColor, tolerance, (colors, speed) => {
                 applyTheme(colors, speed);
                 if (onColorsDetected) onColorsDetected(colors);
             });
@@ -256,6 +228,7 @@ export async function handleUpload(
     useChromaKey: boolean,
     keyColor: string,
     bgColor: string,
+    tolerance: number,
     useImageImprovement: boolean,
     project: string,
     location: string,
@@ -275,6 +248,7 @@ export async function handleUpload(
     const reader = new FileReader();
     reader.onload = async (re: any) => {
         const dataUrl = re.target.result;
+        
         elements.generatedImg.src = dataUrl;
         elements.generatedImageContainer.style.display = 'block';
         if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
@@ -285,13 +259,14 @@ export async function handleUpload(
                 elements.uploadBtn.disabled = true;
                 const originalText = elements.uploadBtn.textContent;
                 elements.uploadBtn.textContent = 'Improving...';
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'block';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.remove('hidden');
                 
                 const base64Data = dataUrl.split(',')[1];
                 let instruction = "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
                 
                 if (useChromaKey) {
-                    instruction += ` Replace the background with a solid ${keyColor} color.`;
+                    const colorDesc = keyColor === 'green' ? 'bright green (#00b140)' : (keyColor === 'blue' ? 'blue (#0047bb)' : keyColor);
+                    instruction += ` Replace the background with a solid ${colorDesc} color.`;
                 } else {
                     instruction += ` Use a nice, unobtrusive uniform background.`;
                 }
@@ -304,10 +279,11 @@ export async function handleUpload(
                 if (part && part.inlineData && part.inlineData.data) {
                     const base64 = part.inlineData.data;
                     const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+                    
                     elements.generatedImg.src = improvedUrl;
                     
                     // Update background preview and detect palette
-                    updateBackground(improvedUrl, (colors, speed) => {
+                    updateBackground(improvedUrl, keyColor, tolerance, (colors, speed) => {
                         applyTheme(colors, speed);
                         if (onColorsDetected) onColorsDetected(colors);
                     });
@@ -320,7 +296,7 @@ export async function handleUpload(
             } finally {
                 elements.uploadBtn.disabled = false;
                 elements.uploadBtn.textContent = originalText;
-                if (elements.imageProcessingMessage) elements.imageProcessingMessage.style.display = 'none';
+                if (elements.imageProcessingMessage) elements.imageProcessingMessage.classList.add('hidden');
             }
         } else {
             // Resize/crop to 704x1280 and convert to PNG
@@ -357,7 +333,7 @@ export async function handleUpload(
                 elements.generatedImg.src = processedUrl;
                 
                 // Update background preview and detect palette
-                updateBackground(processedUrl, (colors, speed) => {
+                updateBackground(processedUrl, keyColor, tolerance, (colors, speed) => {
                     applyTheme(colors, speed);
                     if (onColorsDetected) onColorsDetected(colors);
                 });
@@ -365,4 +341,92 @@ export async function handleUpload(
         }
     };
     reader.readAsDataURL(file);
+}
+
+export async function handleLuckyPersona(store: any, tokenClient: any, elements: any) {
+    if (!await ensureValidToken(store, tokenClient, elements)) return;
+    const name = elements.avatarNameSelect.value;
+    const voice = elements.voiceSelect.value;
+    const preset = (AVATAR_PRESETS as any)[name];
+    let texture = preset ? preset.texture : 'nice and random';
+    let mood = preset ? preset.mood : 'pleasant and engaging';
+    
+    const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. The avatar has style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the persona description.`;
+    
+    try {
+        elements.luckyPersonaBtn.disabled = true;
+        const originalText = elements.luckyPersonaBtn.textContent;
+        elements.luckyPersonaBtn.textContent = 'Thinking...';
+        const data = await generateContent('gemini-3-flash-preview', prompt, elements.projectIdInput.value, elements.locationInput.value || 'us-central1', elements.tokenInput.value);
+        const text = data.candidates[0].content.parts[0].text;
+        elements.systemInstructionInput.value = text.trim();
+        elements.luckyPersonaBtn.textContent = originalText;
+    } catch (e: any) {
+        alert(`Failed to generate persona: ${e.message}`);
+        elements.luckyPersonaBtn.textContent = "I'm feeling lucky";
+    } finally {
+        elements.luckyPersonaBtn.disabled = false;
+    }
+}
+
+export async function handleLuckyGreeting(store: any, tokenClient: any, elements: any) {
+    if (!await ensureValidToken(store, tokenClient, elements)) return;
+    const persona = elements.systemInstructionInput.value;
+    const name = elements.avatarNameSelect.value;
+    const preset = (AVATAR_PRESETS as any)[name];
+    let texture = preset ? preset.texture : 'custom';
+    let mood = preset ? preset.mood : 'pleasant';
+    
+    let prompt = '';
+    if (persona) {
+        prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
+    } else {
+        prompt = `Generate a default greeting for an AI avatar named ${name} with visual texture "${texture}" and mood "${mood}". Return only the greeting text.`;
+    }
+    
+    try {
+        elements.luckyGreetingBtn.disabled = true;
+        const originalText = elements.luckyGreetingBtn.textContent;
+        elements.luckyGreetingBtn.textContent = 'Thinking...';
+        const data = await generateContent('gemini-3-flash-preview', prompt, elements.projectIdInput.value, elements.locationInput.value || 'us-central1', elements.tokenInput.value);
+        const text = data.candidates[0].content.parts[0].text;
+        elements.defaultGreetingInput.value = text.trim();
+        elements.luckyGreetingBtn.textContent = originalText;
+    } catch (e: any) {
+        alert(`Failed to generate greeting: ${e.message}`);
+        elements.luckyGreetingBtn.textContent = "I'm feeling lucky";
+    } finally {
+        elements.luckyGreetingBtn.disabled = false;
+    }
+}
+
+export async function handleLuckyImage(store: any, tokenClient: any, elements: any) {
+    if (!await ensureValidToken(store, tokenClient, elements)) return;
+    const persona = elements.systemInstructionInput.value;
+    const name = elements.avatarNameSelect.value;
+    const preset = (AVATAR_PRESETS as any)[name];
+    let texture = preset ? preset.texture : 'custom';
+    let mood = preset ? preset.mood : 'pleasant';
+    
+    let prompt = '';
+    if (persona) {
+        prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
+    } else {
+        prompt = `Generate an image generation prompt for a profile picture of an AI avatar named ${name} with style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the prompt text.`;
+    }
+    
+    try {
+        elements.luckyImageBtn.disabled = true;
+        const originalText = elements.luckyImageBtn.textContent;
+        elements.luckyImageBtn.textContent = 'Thinking...';
+        const data = await generateContent('gemini-3-flash-preview', prompt, elements.projectIdInput.value, elements.locationInput.value || 'us-central1', elements.tokenInput.value);
+        const text = data.candidates[0].content.parts[0].text;
+        elements.imagePromptInput.value = text.trim();
+        elements.luckyImageBtn.textContent = originalText;
+    } catch (e: any) {
+        alert(`Failed to generate image prompt: ${e.message}`);
+        elements.luckyImageBtn.textContent = "I'm feeling lucky";
+    } finally {
+        elements.luckyImageBtn.disabled = false;
+    }
 }

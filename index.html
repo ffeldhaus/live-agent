@@ -156,13 +156,8 @@
                             <label class="flex items-center gap-1 text-sm text-slate-300"><input type="checkbox" id="enableChromaKey" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800"> Enable</label>
                             
                             <select id="chromaKeyColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="green">Green Key</option>
-                                <option value="blue">Blue Key</option>
-                            </select>
-                            
-                            <select id="backgroundColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="transparent" selected>Make Transparent</option>
-                                <option value="white">Replace with White</option>
+                                <option value="green">Bright Green (#00b140)</option>
+                                <option value="blue">Blue (#0047bb)</option>
                             </select>
                         </div>
                     </div>
@@ -227,6 +222,14 @@
             </div>
             
             <div class="flex flex-col gap-2 mt-4">
+                <div class="flex items-center gap-2 w-full">
+                    <input type="checkbox" id="enableTransparency" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableTransparency" class="text-sm text-slate-300 font-normal whitespace-nowrap">Enable Transparency</label>
+                    <div class="flex items-center gap-2 ml-2 flex-1">
+                        <label for="transparencyTolerance" class="text-xs text-slate-300 whitespace-nowrap">Tolerance: <span id="toleranceVal">60</span></label>
+                        <input type="range" id="transparencyTolerance" min="5" max="100" value="60" class="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+                </div>
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="enableTranscript" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
                     <label for="enableTranscript" class="text-sm text-slate-300 font-normal">Enable Transcript</label>

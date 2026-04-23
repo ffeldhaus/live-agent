@@ -2,7 +2,7 @@ import { GeminiAvatar } from './gemini-avatar';
 import { AVATAR_PRESETS, VOICE_PRESETS } from './constants';
 import { qaScenarios } from './walkthrough-data';
 import { generateContent, updateBackground, applyTheme, applyAvatarTheme, downloadBlob } from './demo-helpers';
-import { handleImageGeneration, handleCameraCapture, handleUpload } from './demo-handlers';
+import { handleImageGeneration, handleCameraCapture, handleUpload, handleLuckyPersona, handleLuckyGreeting, handleLuckyImage } from './demo-handlers';
 import { setupWalkthrough } from './demo-walkthrough';
 import { verifyToken, fetchUserProfile, ensureValidToken, displayUserProfile } from './auth';
 import { loadSettings, saveSettings } from './settings';
@@ -66,7 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chroma Keying elements
     const enableChromaKey = document.getElementById('enableChromaKey') as HTMLInputElement;
     const chromaKeyColor = document.getElementById('chromaKeyColor') as HTMLSelectElement;
-    const backgroundColor = document.getElementById('backgroundColor') as HTMLSelectElement;
+    const enableTransparency = document.getElementById('enableTransparency') as HTMLInputElement;
+    const transparencyTolerance = document.getElementById('transparencyTolerance') as HTMLInputElement;
+    const toleranceVal = document.getElementById('toleranceVal') as HTMLSpanElement;
     // QA elements
     const qaContainer = document.getElementById('qaContainer') as HTMLDivElement;
     const qaList = document.getElementById('qaList') as HTMLDivElement;
@@ -125,7 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         oauthClientIdInput, voiceSelect, languageSelect, saveVideoToggle, debugToggle,
         recordUserAudioCheckbox, micAutoRequestToggle, ctrlMic, ctrlCamera, ctrlScreen,
         ctrlMute, ctrlSnapshot, ctrlSettings, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
-        defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor, backgroundColor,
+        defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor,
+        enableChromaKey: enableTransparency,
+        chromaKeyToleranceSlider: transparencyTolerance, toleranceVal,
         enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
         enableGrounding, customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn,
         saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, captureBtn, uploadBtn, generateImageBtn, luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,
@@ -566,9 +570,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Chroma Key Listeners
-    if (enableChromaKey) enableChromaKey.onchange = () => avatar.setAttribute('enable-chroma-key', enableChromaKey.checked.toString());
+    if (enableTransparency) enableTransparency.onchange = () => avatar.setAttribute('enable-chroma-key', enableTransparency.checked.toString());
     if (chromaKeyColor) chromaKeyColor.onchange = () => avatar.setAttribute('chroma-key-color', chromaKeyColor.value);
-    if (backgroundColor) backgroundColor.onchange = () => avatar.setAttribute('background-color', backgroundColor.value);
+    if (transparencyTolerance) {
+        transparencyTolerance.oninput = () => {
+            if (toleranceVal) toleranceVal.textContent = transparencyTolerance.value;
+            avatar.setAttribute('chroma-key-tolerance', transparencyTolerance.value);
+        };
+    }
 
     // Toggle Listeners
     if (enableTranscript) {
@@ -596,99 +605,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Lucky buttons
-    if (luckyPersonaBtn) {
-        luckyPersonaBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient, elements)) return;
-            const name = avatarNameSelect.value;
-            const voice = voiceSelect.value;
-            const preset = (AVATAR_PRESETS as any)[name];
-            let texture = preset ? preset.texture : 'nice and random';
-            let mood = preset ? preset.mood : 'pleasant and engaging';
-            
-            const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. The avatar has style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the persona description.`;
-            
-            try {
-                luckyPersonaBtn.disabled = true;
-                const originalText = luckyPersonaBtn.textContent;
-                luckyPersonaBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
-                const text = data.candidates[0].content.parts[0].text;
-                systemInstructionInput.value = text.trim();
-                luckyPersonaBtn.textContent = originalText;
-            } catch (e: any) {
-                alert(`Failed to generate persona: ${e.message}`);
-                luckyPersonaBtn.textContent = "I'm feeling lucky";
-            } finally {
-                luckyPersonaBtn.disabled = false;
-            }
-        };
-    }
-
-    if (luckyGreetingBtn) {
-        luckyGreetingBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient, elements)) return;
-            const persona = systemInstructionInput.value;
-            const name = avatarNameSelect.value;
-            const preset = (AVATAR_PRESETS as any)[name];
-            let texture = preset ? preset.texture : 'custom';
-            let mood = preset ? preset.mood : 'pleasant';
-            
-            let prompt = '';
-            if (persona) {
-                prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
-            } else {
-                prompt = `Generate a default greeting for an AI avatar named ${name} with visual texture "${texture}" and mood "${mood}". Return only the greeting text.`;
-            }
-            
-            try {
-                luckyGreetingBtn.disabled = true;
-                const originalText = luckyGreetingBtn.textContent;
-                luckyGreetingBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
-                const text = data.candidates[0].content.parts[0].text;
-                defaultGreetingInput.value = text.trim();
-                luckyGreetingBtn.textContent = originalText;
-            } catch (e: any) {
-                alert(`Failed to generate greeting: ${e.message}`);
-                luckyGreetingBtn.textContent = "I'm feeling lucky";
-            } finally {
-                luckyGreetingBtn.disabled = false;
-            }
-        };
-    }
-
-    if (luckyImageBtn) {
-        luckyImageBtn.onclick = async () => {
-            if (!await ensureValidToken(store, tokenClient, elements)) return;
-            const persona = systemInstructionInput.value;
-            const name = avatarNameSelect.value;
-            const preset = (AVATAR_PRESETS as any)[name];
-            let texture = preset ? preset.texture : 'custom';
-            let mood = preset ? preset.mood : 'pleasant';
-            
-            let prompt = '';
-            if (persona) {
-                prompt = `Generate an image generation prompt for a profile picture of an AI avatar with this persona: "${persona}". Return only the prompt text.`;
-            } else {
-                prompt = `Generate an image generation prompt for a profile picture of an AI avatar named ${name} with style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the prompt text.`;
-            }
-            
-            try {
-                luckyImageBtn.disabled = true;
-                const originalText = luckyImageBtn.textContent;
-                luckyImageBtn.textContent = 'Thinking...';
-                const data = await generateContent('gemini-3-flash-preview', prompt, projectIdInput.value, locationInput.value || 'us-central1', tokenInput.value);
-                const text = data.candidates[0].content.parts[0].text;
-                imagePromptInput.value = text.trim();
-                luckyImageBtn.textContent = originalText;
-            } catch (e: any) {
-                alert(`Failed to generate image prompt: ${e.message}`);
-                luckyImageBtn.textContent = "I'm feeling lucky";
-            } finally {
-                luckyImageBtn.disabled = false;
-            }
-        };
-    }
+    if (luckyPersonaBtn) luckyPersonaBtn.onclick = () => handleLuckyPersona(store, tokenClient, elements);
+    if (luckyGreetingBtn) luckyGreetingBtn.onclick = () => handleLuckyGreeting(store, tokenClient, elements);
+    if (luckyImageBtn) luckyImageBtn.onclick = () => handleLuckyImage(store, tokenClient, elements);
 
     if (generateImageBtn) {
         generateImageBtn.onclick = async () => {
@@ -698,7 +617,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 imagePromptInput.value,
                 enableChromaKey.checked,
                 chromaKeyColor.value,
-                backgroundColor.value,
+                'transparent',
+                parseInt(transparencyTolerance.value),
                 projectIdInput.value,
                 locationInput.value || 'us-central1',
                 tokenInput.value,
@@ -837,7 +757,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 name,
                 enableChromaKey.checked,
                 chromaKeyColor.value,
-                backgroundColor.value,
+                'transparent',
+                parseInt(transparencyTolerance.value),
                 toggleImageImprovement.checked,
                 projectIdInput.value,
                 locationInput.value || 'us-central1',
@@ -871,7 +792,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         name,
                         enableChromaKey.checked,
                         chromaKeyColor.value,
-                        backgroundColor.value,
+                        'transparent',
+                        parseInt(transparencyTolerance.value),
                         toggleImageImprovement.checked,
                         projectIdInput.value,
                         locationInput.value || 'us-central1',
@@ -924,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
     store.imagePrompt = imagePromptInput.value;
     store.enableChromaKey = enableChromaKey.checked;
     store.chromaKeyColor = chromaKeyColor.value;
-    store.backgroundColor = backgroundColor.value;
+
     store.enableTranscript = enableTranscript.checked;
     store.enableChatInput = enableChatInput.checked;
     store.renderTranscriptOutside = renderOutsideToggle.checked;
