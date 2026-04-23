@@ -61,7 +61,14 @@ export function initWebGL(
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    return { gl, program, positionBuffer, texCoordBuffer, glTexture };
+    const maskTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, maskTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    return { gl, program, positionBuffer, texCoordBuffer, glTexture, maskTexture };
 }
 
 export function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
@@ -130,10 +137,14 @@ export function renderWebGLFrame(
     keyColor: {r: number, g: number, b: number}, 
     tolerance: number, 
     isTransparent: boolean, 
-    isPreset: boolean, 
+    enableChromaKey: boolean, 
     positionBuffer: WebGLBuffer, 
     texCoordBuffer: WebGLBuffer, 
-    glTexture: WebGLTexture
+    glTexture: WebGLTexture,
+    maskTexture: WebGLTexture,
+    maskData: Uint8Array,
+    maskWidth: number,
+    maskHeight: number
 ) {
     gl.viewport(0, 0, targetWidth, targetHeight);
     gl.clearColor(0, 0, 0, 0);
@@ -155,7 +166,7 @@ export function renderWebGLFrame(
     gl.uniform1i(spillLoc, 1);
     gl.uniform1i(isTransparentLoc, isTransparent ? 1 : 0);
     gl.uniform2f(texSizeLoc, width, height);
-    gl.uniform1i(enableChromaKeyLoc, isPreset ? 0 : 1);
+    gl.uniform1i(enableChromaKeyLoc, enableChromaKey ? 1 : 0);
 
     const positionLoc = gl.getAttribLocation(program, "a_position");
     gl.enableVertexAttribArray(positionLoc);
@@ -173,6 +184,13 @@ export function renderWebGLFrame(
     
     const imageLoc = gl.getUniformLocation(program, "u_image");
     gl.uniform1i(imageLoc, 0);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, maskTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, maskWidth, maskHeight, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, maskData);
+    
+    const maskLoc = gl.getUniformLocation(program, "u_mask");
+    gl.uniform1i(maskLoc, 1);
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 }

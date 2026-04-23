@@ -42,6 +42,10 @@ export class GeminiAvatar extends HTMLElement {
   private transcriptArea: HTMLDivElement | null = null;
   private chatContainer: HTMLDivElement | null = null;
   private chatInput: HTMLInputElement | null = null;
+  private samplingCanvas: HTMLCanvasElement | null = null;
+  private maskCanvas: HTMLCanvasElement | null = null;
+  private maskCtx: CanvasRenderingContext2D | null = null;
+  private maskTexture: WebGLTexture | null = null;
 
   // Statistics
   private startTime: number | null = null;
@@ -73,6 +77,7 @@ export class GeminiAvatar extends HTMLElement {
         this.positionBuffer = webgl.positionBuffer;
         this.texCoordBuffer = webgl.texCoordBuffer;
         this.glTexture = webgl.glTexture;
+        this.maskTexture = webgl.maskTexture;
     }
     const autoRequest = this.getAttribute("mic-auto-request") !== "false";
     if (autoRequest) {
@@ -482,11 +487,15 @@ export class GeminiAvatar extends HTMLElement {
   public setPreview(avatarName: string) {
     if (!this.previewImg) return;
 
+    const enabled = this.getAttribute("enable-chroma-key") === "true";
+    const bgColor = this.getAttribute("background-color");
+    const shouldChromaKey = enabled || bgColor === "transparent";
+
     const preset = (AVATAR_PRESETS as any)[avatarName];
     const customUrl = this.getAttribute("custom-avatar-url");
     if (!preset && customUrl) {
       this.previewImg.src = customUrl;
-      this.previewImg.style.display = "block";
+      this.previewImg.style.display = shouldChromaKey ? "none" : "block";
       return;
     }
 
@@ -498,10 +507,11 @@ export class GeminiAvatar extends HTMLElement {
     const url = preset ? preset.image : null;
     if (url) {
       this.previewImg.src = url;
-      this.previewImg.style.display = "block";
+      this.previewImg.style.display = shouldChromaKey ? "none" : "block";
     } else {
       this.previewImg.style.display = "none";
     }
+    this.updateChromaKeyState();
   }
 
   private updateSize(size: string) {
@@ -530,8 +540,16 @@ export class GeminiAvatar extends HTMLElement {
     const parts = pos.split("-");
     this.style.top = parts.includes("top") ? "20px" : "auto";
     this.style.bottom = parts.includes("bottom") ? "20px" : "auto";
-    this.style.left = parts.includes("left") ? "20px" : "auto";
-    this.style.right = parts.includes("right") ? "20px" : "auto";
+    
+    if (parts.includes("middle")) {
+      this.style.left = "50%";
+      this.style.right = "auto";
+      this.style.transform = "translateX(-50%)";
+    } else {
+      this.style.left = parts.includes("left") ? "20px" : "auto";
+      this.style.right = parts.includes("right") ? "20px" : "auto";
+      this.style.transform = "none";
+    }
   }
 
   // Public API
@@ -926,6 +944,14 @@ export class GeminiAvatar extends HTMLElement {
     if (this.videoEl)
       this.videoEl.style.display = shouldChromaKey ? "none" : "block";
 
+    if (this.previewImg) {
+      if (shouldChromaKey) {
+        this.previewImg.style.display = "none";
+      } else {
+        this.previewImg.style.display = this.receivedFirstVideoFrame ? "none" : "block";
+      }
+    }
+
     if (shouldChromaKey) {
       this.startChromaKeyLoop();
     } else {
@@ -935,7 +961,6 @@ export class GeminiAvatar extends HTMLElement {
 
   private computeFrame() {
     if (!this.videoEl || !this.displayCanvas) return;
-    if (this.videoEl.videoWidth === 0 || this.videoEl.videoHeight === 0) return;
 
     if (typeof this.displayCanvas.getContext !== "function") return;
 
@@ -981,17 +1006,103 @@ export class GeminiAvatar extends HTMLElement {
     
     const keyColor = detectKeyColor(source, width, height, isBlueMode, this.samplingCanvas);
     
-    // --- WebGL Rendering ---
+    // --- Mask Generation (Rough Outline & Interior Protection) ---
+    const maskW = 44;
+    const maskH = 80;
+    if (!this.maskCanvas) {
+        this.maskCanvas = document.createElement('canvas');
+        this.maskCanvas.width = maskW;
+        this.maskCanvas.height = maskH;
+        this.maskCtx = this.maskCanvas.getContext('2d');
+    }
+    
+    const maskData = new Uint8Array(maskW * maskH);
+    maskData.fill(255); // Default to foreground
+    
     const toleranceAttr = this.getAttribute("chroma-key-tolerance");
     const tolerance = toleranceAttr ? parseInt(toleranceAttr) : 50;
+    
+    if (this.maskCtx) {
+        this.maskCtx.drawImage(source, 0, 0, width, height, 0, 0, maskW, maskH);
+        const frameData = this.maskCtx.getImageData(0, 0, maskW, maskH);
+        const data = frameData.data;
+        
+        const stack: number[] = [];
+        const visited = new Uint8Array(maskW * maskH);
+        
+        // Add corners to stack
+        const corners = [0, maskW - 1, (maskH - 1) * maskW, maskH * maskW - 1];
+        for (const idx of corners) {
+            stack.push(idx);
+            visited[idx] = 1;
+        }
+        
+        const tol = tolerance * 1.2; // Slightly more relaxed tolerance for rough outline
+        
+        while (stack.length > 0) {
+            const idx = stack.pop()!;
+            const x = idx % maskW;
+            const y = Math.floor(idx / maskW);
+            
+            const r = data[idx * 4 + 0];
+            const g = data[idx * 4 + 1];
+            const b = data[idx * 4 + 2];
+            
+            const isBackground = Math.abs(r - keyColor.r) < tol &&
+                                 Math.abs(g - keyColor.g) < tol &&
+                                 Math.abs(b - keyColor.b) < tol;
+                                 
+            if (isBackground || corners.includes(idx)) {
+                maskData[idx] = 0; // Background
+                
+                const neighbors = [];
+                if (x > 0) neighbors.push(idx - 1);
+                if (x < maskW - 1) neighbors.push(idx + 1);
+                if (y > 0) neighbors.push(idx - maskW);
+                if (y < maskH - 1) neighbors.push(idx + maskW);
+                
+                for (const n of neighbors) {
+                    if (!visited[n]) {
+                        visited[n] = 1;
+                        stack.push(n);
+                    }
+                }
+            }
+        }
+    }
+    
+    // --- Mask Blurring (Expand outline area) ---
+    const blurredMask = new Uint8Array(maskW * maskH);
+    for (let y = 0; y < maskH; y++) {
+        for (let x = 0; x < maskW; x++) {
+            const idx = y * maskW + x;
+            if (x === 0 || x === maskW - 1 || y === 0 || y === maskH - 1) {
+                blurredMask[idx] = maskData[idx];
+                continue;
+            }
+            
+            let sum = 0;
+            for (let ky = -1; ky <= 1; ky++) {
+                for (let kx = -1; kx <= 1; kx++) {
+                    sum += maskData[(y + ky) * maskW + (x + kx)];
+                }
+            }
+            blurredMask[idx] = Math.round(sum / 9);
+        }
+    }
+    maskData.set(blurredMask);
+    
+    // --- WebGL Rendering ---
     const bgColor = this.getAttribute("background-color") || "transparent";
     const avatarName = this.getAttribute("avatar-name") || "Kira";
     const isPreset = AVATAR_PRESETS.hasOwnProperty(avatarName);
+    const enabled = this.getAttribute("enable-chroma-key") === "true";
 
     renderWebGLFrame(
         gl, program, source, width, height, targetWidth, targetHeight,
-        keyColor, tolerance, bgColor === "transparent", isPreset,
-        this.positionBuffer!, this.texCoordBuffer!, this.glTexture!
+        keyColor, tolerance, bgColor === "transparent", enabled,
+        this.positionBuffer!, this.texCoordBuffer!, this.glTexture!,
+        this.maskTexture!, maskData, maskW, maskH
     );
   }
 

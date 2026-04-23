@@ -11,6 +11,7 @@ void main() {
 export const fragmentShaderSource = `
 precision mediump float;
 uniform sampler2D u_image;
+uniform sampler2D u_mask;
 uniform vec3 u_keyColor;
 uniform float u_tolerance;
 uniform float u_falloff;
@@ -60,6 +61,10 @@ void main() {
    
    // Use min for erosion to remove background outline
    alpha = min(alpha, min(min(min(a1, a2), min(a3, a4)), min(min(a5, a6), min(a7, a8))));
+   
+   // Protect interior using mask
+   float maskVal = texture2D(u_mask, v_texCoord).r;
+   alpha = mix(alpha, 1.0, smoothstep(0.7, 0.9, maskVal));
    
    // Spill suppression
    float Cb = dot(color.rgb, kCb) + 0.5;

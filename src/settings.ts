@@ -125,17 +125,24 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
       elements.chromaKeyColor.value = localStorage.getItem(
         "gemini_chroma_key_color",
       )!;
-    if (localStorage.getItem("gemini_background_color"))
-      elements.backgroundColor.value = localStorage.getItem(
-        "gemini_background_color",
-      )!;
+
     
     avatar.setAttribute(
       "enable-chroma-key",
       elements.enableChromaKey.checked.toString(),
     );
     avatar.setAttribute("chroma-key-color", elements.chromaKeyColor.value);
-    avatar.setAttribute("background-color", elements.backgroundColor.value);
+    avatar.setAttribute("background-color", "transparent");
+
+    if (localStorage.getItem("gemini_chroma_key_tolerance")) {
+      elements.chromaKeyTolerance.value = localStorage.getItem("gemini_chroma_key_tolerance")!;
+      elements.chromaKeyToleranceVal.textContent = elements.chromaKeyTolerance.value;
+      avatar.setAttribute("chroma-key-tolerance", elements.chromaKeyTolerance.value);
+    } else {
+      elements.chromaKeyTolerance.value = "50";
+      elements.chromaKeyToleranceVal.textContent = "50";
+      avatar.setAttribute("chroma-key-tolerance", "50");
+    }
 
     elements.enableTranscript.checked = localStorage.getItem('gemini_enable_transcript') === 'true';
     elements.enableChatInput.checked = localStorage.getItem('gemini_enable_chat_input') === 'true';
@@ -278,9 +285,10 @@ export function saveSettings(elements: any, store: any, customAvatars: Record<st
       "gemini_chroma_key_color",
       elements.chromaKeyColor.value,
     );
+
     localStorage.setItem(
-      "gemini_background_color",
-      elements.backgroundColor.value,
+      "gemini_chroma_key_tolerance",
+      elements.chromaKeyTolerance.value,
     );
     
     localStorage.setItem('gemini_enable_transcript', elements.enableTranscript.checked.toString());

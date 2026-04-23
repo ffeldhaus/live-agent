@@ -116,7 +116,7 @@ export async function handleImageGeneration(
             updateBackground(finalUrl, (colors, speed) => {
               applyTheme(colors, speed);
               if (onColorsDetected) onColorsDetected(colors);
-            });
+            }, keyColor);
           }
         };
         img.src = elements.generatedImg.src;
@@ -125,7 +125,7 @@ export async function handleImageGeneration(
         updateBackground(finalUrl, (colors, speed) => {
           applyTheme(colors, speed);
           if (onColorsDetected) onColorsDetected(colors);
-        });
+        }, keyColor);
       }
     } else {
       alert(
@@ -274,7 +274,7 @@ export async function handleCameraCapture(
           updateBackground(improvedUrl, (colors, speed) => {
             applyTheme(colors, speed);
             if (onColorsDetected) onColorsDetected(colors);
-          });
+          }, keyColor);
         } else {
           alert("Model did not return an image. See console.");
         }
@@ -292,7 +292,7 @@ export async function handleCameraCapture(
       updateBackground(dataUrl, (colors, speed) => {
         applyTheme(colors, speed);
         if (onColorsDetected) onColorsDetected(colors);
-      });
+      }, keyColor);
     }
   }
 }
@@ -372,7 +372,7 @@ export async function handleUpload(
           updateBackground(improvedUrl, (colors, speed) => {
             applyTheme(colors, speed);
             if (onColorsDetected) onColorsDetected(colors);
-          });
+          }, keyColor);
         } else {
           alert("Model did not return an image. See console.");
         }
@@ -433,7 +433,7 @@ export async function handleUpload(
         updateBackground(processedUrl, (colors, speed) => {
           applyTheme(colors, speed);
           if (onColorsDetected) onColorsDetected(colors);
-        });
+        }, keyColor);
       }
     }
   };

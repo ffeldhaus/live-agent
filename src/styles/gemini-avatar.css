@@ -9,7 +9,7 @@
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
   background: transparent;
-  z-index: 10000;
+  z-index: 5;
   transition: all 0.3s ease;
   max-width: calc(100vw - 40px);
   max-height: calc(100vh - 40px);

@@ -25,8 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
       oauthClientIdInput, voiceSelect, languageSelect, saveVideoToggle, debugToggle,
       recordUserAudioCheckbox, micAutoRequestToggle, ctrlMic, ctrlCamera, ctrlScreen,
       ctrlMute, ctrlSnapshot, ctrlSettings, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
-      defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor,
-      backgroundColor, qaContainer, qaList, toggleQaBtn,
+      defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor, chromaKeyTolerance, chromaKeyToleranceVal,
+      qaContainer, qaList, toggleQaBtn,
       enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
       externalTranscript, externalChatInput, externalSendBtn, barSetup, barLatency,
       statTotalLatency, cameraBtn, uploadBtn, enableGrounding, cameraModal,
@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
       saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage,
       luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,
       enableSessionResumption, bgImagePrompt, luckyBgPromptBtn, bgImageUrl,
-      clearBgBtn, bgImageUpload, uploadBgBtn, generateBgBtn, generateImageBtn, saveBtn, sendBtn, textInput, copyHtmlBtn
+      clearBgBtn, bgImageUpload, uploadBgBtn, generateBgBtn, generateImageBtn, saveBtn, sendBtn, textInput, copyHtmlBtn,
+      expandBtn, configContainer
     } = elements;
 
     // Reactive State Store
@@ -64,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
       imagePrompt: "",
       enableChromaKey: false,
       chromaKeyColor: "green",
-      backgroundColor: "white",
+      backgroundColor: "transparent",
       enableTranscript: false,
       enableChatInput: false,
       enableSessionResumption: false,
@@ -294,6 +295,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Listeners
+    if (expandBtn) {
+      expandBtn.onclick = () => {
+        const isCollapsed = configContainer.classList.toggle('hidden');
+        
+        if (isCollapsed) {
+          expandBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+          expandBtn.title = "Expand Configuration";
+        } else {
+          expandBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>`;
+          expandBtn.title = "Collapse Configuration";
+        }
+      };
+    }
     projectIdInput.addEventListener(
       "input",
       () => (store.projectId = projectIdInput.value),
@@ -556,9 +570,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (chromaKeyColor)
       chromaKeyColor.onchange = () =>
         avatar.setAttribute("chroma-key-color", chromaKeyColor.value);
-    if (backgroundColor)
-      backgroundColor.onchange = () =>
-        avatar.setAttribute("background-color", backgroundColor.value);
+
+
+    if (chromaKeyTolerance) {
+      chromaKeyTolerance.oninput = () => {
+        chromaKeyToleranceVal.textContent = chromaKeyTolerance.value;
+        avatar.setAttribute("chroma-key-tolerance", chromaKeyTolerance.value);
+      };
+    }
 
     // Toggle Listeners
     if (enableTranscript) {
@@ -776,7 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
               imagePromptInput.value,
               enableChromaKey.checked,
               chromaKeyColor.value,
-              backgroundColor.value,
+              "transparent",
               projectIdInput.value,
               locationInput.value || "us-central1",
               tokenInput.value,
@@ -922,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
               name,
               enableChromaKey.checked,
               chromaKeyColor.value,
-              backgroundColor.value,
+              "transparent",
               toggleImageImprovement.checked,
               projectIdInput.value,
               locationInput.value || "us-central1",
@@ -965,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       name,
                       enableChromaKey.checked,
                       chromaKeyColor.value,
-                      backgroundColor.value,
+                      "transparent",
                       toggleImageImprovement.checked,
                       projectIdInput.value,
                       locationInput.value || "us-central1",
@@ -1026,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
     store.imagePrompt = imagePromptInput.value;
     store.enableChromaKey = enableChromaKey.checked;
     store.chromaKeyColor = chromaKeyColor.value;
-    store.backgroundColor = backgroundColor.value;
+    store.backgroundColor = "transparent";
     store.enableTranscript = enableTranscript.checked;
     store.enableChatInput = enableChatInput.checked;
     store.renderTranscriptOutside = renderOutsideToggle.checked;

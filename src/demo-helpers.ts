@@ -51,6 +51,7 @@ export async function generateContent(
 export function updateBackground(
   imageUrl: string,
   onThemeApplied: (colors: string[], speed: string) => void,
+  keyColor?: string
 ) {
   const img = new Image();
   img.crossOrigin = "Anonymous";
@@ -74,6 +75,9 @@ export function updateBackground(
         const b = data[i + 2];
 
         if (data[i + 3] < 128) continue; // Ignore transparent
+
+        if (keyColor === 'green' && g > r && g > b) continue;
+        if (keyColor === 'blue' && b > r && b > g) continue;
 
         const hex = `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
         colors[hex] = (colors[hex] || 0) + 1;
@@ -103,7 +107,12 @@ export function updateBackground(
 
 export function applyTheme(colors: string[], speed: string) {
     const body = document.body;
-    body.classList.add("animated-bg");
+    
+    // Only add animated-bg if no background image is set
+    if (!body.style.backgroundImage || body.style.backgroundImage === 'none') {
+        body.classList.add("animated-bg");
+    }
+    
     body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
     body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
     body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
@@ -122,6 +131,7 @@ export function applyAvatarTheme(
         newCustomAvatarBtn?: HTMLButtonElement
     }
 ) {
+    const keyColor = avatar.getAttribute('chroma-key-color') || 'green';
     const preset = (AVATAR_PRESETS as any)[avatarName];
     if (preset && preset.palette) {
         // Map mood to animation speed
@@ -143,7 +153,7 @@ export function applyAvatarTheme(
         if (customAvatar.palette) {
             applyTheme(customAvatar.palette, '15s');
         } else {
-            updateBackground(customAvatar.image, applyTheme);
+            updateBackground(customAvatar.image, applyTheme, keyColor);
         }
         
         if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
@@ -151,7 +161,7 @@ export function applyAvatarTheme(
         avatar.setPreview(avatarName);
         const pr = (AVATAR_PRESETS as any)[avatarName];
         if (pr && pr.image) {
-            updateBackground(pr.image, applyTheme);
+            updateBackground(pr.image, applyTheme, keyColor);
         }
     }
 }

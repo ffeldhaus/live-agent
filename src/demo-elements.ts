@@ -20,6 +20,9 @@ export function queryElements() {
     const copyHtmlBtn = document.getElementById('copyHtmlBtn') as HTMLButtonElement;
     const recordUserAudioCheckbox = document.getElementById('recordUserAudio') as HTMLInputElement;
     
+    const expandBtn = document.getElementById('expandBtn') as HTMLButtonElement;
+    const configContainer = document.getElementById('configContainer') as HTMLDivElement;
+    
     const micAutoRequestToggle = document.getElementById('micAutoRequestToggle') as HTMLInputElement;
     const ctrlMic = document.getElementById('ctrlMic') as HTMLInputElement;
     const ctrlCamera = document.getElementById('ctrlCamera') as HTMLInputElement;
@@ -56,7 +59,9 @@ export function queryElements() {
     
     const enableChromaKey = document.getElementById('enableChromaKey') as HTMLInputElement;
     const chromaKeyColor = document.getElementById('chromaKeyColor') as HTMLSelectElement;
-    const backgroundColor = document.getElementById("backgroundColor") as HTMLSelectElement;
+
+    const chromaKeyTolerance = document.getElementById('chromaKeyTolerance') as HTMLInputElement;
+    const chromaKeyToleranceVal = document.getElementById('chromaKeyToleranceVal') as HTMLSpanElement;
     
     const qaContainer = document.getElementById("qaContainer") as HTMLDivElement;
     const qaList = document.getElementById("qaList") as HTMLDivElement;
@@ -111,7 +116,8 @@ export function queryElements() {
       recordUserAudioCheckbox, micAutoRequestToggle, ctrlMic, ctrlCamera, ctrlScreen,
       ctrlMute, ctrlSnapshot, ctrlSettings, audioChunkSizeSlider, chunkSizeVal, systemInstructionInput,
       defaultGreetingInput, imagePromptInput, enableChromaKey, chromaKeyColor,
-      backgroundColor, qaContainer, qaList, toggleQaBtn,
+      chromaKeyTolerance, chromaKeyToleranceVal,
+      qaContainer, qaList, toggleQaBtn,
       enableTranscript, enableChatInput, renderOutsideToggle, externalTranscriptSection,
       externalTranscript, externalChatInput, externalSendBtn, barSetup, barLatency,
       statTotalLatency, cameraBtn, uploadBtn, enableGrounding, cameraModal,
@@ -121,6 +127,7 @@ export function queryElements() {
       luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,
       enableSessionResumption, bgImagePrompt, luckyBgPromptBtn, bgImageUrl,
       clearBgBtn, bgImageUpload, uploadBgBtn, generateBgBtn, saveBtn, sendBtn, textInput, copyHtmlBtn,
+      expandBtn, configContainer,
       statSetupDuration, statLatency, statPacketsReceived, statAudioSent, statVideoSent,
       statVideoPackets, statTotalFrames, statSessionDuration, statFps, statDownlink,
       statRtt, statConnType
