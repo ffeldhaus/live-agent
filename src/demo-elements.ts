@@ -56,6 +56,8 @@ export function queryElements() {
     const generateImageBtn = document.getElementById('generateImageBtn') as HTMLButtonElement;
     const generatedImageContainer = document.getElementById('generatedImageContainer') as HTMLDivElement;
     const generatedImg = document.getElementById('generatedImg') as HTMLImageElement;
+    const originalImg = document.getElementById('originalImg') as HTMLImageElement;
+    const redoImprovementBtn = document.getElementById('redoImprovementBtn') as HTMLButtonElement;
     
     const enableChromaKey = document.getElementById('enableChromaKey') as HTMLInputElement;
     const chromaKeyColor = document.getElementById('chromaKeyColor') as HTMLSelectElement;
@@ -122,8 +124,8 @@ export function queryElements() {
       externalTranscript, externalChatInput, externalSendBtn, barSetup, barLatency,
       statTotalLatency, cameraBtn, uploadBtn, enableGrounding, cameraModal,
       cameraVideo, cameraVideoContainer, captureBtn, closeCameraBtn,
-      customAvatarName, generatedImg, generatedImageContainer, newCustomAvatarBtn,
-      saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage,
+      customAvatarName, generatedImg, originalImg, generatedImageContainer, newCustomAvatarBtn,
+      saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, redoImprovementBtn,
       luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,
       enableSessionResumption, bgImagePrompt, luckyBgPromptBtn, bgImageUrl,
       clearBgBtn, bgImageUpload, uploadBgBtn, generateBgBtn, saveBtn, sendBtn, textInput, copyHtmlBtn,

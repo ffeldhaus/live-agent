@@ -6,6 +6,7 @@ import {
   handleImageGeneration,
   handleCameraCapture,
   handleUpload,
+  handleImageImprovement,
   handleBackgroundGeneration,
   handleBackgroundUpload,
   handleLuckyBgPrompt
@@ -18,7 +19,7 @@ import { queryElements } from './demo-elements';
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Demo script started');
     const elements = queryElements();
-    const customAvatars: Record<string, { image: string; type: "custom"; palette?: string[] }> = {};
+    const customAvatars: Record<string, { image: string; originalImage?: string; type: "custom"; palette?: string[] }> = {};
     const {
       avatar, tokenInput, userName, userAvatar, userProfile, googleSignInBtn,
       projectIdInput, locationInput, avatarNameSelect, sizeSelect, positionSelect,
@@ -494,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (name && imageUrl) {
           customAvatars[name] = {
             image: imageUrl,
+            originalImage: elements.originalImg ? elements.originalImg.src : undefined,
             type: "custom",
             palette: detectedPalette,
           };
@@ -505,6 +507,38 @@ document.addEventListener('DOMContentLoaded', () => {
           );
           alert(`Custom avatar "${name}" saved.`);
         }
+      };
+    }
+
+    if (elements.redoImprovementBtn) {
+      elements.redoImprovementBtn.onclick = async () => {
+        const name = customAvatarName.value.trim();
+        const originalImageUrl = elements.originalImg ? elements.originalImg.src : "";
+        if (!name) {
+            alert('Please enter a name for the custom avatar.');
+            return;
+        }
+        if (!originalImageUrl) {
+            alert('No original image to improve.');
+            return;
+        }
+        
+        await handleImageImprovement(
+          originalImageUrl,
+          enableChromaKey.checked,
+          chromaKeyColor.value,
+          projectIdInput.value,
+          locationInput.value || "us-central1",
+          tokenInput.value,
+          {
+            generatedImg,
+            imageProcessingMessage,
+            redoImprovementBtn: elements.redoImprovementBtn,
+          },
+          (colors) => {
+            detectedPalette = colors;
+          },
+        );
       };
     }
 

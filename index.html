@@ -144,58 +144,70 @@
             </details>
         </details>
         
+        <!-- Dedicated Create Custom Avatar Section -->
         <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5">
-            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Avatar</summary>
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Create Custom Avatar</summary>
             
             <!-- Hint always visible -->
             <p class="text-xs text-slate-400 mb-4">Hint: You can create a custom avatar by taking a photo, uploading an image, or generating one from a prompt. For best results with camera input, ensure a uniform background.</p>
 
-            <!-- Collapsible Custom Avatar Section -->
-            <details open class="bg-slate-900/40 rounded-xl p-4 mb-4">
-                <summary class="cursor-pointer text-sm font-semibold text-slate-300 mb-2">Create Custom Avatar</summary>
-                
-                <div class="flex flex-col gap-3">
-                    <div class="flex flex-col gap-1">
-                        <label for="customAvatarName" class="text-sm font-medium text-slate-300">Avatar Name *</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="customAvatarName" placeholder="Enter unique name to create preset" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="newCustomAvatarBtn" style="display: none; white-space: nowrap;">New Custom Avatar</button>
-                            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="saveCustomAvatarBtn" style="display: none; white-space: nowrap;">Save Custom Avatar</button>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-2 items-center">
-                        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="cameraBtn">Camera</button>
-                        <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="uploadBtn">Upload Image</button>
-                        <label class="flex items-center gap-1 text-sm text-slate-300 whitespace-nowrap"><input type="checkbox" id="toggleImageImprovement" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800" checked> Auto-Improve</label>
-                    </div>
-                    
-                    <!-- Image Prompt -->
-                    <div class="flex flex-col gap-1">
-                        <label for="imagePrompt" class="text-sm font-medium text-slate-300">Image Generation Prompt</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
-                            <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate</button>
-                        </div>
-                    </div>
-
-                    <!-- Chroma Keying Color (for generation) -->
-                    <div class="flex flex-col gap-1">
-                        <label for="chromaKeyColor" class="text-sm font-medium text-slate-300">Chroma Key Color (for Generation):</label>
-                        <select id="chromaKeyColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="green">Light Green Key</option>
-                            <option value="blue">Blue Key</option>
-                        </select>
-                    </div>
-
-                    <div id="generatedImageContainer" class="mt-2 hidden text-center">
-                        <p id="imageProcessingMessage" class="text-sm text-sky-400 mb-2 hidden">Improving image...</p>
-                        <img id="generatedImg" class="max-w-full max-h-48 rounded-lg border border-slate-700 mx-auto">
+            <div class="flex flex-col gap-3">
+                <div class="flex flex-col gap-1">
+                    <label for="customAvatarName" class="text-sm font-medium text-slate-300">Avatar Name *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="customAvatarName" placeholder="Enter unique name to create preset" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="newCustomAvatarBtn" style="display: none; white-space: nowrap;">New Custom Avatar</button>
+                        <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="saveCustomAvatarBtn" style="display: none; white-space: nowrap;">Save Custom Avatar</button>
                     </div>
                 </div>
-            </details>
+                
+                <div class="flex gap-2 items-center">
+                    <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="cameraBtn">Camera</button>
+                    <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="uploadBtn">Upload Image</button>
+                    <label class="flex items-center gap-1 text-sm text-slate-300 whitespace-nowrap"><input type="checkbox" id="toggleImageImprovement" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800" checked> Auto-Improve</label>
+                </div>
+                
+                <!-- Image Prompt -->
+                <div class="flex flex-col gap-1">
+                    <label for="imagePrompt" class="text-sm font-medium text-slate-300">Image Generation Prompt</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate</button>
+                    </div>
+                </div>
 
+                <!-- Chroma Keying Color (for generation) -->
+                <div class="flex flex-col gap-1">
+                    <label for="chromaKeyColor" class="text-sm font-medium text-slate-300">Chroma Key Color (for Generation):</label>
+                    <select id="chromaKeyColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="green">Light Green Key</option>
+                        <option value="blue">Blue Key</option>
+                    </select>
+                </div>
+
+                <div id="generatedImageContainer" class="mt-2 hidden text-center">
+                    <p id="imageProcessingMessage" class="text-sm text-sky-400 mb-2 hidden">Improving image...</p>
+                    <div class="flex justify-center gap-4 items-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-slate-400">Original</span>
+                            <img id="originalImg" class="max-w-[150px] max-h-48 rounded-lg border border-slate-700">
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-xs text-slate-400">Improved</span>
+                            <img id="generatedImg" class="max-w-[150px] max-h-48 rounded-lg border border-slate-700">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button id="redoImprovementBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-1.5 px-3 rounded-lg transition-all text-sm">Redo Improvement</button>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5">
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Avatar</summary>
+            
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div class="flex flex-col gap-1">
                     <label for="avatarName" class="text-sm font-medium text-slate-300">Avatar Preset</label>

@@ -44,7 +44,11 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
             const imageUrl = typeof val === 'string' ? val : val.image;
             const type = typeof val === 'string' ? 'custom' : val.type;
             
-            customAvatars[name] = { image: imageUrl, type: type as 'custom' };
+            customAvatars[name] = {
+              image: imageUrl,
+              originalImage: typeof val === 'string' ? undefined : val.originalImage,
+              type: type as "custom",
+            };
             
             const option = document.createElement('option');
             option.value = name;

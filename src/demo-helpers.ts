@@ -123,10 +123,11 @@ export function applyTheme(colors: string[], speed: string) {
 export function applyAvatarTheme(
     avatarName: string,
     avatar: GeminiAvatar,
-    customAvatars: Record<string, { image: string, type: 'custom', palette?: string[] }>,
+    customAvatars: Record<string, { image: string, originalImage?: string, type: 'custom', palette?: string[] }>,
     elements: {
         customAvatarName?: HTMLInputElement,
         generatedImg?: HTMLImageElement,
+        originalImg?: HTMLImageElement,
         generatedImageContainer?: HTMLDivElement,
         newCustomAvatarBtn?: HTMLButtonElement
     }
@@ -147,6 +148,8 @@ export function applyAvatarTheme(
           elements.customAvatarName.value = avatarName;
         if (elements.generatedImg)
           elements.generatedImg.src = customAvatar.image;
+        if (elements.originalImg && customAvatar.originalImage)
+          elements.originalImg.src = customAvatar.originalImage;
         if (elements.generatedImageContainer) elements.generatedImageContainer.style.display = 'block';
         avatar.setAttribute('custom-avatar-url', customAvatar.image);
         

@@ -153,11 +153,12 @@ export async function handleCameraCapture(
   token: string,
   customAvatars: Record<
     string,
-    { image: string; type: "custom"; palette?: string[] }
+    { image: string; originalImage?: string; type: "custom"; palette?: string[] }
   >,
   avatar: GeminiAvatar,
   elements: {
     generatedImg: HTMLImageElement;
+    originalImg: HTMLImageElement;
     generatedImageContainer: HTMLDivElement;
     customAvatarName: HTMLInputElement;
     captureBtn: HTMLButtonElement;
@@ -227,6 +228,7 @@ export async function handleCameraCapture(
     const dataUrl = canvas.toDataURL("image/png");
 
     // Show preview
+    if (elements.originalImg) elements.originalImg.src = dataUrl;
     elements.generatedImg.src = dataUrl;
     elements.generatedImageContainer.style.display = "block";
     if (elements.customAvatarName)
@@ -309,11 +311,12 @@ export async function handleUpload(
   token: string,
   customAvatars: Record<
     string,
-    { image: string; type: "custom"; palette?: string[] }
+    { image: string; originalImage?: string; type: "custom"; palette?: string[] }
   >,
   avatar: GeminiAvatar,
   elements: {
     generatedImg: HTMLImageElement;
+    originalImg: HTMLImageElement;
     generatedImageContainer: HTMLDivElement;
     customAvatarName: HTMLInputElement;
     uploadBtn: HTMLButtonElement;
@@ -325,6 +328,7 @@ export async function handleUpload(
   const reader = new FileReader();
   reader.onload = async (re: any) => {
     const dataUrl = re.target.result;
+    if (elements.originalImg) elements.originalImg.src = dataUrl;
     elements.generatedImg.src = dataUrl;
     elements.generatedImageContainer.style.display = "block";
     if (elements.customAvatarName)
@@ -438,6 +442,73 @@ export async function handleUpload(
     }
   };
   reader.readAsDataURL(file);
+}
+
+export async function handleImageImprovement(
+  originalDataUrl: string,
+  useChromaKey: boolean,
+  keyColor: string,
+  project: string,
+  location: string,
+  token: string,
+  elements: {
+    generatedImg: HTMLImageElement;
+    imageProcessingMessage?: HTMLParagraphElement;
+    redoImprovementBtn?: HTMLButtonElement;
+  },
+  onColorsDetected?: (colors: string[]) => void,
+) {
+  try {
+    if (elements.redoImprovementBtn) elements.redoImprovementBtn.disabled = true;
+    if (elements.imageProcessingMessage)
+      elements.imageProcessingMessage.style.display = "block";
+
+    const base64Data = originalDataUrl.split(",")[1];
+    const mimeType = originalDataUrl.split(";")[0].split(":")[1];
+    
+    let instruction =
+      "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
+
+    if (useChromaKey) {
+      instruction += ` Replace the background with a solid ${keyColor} color.`;
+    } else {
+      instruction += ` Use a nice, unobtrusive uniform background.`;
+    }
+
+    const data = await generateContent(
+      "gemini-3.1-flash-image-preview",
+      instruction,
+      project,
+      location,
+      token,
+      { mimeType: mimeType, data: base64Data },
+    );
+
+    console.log("Image Gen Response:", data);
+    const part = data.candidates[0].content.parts.find(
+      (p: any) => p.inlineData,
+    );
+
+    if (part && part.inlineData && part.inlineData.data) {
+      const base64 = part.inlineData.data;
+      const improvedUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+      elements.generatedImg.src = improvedUrl;
+
+      updateBackground(improvedUrl, (colors, speed) => {
+        applyTheme(colors, speed);
+        if (onColorsDetected) onColorsDetected(colors);
+      }, keyColor);
+    } else {
+      alert("Model did not return an image. See console.");
+    }
+  } catch (e: any) {
+    console.error("Image improvement error:", e);
+    alert("Failed to improve image: " + e.message);
+  } finally {
+    if (elements.redoImprovementBtn) elements.redoImprovementBtn.disabled = false;
+    if (elements.imageProcessingMessage)
+      elements.imageProcessingMessage.style.display = "none";
+  }
 }
 
 export async function handleBackgroundGeneration(
