@@ -14,6 +14,16 @@
     --primary-hover: #4f46e5;
     --text-color: #f8fafc;
 }
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate-bg {
+  to { --angle: 360deg; }
+}
+
 body {
     margin: 0;
     font-family: 'Outfit', sans-serif;
@@ -27,9 +37,13 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background-attachment: fixed;
 }
+
 body.animated-bg {
-    background: linear-gradient(135deg, var(--c1), var(--c2), var(--c3), var(--c4)), #0f172a !important;
+    background: linear-gradient(var(--angle), var(--c1), var(--c2), var(--c3)) !important;
+    animation: rotate-bg 20s linear infinite;
+    background-attachment: fixed;
 }
 .container {
     max-width: 800px;

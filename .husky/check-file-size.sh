@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MAX_LINES=1000
+MAX_LINES=1200
 FAILED=0
 
 while IFS= read -r -d '' file; do
