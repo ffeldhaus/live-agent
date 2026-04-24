@@ -1338,6 +1338,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 avatar.setAttribute('default-greeting', defaultGreetingInput.value);
                 avatar.setAttribute('record-video', saveVideoToggle.checked.toString());
                 avatar.setAttribute('debug', debugToggle.checked.toString());
+                avatar.setAttribute('enable-session-resumption', enableSessionResumption.checked.toString());
                 if (recordUserAudioCheckbox) {
                     avatar.setAttribute('record-user-audio', recordUserAudioCheckbox.checked.toString());
                 }
@@ -1365,6 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         avatar2.setAttribute('record-video', saveVideoToggle.checked.toString());
                         avatar2.setAttribute('record-user-audio', recordUserAudioCheckbox.checked.toString());
                         avatar2.setAttribute('debug', debugToggle.checked.toString());
+                        avatar2.setAttribute('enable-session-resumption', elements.enableSessionResumption2.checked.toString());
                         
                         stream2 = avatar2.getAudioOutputStream();
                         console.log("[Demo] stream2 tracks:", stream2.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, readyState: t.readyState })));
