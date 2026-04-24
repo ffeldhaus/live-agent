@@ -948,7 +948,9 @@ export class GeminiAvatar extends HTMLElement {
   private updateChromaKeyState() {
     const enabled = this.getAttribute('enable-chroma-key') === 'true';
     const bgColor = this.getAttribute('background-color');
-    const shouldChromaKey = enabled || bgColor === 'transparent';
+    const chromaKeyColor = this.getAttribute('chroma-key-color');
+    const shouldChromaKey =
+      (enabled || bgColor === 'transparent') && chromaKeyColor !== 'disabled';
 
     if (this.displayCanvas)
       this.displayCanvas.style.display = shouldChromaKey ? 'block' : 'none';

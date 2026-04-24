@@ -59,7 +59,7 @@ export async function handleImageGeneration(
 
     // Add background settings and resolution to prompt!
     let finalPrompt = enhancedPrompt + ', resolution 704x1280 in PNG format';
-    if (useChromaKey) {
+    if (useChromaKey && keyColor !== 'disabled') {
       finalPrompt += ` with a solid ${keyColor} background.`;
     } else {
       finalPrompt += ' with a nice, unobtrusive uniform background.';
@@ -89,7 +89,11 @@ export async function handleImageGeneration(
       let finalUrl = elements.generatedImg.src;
 
       // Apply transparency via canvas if needed!
-      if (useChromaKey && bgColor === 'transparent') {
+      if (
+        useChromaKey &&
+        bgColor === 'transparent' &&
+        keyColor !== 'disabled'
+      ) {
         const img = new Image();
         img.onload = () => {
           const canv = document.createElement('canvas');
@@ -261,7 +265,7 @@ export async function handleCameraCapture(
         let instruction =
           "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-        if (useChromaKey) {
+        if (useChromaKey && keyColor !== 'disabled') {
           instruction += ` Replace the background with a solid ${keyColor} color.`;
         } else {
           instruction += ' Use a nice, unobtrusive uniform background.';
@@ -373,7 +377,7 @@ export async function handleUpload(
         let instruction =
           "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-        if (useChromaKey) {
+        if (useChromaKey && keyColor !== 'disabled') {
           instruction += ` Replace the background with a solid ${keyColor} color.`;
         } else {
           instruction += ' Use a nice, unobtrusive uniform background.';
@@ -507,7 +511,7 @@ export async function handleImageImprovement(
     let instruction =
       "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-    if (useChromaKey) {
+    if (useChromaKey && keyColor !== 'disabled') {
       instruction += ` Replace the background with a solid ${keyColor} color.`;
     } else {
       instruction += ' Use a nice, unobtrusive uniform background.';
