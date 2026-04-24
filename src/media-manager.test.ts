@@ -47,12 +47,14 @@ describe('MediaManager', () => {
         window.AudioContext = vi.fn().mockImplementation(() => ({
             createMediaStreamSource: vi.fn().mockReturnValue({
                 connect: vi.fn(),
+                disconnect: vi.fn(),
             }),
             audioWorklet: {
                 addModule: vi.fn().mockResolvedValue(undefined),
             },
             createGain: vi.fn().mockReturnValue({
                 connect: vi.fn(),
+                disconnect: vi.fn(),
                 gain: { value: 1 },
             }),
             createBufferSource: vi.fn().mockReturnValue({

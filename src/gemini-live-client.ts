@@ -359,10 +359,6 @@ export class GeminiLiveClient {
                         if (this.onAudioData) this.onAudioData(part.inlineData.data);
                     }
                     if (part.inlineData && part.inlineData.mimeType.startsWith("video/")) {
-                        this._log("Received video data in JSON", {
-                            size: part.inlineData.data.length,
-                            mimeType: part.inlineData.mimeType,
-                        });
                         if (this.onVideoData) this.onVideoData(part.inlineData.data, part.inlineData.mimeType);
                     }
                 }

@@ -50,8 +50,14 @@ describe('Demo App', () => {
     // Mock AudioContext
     // @ts-ignore
     global.AudioContext = vi.fn().mockImplementation(() => ({
-      createMediaStreamSource: vi.fn().mockReturnValue({ connect: vi.fn() }),
-      createGain: vi.fn().mockReturnValue({ connect: vi.fn() }),
+      createMediaStreamSource: vi.fn().mockReturnValue({ connect: vi.fn(), disconnect: vi.fn() }),
+      createGain: vi.fn().mockReturnValue({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }),
+      createMediaElementSource: vi.fn().mockReturnValue({ connect: vi.fn(), disconnect: vi.fn() }),
+      createMediaStreamDestination: vi.fn().mockReturnValue({
+        stream: {
+          getTracks: vi.fn().mockReturnValue([{ kind: 'audio', label: 'mock-track', enabled: true, readyState: 'live' }])
+        }
+      }),
       destination: {},
       currentTime: 0,
       audioWorklet: { addModule: vi.fn().mockResolvedValue(undefined) },

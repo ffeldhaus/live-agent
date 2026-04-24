@@ -12,6 +12,7 @@ export class MediaManager {
     private playbackAudioContext: AudioContext | null = null;
     private audioGainNode: GainNode | null = null;
     private nextPlaybackTime = 0;
+    private audioDestination: MediaStreamAudioDestinationNode | null = null;
     private recordedChunks: Blob[] = [];
     private mpegtsPlayer: any = null;
     private customVideoLoader: any = null;
@@ -22,6 +23,9 @@ export class MediaManager {
     private micStream: MediaStream | null = null;
     private audioContext: AudioContext | null = null;
     private processor: AudioWorkletNode | null = null;
+    private mixer: GainNode | null = null;
+    private extSource: MediaStreamAudioSourceNode | null = null;
+    private micGain: GainNode | null = null;
     private videoInputStream: MediaStream | null = null;
     private videoInputInterval: any = null;
     private micRecorder: MediaRecorder | null = null;
@@ -33,7 +37,14 @@ export class MediaManager {
     private isMuted = false;
     private isMicMuted = false;
     private isRecordingVideo = false;
+    private isRecordingAudio = false;
+    private isExternalMicStream = false;
     private isSetupComplete = false;
+    private isWorkletModuleLoaded = false;
+    private videoAudioSource: MediaElementAudioSourceNode | null = null;
+    private outputProcessor: AudioWorkletNode | null = null;
+    private accumulatedOutputPcmData: Int16Array[] = [];
+    private pendingExternalStream: MediaStream | null = null;
     private receivedFirstVideoFrame = false;
     
     // Stats counters
@@ -62,6 +73,10 @@ export class MediaManager {
         this.isRecordingVideo = value;
     }
 
+    public setRecordingAudio(value: boolean) {
+        this.isRecordingAudio = value;
+    }
+
     public setSetupComplete(value: boolean) {
         this.isSetupComplete = value;
         if (value && this.micRecorder && this.micRecorder.state === 'inactive') {
@@ -86,6 +101,9 @@ export class MediaManager {
 
     public setMicMuted(value: boolean) {
         this.isMicMuted = value;
+        if (this.micGain) {
+            this.micGain.gain.value = value ? 0 : 1;
+        }
     }
 
     public init(useMpegts: boolean) {
@@ -93,6 +111,43 @@ export class MediaManager {
         if (useMpegts) {
             this.initMpegts();
         }
+    }
+
+    public getAudioOutputStream(): MediaStream {
+        if (!this.playbackAudioContext) {
+            this.playbackAudioContext = this.audioContext || new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+            this.nextPlaybackTime = this.playbackAudioContext.currentTime;
+        }
+        if (!this.audioGainNode) {
+            this.audioGainNode = this.playbackAudioContext.createGain();
+            this.audioGainNode.connect(this.playbackAudioContext.destination);
+        }
+        if (this.playbackAudioContext.state === 'suspended') {
+            this.playbackAudioContext.resume();
+            this._log("Resumed playbackAudioContext in getAudioOutputStream");
+        }
+        if (!this.audioDestination) {
+            this.audioDestination = this.playbackAudioContext.createMediaStreamDestination();
+            this.audioGainNode.connect(this.audioDestination);
+            
+            try {
+                this._log("Creating MediaElementSource from video element", null, true);
+                this.videoAudioSource = this.playbackAudioContext.createMediaElementSource(this.videoEl);
+                this.videoAudioSource.connect(this.playbackAudioContext.destination);
+                this.videoAudioSource.connect(this.audioDestination);
+                this.setupOutputRecording();
+            } catch (e: any) {
+                console.error("Failed to create MediaElementSource:", e);
+                this._log("Failed to create MediaElementSource", { error: e.message }, true);
+            }
+        }
+        return this.audioDestination.stream;
+    }
+
+    public setAudioContext(ctx: AudioContext) {
+        this.audioContext = ctx;
+        this.playbackAudioContext = ctx;
+        this._log("Shared AudioContext set in MediaManager");
     }
 
     public resetMediaSource() {
@@ -203,10 +258,12 @@ export class MediaManager {
 
     public async playAudioChunk(base64Data: string) {
         try {
-            this._log("playAudioChunk called", { isMuted: this.isMuted, size: base64Data.length });
+            this._log("playAudioChunk called", { isMuted: this.isMuted, size: base64Data.length }, true);
             if (!this.playbackAudioContext) {
-                this.playbackAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                this.playbackAudioContext = this.audioContext || new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
                 this.nextPlaybackTime = this.playbackAudioContext.currentTime;
+            }
+            if (!this.audioGainNode) {
                 this.audioGainNode = this.playbackAudioContext.createGain();
                 this.audioGainNode.connect(this.playbackAudioContext.destination);
             }
@@ -240,8 +297,6 @@ export class MediaManager {
 
     public async handleVideoDataChunk(base64Data: string, mimeType: string) {
         try {
-            this._log("handleVideoDataChunk called", { isRecordingVideo: this.isRecordingVideo, size: base64Data.length });
-            
             this.checkFirstFrame();
             this.videoFramesReceived++;
 
@@ -313,14 +368,46 @@ export class MediaManager {
         }
     }
 
-    public async startMic(audioChunkSize: string = "2048") {
+    public async startMic(audioChunkSize: string = "2048", externalStream: MediaStream | null = null, micStream: MediaStream | null = null) {
         try {
-            this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            if (micStream) {
+                this.micStream = micStream;
+                this.isExternalMicStream = true;
+                this._log("Using provided external mic stream");
+            } else {
+                this.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.isExternalMicStream = false;
+            }
             
             this.stopSilencePadding();
 
-            this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-            const source = this.audioContext.createMediaStreamSource(this.micStream);
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+            }
+            
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+                this._log("Resumed audioContext in startMic");
+            }
+            
+            this.mixer = this.audioContext.createGain();
+            this.micGain = this.audioContext.createGain();
+            const micSource = this.audioContext.createMediaStreamSource(this.micStream);
+            micSource.connect(this.micGain);
+            this.micGain.connect(this.mixer);
+            this.micGain.gain.value = this.isMicMuted ? 0 : 1;
+            
+            if (externalStream) {
+                this.extSource = this.audioContext.createMediaStreamSource(externalStream);
+                this.extSource.connect(this.mixer);
+            }
+            
+            if (this.pendingExternalStream) {
+                this._log("Connecting pending external stream");
+                this.extSource = this.audioContext.createMediaStreamSource(this.pendingExternalStream);
+                this.extSource.connect(this.mixer);
+                this.pendingExternalStream = null;
+            }
 
             const bufferSize = parseInt(audioChunkSize);
             const workletCode = `
@@ -334,6 +421,7 @@ export class MediaManager {
                         const input = inputs[0];
                         if (input && input[0]) {
                             const inputChannel = input[0];
+                            
                             for (let i = 0; i < inputChannel.length; i++) {
                                 this.buffer[this.offset++] = inputChannel[i];
                                 if (this.offset >= this.buffer.length) {
@@ -353,7 +441,9 @@ export class MediaManager {
             const currentContext = this.audioContext;
             try {
                 await this.audioContext.audioWorklet.addModule(dataUri);
+                this.isWorkletModuleLoaded = true;
                 this._log("AudioWorklet module added successfully");
+                this.setupOutputRecording();
             } catch (e) {
                 console.error("Failed to add AudioWorklet module:", e);
                 this._log("Failed to add AudioWorklet module", e, true);
@@ -366,23 +456,22 @@ export class MediaManager {
             }
 
             this.processor = new AudioWorkletNode(this.audioContext, "audio-processor");
-            source.connect(this.processor);
+            this.mixer.connect(this.processor);
             this.processor.connect(this.audioContext.destination);
 
             this.processor.port.onmessage = (e) => {
+                if (e.data && e.data.type === 'signal') {
+                    return;
+                }
                 const inputData = e.data;
                 const pcmData = this.float32ToInt16(inputData);
                 
-                if (this.isMicMuted) {
-                    pcmData.fill(0); // Silence pad
-                }
-                
                 const base64Data = this.arrayBufferToBase64(pcmData.buffer);
 
-                if (this.isSetupComplete && this.receivedFirstVideoFrame) {
+                if (this.isSetupComplete) {
                     if (this.onAudioChunk) this.onAudioChunk(base64Data);
                     
-                    if (this.isRecordingVideo) {
+                    if (this.isRecordingAudio || this.isRecordingVideo) {
                         this.accumulatedPcmData.push(pcmData);
                     }
                     this.audioChunksSent++;
@@ -398,10 +487,32 @@ export class MediaManager {
         }
     }
 
+    public updateExternalStream(stream: MediaStream | null) {
+        this._log("updateExternalStream called", { hasStream: !!stream, hasContext: !!this.audioContext });
+        if (!this.audioContext || !this.mixer) {
+            this._log("updateExternalStream: mixer not ready, deferring connection", null, true);
+            this.pendingExternalStream = stream;
+            return;
+        }
+        
+        if (this.extSource) {
+            this.extSource.disconnect();
+            this.extSource = null;
+            this._log("Disconnected previous external source");
+        }
+        
+        if (stream) {
+            this.extSource = this.audioContext.createMediaStreamSource(stream);
+            this.extSource.connect(this.mixer);
+            this._log("Connected new external source to mixer");
+        }
+    }
+
     public setupMicRecorder() {
         if (this.isRecordingVideo && this.micStream) {
             this.micChunks = [];
             this.accumulatedPcmData = [];
+            this.accumulatedOutputPcmData = [];
             this.micRecorder = new MediaRecorder(this.micStream);
             this.micRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
@@ -421,21 +532,62 @@ export class MediaManager {
             this.processor.disconnect();
             this.processor = null;
         }
-        if (this.audioContext) {
-            this.audioContext.close();
-            this.audioContext = null;
+        if (this.mixer) {
+            this.mixer.disconnect();
+            this.mixer = null;
+        }
+        if (this.micGain) {
+            this.micGain.disconnect();
+            this.micGain = null;
+        }
+        if (this.extSource) {
+            this.extSource.disconnect();
+            this.extSource = null;
         }
 
         if (this.micStream) {
-            if (typeof this.micStream.getTracks === 'function') {
-                const tracks = this.micStream.getTracks();
-                if (Array.isArray(tracks)) {
-                    tracks.forEach(track => track.stop());
+            if (!this.isExternalMicStream) {
+                if (typeof this.micStream.getTracks === 'function') {
+                    const tracks = this.micStream.getTracks();
+                    if (Array.isArray(tracks)) {
+                        tracks.forEach(track => track.stop());
+                    }
                 }
             }
             this.micStream = null;
         }
         this._log("Microphone stopped");
+    }
+
+    private setupOutputRecording() {
+        if (this.videoAudioSource && this.audioContext && this.isWorkletModuleLoaded && !this.outputProcessor) {
+            this._log("Setting up output recording worklet", null, true);
+            this.outputProcessor = new AudioWorkletNode(this.audioContext, "audio-processor");
+            this.videoAudioSource.connect(this.outputProcessor);
+            this.outputProcessor.port.onmessage = (e) => {
+                if (e.data && e.data.type === 'signal') return; // Ignore signal logs
+                const inputData = e.data;
+                const pcmData = this.float32ToInt16(inputData);
+                this.accumulatedOutputPcmData.push(pcmData);
+            };
+        }
+    }
+
+    public getRecordedOutput() {
+        const totalLength = this.accumulatedOutputPcmData.reduce(
+            (acc, chunk) => acc + chunk.length,
+            0,
+        );
+        const result = new Int16Array(totalLength);
+        let offset = 0;
+        for (const chunk of this.accumulatedOutputPcmData) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+
+        return new Blob([result.buffer], {
+            type: "application/octet-stream",
+        });
     }
 
     public startVideoStreaming(stream: MediaStream) {

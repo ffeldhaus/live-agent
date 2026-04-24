@@ -411,6 +411,7 @@ export class GeminiAvatar extends HTMLElement {
       "render-transcript-outside",
       "enable-grounding",
       "enable-session-resumption",
+      "record-user-audio",
     ];
   }
 
@@ -429,6 +430,12 @@ export class GeminiAvatar extends HTMLElement {
         this.isRecordingVideo = newValue === "true";
         this._log(
           `Video recording ${this.isRecordingVideo ? "enabled" : "disabled"}`,
+        );
+        break;
+      case "record-user-audio":
+        this.mediaManager?.setRecordingAudio(newValue === "true");
+        this._log(
+          `Audio recording ${newValue === "true" ? "enabled" : "disabled"}`,
         );
         break;
       case "access-token":
@@ -553,7 +560,7 @@ export class GeminiAvatar extends HTMLElement {
   }
 
   // Public API
-  public async start() {
+  public async start(externalStream?: MediaStream, micStream?: MediaStream) {
     this._log("Starting session...");
 
     // Reset mic mute state based on attribute
@@ -563,7 +570,7 @@ export class GeminiAvatar extends HTMLElement {
       if (this.micBtn) this.micBtn.classList.remove("off");
       if (!this.isRecording) {
         const audioChunkSize = this.getAttribute("audio-chunk-size") || "2048";
-        const started = await this.mediaManager?.startMic(audioChunkSize);
+        const started = await this.mediaManager?.startMic(audioChunkSize, externalStream, micStream);
         if (started) {
           this.isRecording = true;
         }
@@ -592,6 +599,8 @@ export class GeminiAvatar extends HTMLElement {
     }
     this.mediaManager?.stopVideoStreaming();
     this.mediaManager?.resetMediaSource();
+    this.receivedFirstVideoFrame = false;
+    this.updateChromaKeyState();
     this.disconnect();
   }
 
@@ -652,6 +661,25 @@ export class GeminiAvatar extends HTMLElement {
       type: "application/octet-stream",
     });
     return { videoBlob, audioBlob };
+  }
+
+  public getRecordedOutput() {
+    return this.mediaManager?.getRecordedOutput();
+  }
+
+  public getAudioOutputStream(): MediaStream {
+    if (!this.mediaManager) {
+      throw new Error("MediaManager not initialized");
+    }
+    return this.mediaManager.getAudioOutputStream();
+  }
+
+  public updateExternalStream(stream: MediaStream | null) {
+    this.mediaManager?.updateExternalStream(stream);
+  }
+
+  public setAudioContext(ctx: AudioContext) {
+    this.mediaManager?.setAudioContext(ctx);
   }
 
   public getStats() {

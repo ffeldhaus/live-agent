@@ -111,6 +111,35 @@ export function queryElements() {
     const uploadBgBtn = document.getElementById('uploadBgBtn') as HTMLButtonElement;
     const generateBgBtn = document.getElementById('generateBgBtn') as HTMLButtonElement;
 
+    const addAvatarBtn = document.getElementById('addAvatarBtn') as HTMLButtonElement;
+    const avatar2Config = document.getElementById('avatar2Config') as HTMLDetailsElement;
+    const avatarName2 = document.getElementById('avatarName2') as HTMLSelectElement;
+    const voiceSelect2 = document.getElementById('voiceSelect2') as HTMLSelectElement;
+    const size2 = document.getElementById('size2') as HTMLSelectElement;
+    const position2 = document.getElementById('position2') as HTMLSelectElement;
+    const languageSelect2 = document.getElementById('languageSelect2') as HTMLSelectElement;
+    const enableChromaKey2 = document.getElementById('enableChromaKey2') as HTMLInputElement;
+    const chromaKeyTolerance2 = document.getElementById('chromaKeyTolerance2') as HTMLInputElement;
+    const chromaKeyToleranceVal2 = document.getElementById('chromaKeyToleranceVal2') as HTMLSpanElement;
+    const enableTranscript2 = document.getElementById('enableTranscript2') as HTMLInputElement;
+    const renderOutsideToggle2 = document.getElementById('renderOutsideToggle2') as HTMLInputElement;
+    const enableChatInput2 = document.getElementById('enableChatInput2') as HTMLInputElement;
+    const enableSessionResumption2 = document.getElementById('enableSessionResumption2') as HTMLInputElement;
+    const enableGrounding2 = document.getElementById('enableGrounding2') as HTMLInputElement;
+    const systemInstruction2 = document.getElementById('systemInstruction2') as HTMLTextAreaElement;
+    const luckyPersonaBtn2 = document.getElementById('luckyPersonaBtn2') as HTMLButtonElement;
+    const defaultGreeting2 = document.getElementById('defaultGreeting2') as HTMLInputElement;
+    const luckyGreetingBtn2 = document.getElementById('luckyGreetingBtn2') as HTMLButtonElement;
+
+    const statPacketsReceived2 = document.getElementById('statPacketsReceived2') as HTMLSpanElement;
+    const statAudioSent2 = document.getElementById('statAudioSent2') as HTMLSpanElement;
+    const statVideoSent2 = document.getElementById('statVideoSent2') as HTMLSpanElement;
+    const statVideoPackets2 = document.getElementById('statVideoPackets2') as HTMLSpanElement;
+    const statTotalFrames2 = document.getElementById('statTotalFrames2') as HTMLSpanElement;
+    const statSessionDuration2 = document.getElementById('statSessionDuration2') as HTMLSpanElement;
+    const statFps2 = document.getElementById('statFps2') as HTMLSpanElement;
+    const statCpuPressure = document.getElementById('statCpuPressure') as HTMLSpanElement;
+
     const elements = {
       avatar, tokenInput, userName, userAvatar, userProfile, googleSignInBtn,
       projectIdInput, locationInput, avatarNameSelect, sizeSelect, positionSelect,
@@ -132,7 +161,13 @@ export function queryElements() {
       expandBtn, configContainer,
       statSetupDuration, statLatency, statPacketsReceived, statAudioSent, statVideoSent,
       statVideoPackets, statTotalFrames, statSessionDuration, statFps, statDownlink,
-      statRtt, statConnType
+      statRtt, statConnType,
+      addAvatarBtn, avatar2Config, avatarName2, voiceSelect2, size2, position2,
+      languageSelect2, enableChromaKey2, chromaKeyTolerance2, chromaKeyToleranceVal2,
+      enableTranscript2, renderOutsideToggle2, enableChatInput2, enableSessionResumption2,
+      enableGrounding2, systemInstruction2, luckyPersonaBtn2, defaultGreeting2, luckyGreetingBtn2,
+      statPacketsReceived2, statAudioSent2, statVideoSent2, statVideoPackets2,
+      statTotalFrames2, statSessionDuration2, statFps2, statCpuPressure
     };
 
     return elements;

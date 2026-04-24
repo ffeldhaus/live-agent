@@ -40,6 +40,35 @@ document.addEventListener('DOMContentLoaded', () => {
       expandBtn, configContainer
     } = elements;
 
+    let avatar2: GeminiAvatar | null = null;
+    let isAvatar2Active = false;
+
+    const sharedAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+    avatar.setAudioContext(sharedAudioContext);
+
+    // CPU Pressure Observer
+    if ('PressureObserver' in window) {
+        const observer = new (window as any).PressureObserver((records: any[]) => {
+            const lastRecord = records[records.length - 1];
+            if (elements.statCpuPressure) {
+                elements.statCpuPressure.textContent = lastRecord.state;
+                if (lastRecord.state === 'nominal') elements.statCpuPressure.style.color = '#22c55e';
+                else if (lastRecord.state === 'fair') elements.statCpuPressure.style.color = '#eab308';
+                else if (lastRecord.state === 'serious') elements.statCpuPressure.style.color = '#f97316';
+                else if (lastRecord.state === 'critical') elements.statCpuPressure.style.color = '#ef4444';
+            }
+        }, { sampleInterval: 1000 });
+        
+        try {
+            observer.observe('cpu');
+        } catch (e) {
+            console.error("Failed to observe CPU pressure:", e);
+            if (elements.statCpuPressure) elements.statCpuPressure.textContent = 'Error';
+        }
+    } else {
+        if (elements.statCpuPressure) elements.statCpuPressure.textContent = 'Not supported';
+    }
+
     // Reactive State Store
     const appState = {
       projectId: "",
@@ -166,6 +195,16 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings(elements, store, customAvatars, avatar);
     if (localStorage.getItem("gemini_oauth_client_id")) {
       initGoogleAuth();
+    }
+
+    // Initial state for transparency checkbox
+    const initialVal = avatarNameSelect.value;
+    const isPreset = initialVal in AVATAR_PRESETS;
+    if (enableChromaKey) {
+        enableChromaKey.disabled = isPreset;
+        if (isPreset) {
+            avatar.setAttribute("enable-chroma-key", "false");
+        }
     }
     function validateForm() {
       const project = store.projectId.trim();
@@ -309,6 +348,144 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       };
     }
+    function setupAvatar2() {
+        if (!avatar2) return;
+        
+        if (elements.avatarName2) {
+            elements.avatarName2.innerHTML = "";
+            Object.values(AVATAR_PRESETS).forEach((preset) => {
+                const option = document.createElement("option");
+                option.value = preset.id;
+                option.textContent = `${preset.displayName} (${preset.style})`;
+                elements.avatarName2.appendChild(option);
+            });
+            const audioOnlyOption = document.createElement("option");
+            audioOnlyOption.value = "AudioOnly";
+            audioOnlyOption.textContent = "Audio Only";
+            elements.avatarName2.appendChild(audioOnlyOption);
+            
+            Object.keys(customAvatars).forEach(name => {
+                const option = document.createElement("option");
+                option.value = name;
+                option.textContent = name;
+                elements.avatarName2.appendChild(option);
+            });
+            
+            elements.avatarName2.value = "Kira";
+            avatar2.setPreview("Kira");
+        }
+        
+        if (elements.voiceSelect2) {
+            elements.voiceSelect2.innerHTML = "";
+            Object.values(VOICE_PRESETS).forEach((preset) => {
+                const option = document.createElement("option");
+                option.value = preset.id;
+                option.textContent = `${preset.displayName} (${preset.description})`;
+                elements.voiceSelect2.appendChild(option);
+            });
+        }
+        
+        if (elements.size2) elements.size2.onchange = () => avatar2?.setAttribute("size", elements.size2.value);
+        
+        if (elements.position2) {
+            elements.position2.onchange = () => {
+                const newPos = elements.position2.value;
+                const oldPos2 = avatar2?.getAttribute('position') || 'top-left';
+                const pos1 = avatar.getAttribute('position') || 'top-right';
+                if (newPos === pos1) {
+                    avatar.setAttribute('position', oldPos2);
+                    if (positionSelect) positionSelect.value = oldPos2;
+                    store.position = oldPos2;
+                }
+                avatar2?.setAttribute('position', newPos);
+            };
+        }
+        
+        if (elements.avatarName2) {
+            elements.avatarName2.onchange = () => {
+                const val = elements.avatarName2.value;
+                const isPreset = val in AVATAR_PRESETS;
+                
+                if (elements.enableChromaKey2) {
+                    elements.enableChromaKey2.disabled = isPreset;
+                    if (isPreset) {
+                        avatar2?.setAttribute("enable-chroma-key", "false");
+                    } else {
+                        avatar2?.setAttribute("enable-chroma-key", elements.enableChromaKey2.checked.toString());
+                    }
+                }
+
+                avatar2?.setAttribute("avatar-name", val);
+                const preset = (AVATAR_PRESETS as any)[val];
+                if (preset) {
+                    avatar2?.setPreview(val);
+                } else if (customAvatars[val]) {
+                    avatar2?.setAttribute('custom-avatar-url', customAvatars[val].image);
+                }
+            };
+        }
+        
+        if (elements.languageSelect2) elements.languageSelect2.onchange = () => avatar2?.setAttribute("language", elements.languageSelect2.value);
+        if (elements.enableChromaKey2) elements.enableChromaKey2.onchange = () => avatar2?.setAttribute("enable-chroma-key", elements.enableChromaKey2.checked.toString());
+        if (elements.chromaKeyTolerance2) {
+            elements.chromaKeyTolerance2.oninput = () => {
+                if (elements.chromaKeyToleranceVal2) elements.chromaKeyToleranceVal2.textContent = elements.chromaKeyTolerance2.value;
+                avatar2?.setAttribute("chroma-key-tolerance", elements.chromaKeyTolerance2.value);
+            };
+        }
+        if (elements.enableTranscript2) elements.enableTranscript2.onchange = () => avatar2?.setAttribute("enable-transcript", elements.enableTranscript2.checked.toString());
+        if (elements.enableChatInput2) elements.enableChatInput2.onchange = () => avatar2?.setAttribute("enable-chat-input", elements.enableChatInput2.checked.toString());
+        if (elements.enableSessionResumption2) elements.enableSessionResumption2.onchange = () => avatar2?.setAttribute("enable-session-resumption", elements.enableSessionResumption2.checked.toString());
+        if (elements.enableGrounding2) elements.enableGrounding2.onchange = () => avatar2?.setAttribute("enable-grounding", elements.enableGrounding2.checked.toString());
+
+        // Initial state for transparency checkbox for Avatar 2
+        if (elements.avatarName2) {
+            const val = elements.avatarName2.value;
+            const isPreset = val in AVATAR_PRESETS;
+            if (elements.enableChromaKey2) {
+                elements.enableChromaKey2.disabled = isPreset;
+                if (isPreset) {
+                    avatar2?.setAttribute("enable-chroma-key", "false");
+                }
+            }
+        }
+    }
+
+    if (elements.addAvatarBtn) {
+        elements.addAvatarBtn.onclick = () => {
+            if (isAvatar2Active) return;
+            
+            avatar2 = document.createElement('gemini-avatar') as GeminiAvatar;
+            avatar2.id = 'my-avatar-2';
+            
+            const pos1 = avatar.getAttribute('position') || 'top-right';
+            let pos2 = 'top-left';
+            if (pos1.includes('right')) pos2 = pos1.replace('right', 'left');
+            else if (pos1.includes('left') || pos1.includes('middle')) pos2 = pos1.replace('left', 'right').replace('middle', 'right');
+            
+            avatar2.setAttribute('position', pos2);
+            avatar2.setAttribute('size', avatar.getAttribute('size') || '300px');
+            avatar2.setAttribute('project-id', avatar.getAttribute('project-id') || '');
+            avatar2.setAttribute('location', avatar.getAttribute('location') || 'us-central1');
+            avatar2.setAttribute('avatar-name', 'Kira');
+            
+            avatar2.setAudioContext(sharedAudioContext);
+            
+            document.body.appendChild(avatar2);
+            
+            if (elements.avatar2Config) {
+                elements.avatar2Config.style.display = 'block';
+            }
+            
+            isAvatar2Active = true;
+            elements.addAvatarBtn.disabled = true;
+            
+            if (elements.position2) elements.position2.value = pos2;
+            
+            setupAvatar2();
+        };
+    }
+
     projectIdInput.addEventListener(
       "input",
       () => (store.projectId = projectIdInput.value),
@@ -551,6 +728,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (avatarNameSelect) {
       avatarNameSelect.onchange = () => {
         const val = avatarNameSelect.value;
+        const isPreset = val in AVATAR_PRESETS;
+        
+        if (enableChromaKey) {
+            enableChromaKey.disabled = isPreset;
+            if (isPreset) {
+                avatar.setAttribute("enable-chroma-key", "false");
+            } else {
+                avatar.setAttribute("enable-chroma-key", enableChromaKey.checked.toString());
+            }
+        }
+
         applyAvatarTheme(val, avatar, customAvatars, {
           customAvatarName,
           generatedImg,
@@ -1095,11 +1283,40 @@ document.addEventListener('DOMContentLoaded', () => {
         streamBtn.onclick = async () => {
             if (avatar.isConnected) {
                 const savingVideo = saveVideoToggle.checked;
+                const recordingAudio = recordUserAudioCheckbox ? recordUserAudioCheckbox.checked : false;
+                
                 if (savingVideo) {
                     streamBtn.textContent = 'Processing video...';
                     streamBtn.disabled = true;
                 }
+                
+                if (savingVideo || recordingAudio) {
+                    if (avatar2 && isAvatar2Active) {
+                        const files = avatar2.getSessionFiles();
+                        console.log("[Demo] Attempting to download Avatar 2 files", { hasAudio: !!files.audioBlob, size: files.audioBlob?.size });
+                        if (files.audioBlob && files.audioBlob.size > 0) {
+                            downloadBlob(files.audioBlob, `avatar2_input_${new Date().toISOString()}.pcm`);
+                        } else {
+                            console.log("[Demo] Avatar 2 audio blob is empty or null, skipping download");
+                        }
+                    }
+                    
+                    // Download Avatar 1 output instead of input!
+                    const outputBlob1 = avatar.getRecordedOutput();
+                    console.log("[Demo] Attempting to download Avatar 1 output", { size: outputBlob1?.size });
+                    if (outputBlob1 && outputBlob1.size > 0) {
+                        downloadBlob(outputBlob1, `avatar1_output_${new Date().toISOString()}.pcm`);
+                    } else {
+                        console.log("[Demo] Avatar 1 output blob is empty or null, skipping download");
+                    }
+                }
+
                 await avatar.stop();
+                
+                if (avatar2 && isAvatar2Active) {
+                    await avatar2.stop();
+                }
+                
                 streamBtn.textContent = 'Start';
                 streamBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'; // Green!
                 streamBtn.disabled = false;
@@ -1109,7 +1326,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 if (!await ensureValidToken(store, tokenClient, elements)) return;
-                // Update attributes!
+                
+                // Update attributes for Avatar 1
                 avatar.setAttribute('access-token', tokenInput.value);
                 avatar.setAttribute('project-id', projectIdInput.value);
                 avatar.setAttribute('location', locationInput.value || 'us-central1');
@@ -1128,14 +1346,52 @@ document.addEventListener('DOMContentLoaded', () => {
                     streamBtn.disabled = true;
                     streamBtn.textContent = 'Connecting...';
                     
-                    await avatar.start();
+                    const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    const stream1 = avatar.getAudioOutputStream();
+                    console.log("[Demo] stream1 tracks:", stream1.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, readyState: t.readyState })));
+                    
+                    let stream2: MediaStream | null = null;
+                    if (avatar2 && isAvatar2Active) {
+                        // Update attributes for Avatar 2
+                        avatar2.setAttribute('access-token', tokenInput.value);
+                        avatar2.setAttribute('project-id', projectIdInput.value);
+                        avatar2.setAttribute('location', locationInput.value || 'us-central1');
+                        avatar2.setAttribute('avatar-name', elements.avatarName2.value);
+                        avatar2.setAttribute('voice', elements.voiceSelect2.value);
+                        avatar2.setAttribute('language', elements.languageSelect2.value);
+                        avatar2.setAttribute('system-instruction', elements.systemInstruction2.value);
+                        avatar2.setAttribute('default-greeting', elements.defaultGreeting2.value);
+                        avatar2.setAttribute('record-video', saveVideoToggle.checked.toString());
+                        avatar2.setAttribute('record-user-audio', recordUserAudioCheckbox.checked.toString());
+                        avatar2.setAttribute('debug', debugToggle.checked.toString());
+                        
+                        stream2 = avatar2.getAudioOutputStream();
+                        console.log("[Demo] stream2 tracks:", stream2.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, readyState: t.readyState })));
+                    }
+                    
+                    await avatar.start(undefined, micStream);
+                    
+                    if (avatar2 && isAvatar2Active) {
+                        await avatar2.start(undefined, micStream);
+                    }
+                    
+                    avatar.updateExternalStream(stream2);
+                    if (avatar2 && isAvatar2Active) {
+                        avatar2.updateExternalStream(stream1);
+                    }
                     
                     streamBtn.textContent = 'Stop';
                     streamBtn.style.background = '#ea4335'; // Red!
                     streamBtn.disabled = false;
                     
                     // Start stats interval
-                    statsInterval = setInterval(() => updateStats(avatar, elements), 1000);
+                    statsInterval = setInterval(() => {
+                        updateStats(avatar, elements);
+                        if (avatar2 && isAvatar2Active) {
+                            updateStats(avatar2, elements, "2");
+                        }
+                    }, 1000);
                 } catch (e: any) {
                     alert('Failed to start session: ' + e.message);
                     streamBtn.textContent = 'Start';

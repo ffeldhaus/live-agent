@@ -309,11 +309,116 @@
 
 
         </details>
+
+        <!-- Avatar 2 Configuration (Hidden by default) -->
+        <details id="avatar2Config" class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5" style="display: none;">
+            <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Avatar 2</summary>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1">
+                    <label for="avatarName2" class="text-sm font-medium text-slate-300">Avatar Preset</label>
+                    <select id="avatarName2" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="voiceSelect2" class="text-sm font-medium text-slate-300">Voice</label>
+                    <select id="voiceSelect2" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="size2" class="text-sm font-medium text-slate-300">Size</label>
+                    <select id="size2" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="300px">Standard (300px)</option>
+                        <option value="200px">Small (200px)</option>
+                        <option value="400px">Large (400px)</option>
+                        <option value="704px">Full Size (704x1280)</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="position2" class="text-sm font-medium text-slate-300">Position</label>
+                    <select id="position2" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="bottom-right">Bottom Right</option>
+                        <option value="bottom-left">Bottom Left</option>
+                        <option value="top-right">Top Right</option>
+                        <option value="top-left">Top Left</option>
+                        <option value="top-middle">Top Middle</option>
+                        <option value="bottom-middle">Bottom Middle</option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label for="languageSelect2" class="text-sm font-medium text-slate-300">Language</label>
+                    <select id="languageSelect2" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="en-US" selected>English (US)</option>
+                        <option value="en-GB">English (UK)</option>
+                        <option value="de-DE">German (Germany)</option>
+                        <option value="fr-FR">French (France)</option>
+                        <option value="es-ES">Spanish (Spain)</option>
+                        <option value="ja-JP">Japanese (Japan)</option>
+                        <option value="ko-KR">Korean (South Korea)</option>
+                        <option value="zh-CN">Chinese (Simplified)</option>
+                        <option value="it-IT">Italian (Italy)</option>
+                        <option value="nl-NL">Dutch (Netherlands)</option>
+                        <option value="pt-BR">Portuguese (Brazil)</option>
+                        <option value="ru-RU">Russian (Russia)</option>
+                        <option value="hi-IN">Hindi (India)</option>
+                        <option value="ar-XA">Arabic</option>
+                        <option value="id-ID">Indonesian (Indonesia)</option>
+                        <option value="pl-PL">Polish (Poland)</option>
+                        <option value="sv-SE">Swedish (Sweden)</option>
+                        <option value="tr-TR">Turkish (Turkey)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-2 mt-2">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableChromaKey2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableChromaKey2" class="text-sm text-slate-300 font-normal">Enable Transparency with Tolerance:</label>
+                    <input type="range" id="chromaKeyTolerance2" min="5" max="100" value="50" class="flex-1 p-0 border-none">
+                    <span id="chromaKeyToleranceVal2" class="text-xs text-slate-400">50</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableTranscript2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableTranscript2" class="text-sm text-slate-300 font-normal">Enable Transcript</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="renderOutsideToggle2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="renderOutsideToggle2" class="text-sm text-slate-300 font-normal">Render Transcript Outside Component</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableChatInput2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableChatInput2" class="text-sm text-slate-300 font-normal">Enable Chat Input</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableSessionResumption2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableSessionResumption2" class="text-sm text-slate-300 font-normal">Enable Session Resumption</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="enableGrounding2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
+                    <label for="enableGrounding2" class="text-sm text-slate-300 font-normal">Enable Google Search Grounding</label>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1 mt-4">
+                <label for="systemInstruction2" class="text-sm font-medium text-slate-300">System Instructions / Persona</label>
+                <div class="flex gap-2">
+                    <textarea id="systemInstruction2" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px]"></textarea>
+                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn2">I'm feeling lucky</button>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-1 mt-4">
+                <label for="defaultGreeting2" class="text-sm font-medium text-slate-300">Default Greeting</label>
+                <div class="flex gap-2">
+                    <input type="text" id="defaultGreeting2" placeholder="E.g., Hello! How can I help you today?" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn2">I'm feeling lucky</button>
+                </div>
+            </div>
+        </details>
         
         <!-- Actions -->
         <div class="flex gap-2 mt-5">
             <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="saveBtn">Save Configuration</button>
             <button class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="streamBtn" disabled>Start</button>
+            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="addAvatarBtn">Add Avatar</button>
         </div>
         
         <div class="flex gap-2 mt-2">
@@ -334,13 +439,14 @@
                     </div>
                     <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
                 </div>
-                <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span></div>
-                <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span></div>
-                <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span></div>
-                <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span></div>
-                <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span></div>
-                <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
-                <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span></div>
+                <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span> / <span id="statPacketsReceived2" class="font-medium text-slate-200">0</span></div>
+                <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span> / <span id="statAudioSent2" class="font-medium text-slate-200">0</span></div>
+                <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span> / <span id="statVideoSent2" class="font-medium text-slate-200">0</span></div>
+                <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span> / <span id="statVideoPackets2" class="font-medium text-slate-200">0</span></div>
+                <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span> / <span id="statTotalFrames2" class="font-medium text-slate-200">0</span></div>
+                <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> / <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
+                <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span> / <span id="statFps2" class="font-medium text-slate-200">-</span></div>
+                <div>CPU Pressure: <span id="statCpuPressure" class="font-medium text-slate-200">-</span></div>
                 <div>Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
                 <div>RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
                 <div>Connection Type: <span id="statConnType" class="font-medium text-slate-200">-</span></div>

@@ -178,28 +178,35 @@ export function downloadBlob(blob: Blob, filename: string) {
     URL.revokeObjectURL(url);
 }
 
-export function updateStats(avatar: any, elements: any) {
+export function updateStats(avatar: any, elements: any, suffix: string = "") {
     const stats = avatar.getStats();
-    if (elements.statSetupDuration) elements.statSetupDuration.textContent = stats.setupDurationMs ? stats.setupDurationMs.toString() : '-';
-    if (elements.statLatency) elements.statLatency.textContent = stats.setupToFirstFrameDurationMs ? stats.setupToFirstFrameDurationMs.toString() : '-';
-    if (elements.statPacketsReceived) elements.statPacketsReceived.textContent = stats.packetsReceived.toString();
-    if (elements.statAudioSent) elements.statAudioSent.textContent = stats.audioChunksSent.toString();
-    if (elements.statVideoSent) elements.statVideoSent.textContent = stats.videoFramesSent.toString();
-    if (elements.statVideoPackets) elements.statVideoPackets.textContent = stats.videoPacketsReceived.toString();
-    if (elements.statTotalFrames) elements.statTotalFrames.textContent = stats.totalVideoFrames.toString();
-    if (elements.statSessionDuration) elements.statSessionDuration.textContent = stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-';
-    if (elements.statFps) elements.statFps.textContent = stats.averageFps ? stats.averageFps.toString() : '-';
-    if (elements.statDownlink) elements.statDownlink.textContent = stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-';
-    if (elements.statRtt) elements.statRtt.textContent = stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-';
-    if (elements.statConnType) elements.statConnType.textContent = stats.networkInfo?.type || '-';
+    
+    const set = (id: string, val: string) => {
+        const fullId = id + suffix;
+        if (elements[fullId]) elements[fullId].textContent = val;
+    };
+
+    set('statSetupDuration', stats.setupDurationMs ? stats.setupDurationMs.toString() : '-');
+    set('statLatency', stats.setupToFirstFrameDurationMs ? stats.setupToFirstFrameDurationMs.toString() : '-');
+    set('statPacketsReceived', stats.packetsReceived.toString());
+    set('statAudioSent', stats.audioChunksSent.toString());
+    set('statVideoSent', stats.videoFramesSent.toString());
+    set('statVideoPackets', stats.videoPacketsReceived.toString());
+    set('statTotalFrames', stats.totalVideoFrames.toString());
+    set('statSessionDuration', stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-');
+    set('statFps', stats.averageFps ? stats.averageFps.toString() : '-');
+    
+    set('statDownlink', stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-');
+    set('statRtt', stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-');
+    set('statConnType', stats.networkInfo?.type || '-');
     
     const setup = stats.setupDurationMs || 0;
     const latency = stats.setupToFirstFrameDurationMs || 0;
     const total = setup + latency;
 
-    if (elements.statTotalLatency) elements.statTotalLatency.textContent = total.toString();
+    set('statTotalLatency', total.toString());
 
-    if (elements.barSetup && elements.barLatency && total > 0) {
+    if (!suffix && elements.barSetup && elements.barLatency && total > 0) {
         const setupPct = (setup / total) * 100;
         const latencyPct = (latency / total) * 100;
 
