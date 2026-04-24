@@ -279,20 +279,33 @@ export function saveSettings(
   store: any,
   customAvatars: Record<string, string>,
 ) {
+  const setOrRemove = (key: string, value: string, defaultValue: string) => {
+    if (value === defaultValue) {
+      localStorage.removeItem(key);
+    } else {
+      localStorage.setItem(key, value);
+    }
+  };
+
   localStorage.setItem('gemini_project_id', elements.projectIdInput.value);
   localStorage.setItem('gemini_location', elements.locationInput.value);
-  localStorage.setItem('gemini_avatar_name', elements.avatarNameSelect.value);
-  localStorage.setItem('gemini_size', elements.sizeSelect.value);
-  localStorage.setItem('gemini_position', elements.positionSelect.value);
   localStorage.setItem(
     'gemini_oauth_client_id',
     elements.oauthClientIdInput.value,
   );
-  localStorage.setItem('gemini_voice', elements.voiceSelect.value);
-  localStorage.setItem('gemini_language', elements.languageSelect.value);
+
+  setOrRemove('gemini_avatar_name', elements.avatarNameSelect.value, 'Kira');
+  setOrRemove('gemini_size', elements.sizeSelect.value, '300px');
+  setOrRemove('gemini_position', elements.positionSelect.value, 'top-right');
+  setOrRemove('gemini_voice', elements.voiceSelect.value, 'kore');
+  setOrRemove('gemini_language', elements.languageSelect.value, 'en-US');
 
   const bgUrl = elements.bgImageUrl.value;
-  if (bgUrl && (bgUrl.startsWith('http') || bgUrl.startsWith('data:'))) {
+  const defaultBg =
+    'https://storage.googleapis.com/gweb-cloudblog-publish/images/GCN26_102_BlogHeader_2436x1200_Opt_4_Dark.max-2500x2500.jpg';
+  if (bgUrl === defaultBg) {
+    localStorage.removeItem('gemini_background_image');
+  } else if (bgUrl && (bgUrl.startsWith('http') || bgUrl.startsWith('data:'))) {
     localStorage.setItem('gemini_background_image', bgUrl);
   }
 
@@ -311,94 +324,115 @@ export function saveSettings(
     localStorage.removeItem('gemini_user_avatar');
   }
 
-  localStorage.setItem(
+  setOrRemove(
     'gemini_save_video',
     elements.saveVideoToggle.checked.toString(),
+    'false',
   );
-  localStorage.setItem('gemini_debug', elements.debugToggle.checked.toString());
+  setOrRemove('gemini_debug', elements.debugToggle.checked.toString(), 'false');
+
   if (elements.recordUserAudioCheckbox) {
-    localStorage.setItem(
+    setOrRemove(
       'gemini_record_user_audio',
       elements.recordUserAudioCheckbox.checked.toString(),
+      'false',
     );
   }
   if (elements.micAutoRequestToggle) {
-    localStorage.setItem(
+    setOrRemove(
       'gemini_mic_auto_request',
       elements.micAutoRequestToggle.checked.toString(),
+      'true',
     );
   }
 
-  localStorage.setItem('gemini_ctrl_mic', elements.ctrlMic.checked.toString());
-  localStorage.setItem(
+  setOrRemove('gemini_ctrl_mic', elements.ctrlMic.checked.toString(), 'true');
+  setOrRemove(
     'gemini_ctrl_camera',
     elements.ctrlCamera.checked.toString(),
+    'true',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_ctrl_screen',
     elements.ctrlScreen.checked.toString(),
+    'true',
   );
-  localStorage.setItem(
-    'gemini_ctrl_mute',
-    elements.ctrlMute.checked.toString(),
-  );
-  localStorage.setItem(
+  setOrRemove('gemini_ctrl_mute', elements.ctrlMute.checked.toString(), 'true');
+  setOrRemove(
     'gemini_ctrl_snapshot',
     elements.ctrlSnapshot.checked.toString(),
+    'false',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_ctrl_settings',
     elements.ctrlSettings.checked.toString(),
+    'true',
   );
 
-  localStorage.setItem(
+  setOrRemove(
     'gemini_audio_chunk_size',
     elements.audioChunkSizeSlider.value,
+    '2048',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_system_instruction',
     elements.systemInstructionInput.value,
+    '',
   );
-  localStorage.setItem(
+
+  const presetName = elements.avatarNameSelect.value;
+  const preset = (AVATAR_PRESETS as any)[presetName];
+  const defaultGreeting = preset ? preset.defaultGreeting : '';
+  setOrRemove(
     'gemini_default_greeting',
     elements.defaultGreetingInput.value,
+    defaultGreeting,
   );
-  localStorage.setItem('gemini_image_prompt', elements.imagePromptInput.value);
 
-  localStorage.setItem(
+  setOrRemove('gemini_image_prompt', elements.imagePromptInput.value, '');
+
+  setOrRemove(
     'gemini_enable_chroma_key',
     elements.enableChromaKey.checked.toString(),
+    'false',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_chroma_key_color',
     elements.chromaKeyColor.value,
+    'green',
   );
-
-  localStorage.setItem(
+  setOrRemove(
     'gemini_chroma_key_tolerance',
     elements.chromaKeyTolerance.value,
+    '50',
   );
 
-  localStorage.setItem(
+  setOrRemove(
     'gemini_enable_transcript',
     elements.enableTranscript.checked.toString(),
+    'false',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_enable_chat_input',
     elements.enableChatInput.checked.toString(),
+    'false',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_enable_session_resumption',
     elements.enableSessionResumption.checked.toString(),
+    'false',
   );
-  localStorage.setItem(
+  setOrRemove(
     'gemini_enable_transcript_outside',
     elements.renderOutsideToggle.checked.toString(),
+    'false',
   );
+
   if (elements.enableGrounding) {
-    localStorage.setItem(
+    setOrRemove(
       'gemini_enable_grounding',
       elements.enableGrounding.checked.toString(),
+      'false',
     );
   }
 

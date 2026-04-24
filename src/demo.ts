@@ -2,6 +2,7 @@ import {GeminiAvatar} from './gemini-avatar';
 import {AVATAR_PRESETS, VOICE_PRESETS} from './constants';
 import {qaScenarios} from './walkthrough-data';
 import {generateContent, applyAvatarTheme, updateStats} from './demo-helpers';
+import {showMessageModal} from './ui-helpers';
 import {
   handleImageGeneration,
   handleCameraCapture,
@@ -96,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     generateBgBtn,
     generateImageBtn,
     saveBtn,
+    resetAvatarBtn,
     copyHtmlBtn,
     expandBtn,
     configContainer,
@@ -200,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         callback: async (response: any) => {
           console.log('OAuth callback received', response);
           if (response.error !== undefined) {
-            alert('OAuth Error: ' + response.error);
+            showMessageModal('OAuth Error', response.error);
             return;
           }
           store.accessToken = response.access_token;
@@ -546,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
         } else {
-          alert('Invalid token or failed to verify.');
+          showMessageModal('Error', 'Invalid token or failed to verify.');
         }
       }
     } else {
@@ -593,7 +595,82 @@ document.addEventListener('DOMContentLoaded', () => {
     saveBtn.onclick = () => {
       saveSettings(elements, store, customAvatars);
 
-      alert('Configuration saved.');
+      showMessageModal('Success', 'Configuration saved.');
+    };
+  }
+
+  if (resetAvatarBtn) {
+    resetAvatarBtn.onclick = () => {
+      // Reset UI elements to defaults
+      avatarNameSelect.value = 'Kira';
+      sizeSelect.value = '300px';
+      positionSelect.value = 'top-right';
+      voiceSelect.value = 'kore';
+      languageSelect.value = 'en-US';
+      enableChromaKey.checked = false;
+      chromaKeyColor.value = 'green';
+      chromaKeyTolerance.value = '50';
+      if (elements.chromaKeyToleranceVal)
+        elements.chromaKeyToleranceVal.textContent = '50';
+      enableTranscript.checked = false;
+      enableChatInput.checked = false;
+      enableSessionResumption.checked = false;
+      renderOutsideToggle.checked = false;
+      if (enableGrounding) enableGrounding.checked = false;
+      systemInstructionInput.value = '';
+
+      const preset = (AVATAR_PRESETS as any)['Kira'];
+      defaultGreetingInput.value = preset ? preset.defaultGreeting : '';
+
+      // Update store
+      store.avatarName = 'Kira';
+      store.size = '300px';
+      store.position = 'top-right';
+      store.voice = 'kore';
+      store.language = 'en-US';
+      store.enableChromaKey = false;
+      store.chromaKeyColor = 'green';
+      store.chromaKeyTolerance = '50';
+      store.enableTranscript = false;
+      store.enableChatInput = false;
+      store.enableSessionResumption = false;
+      store.renderTranscriptOutside = false;
+      store.enableGrounding = false;
+      store.systemInstruction = '';
+      store.defaultGreeting = defaultGreetingInput.value;
+
+      // Update avatar attributes
+      avatar.setAttribute('avatar-name', 'Kira');
+      avatar.setAttribute('size', '300px');
+      avatar.setAttribute('position', 'top-right');
+      avatar.setAttribute('voice', 'kore');
+      avatar.setAttribute('language', 'en-US');
+      avatar.setAttribute('enable-chroma-key', 'false');
+      avatar.setAttribute('chroma-key-color', 'green');
+      avatar.setAttribute('chroma-key-tolerance', '50');
+      avatar.setAttribute('enable-transcript', 'false');
+      avatar.setAttribute('enable-chat-input', 'false');
+      avatar.setAttribute('enable-session-resumption', 'false');
+      avatar.setAttribute('render-transcript-outside', 'false');
+      avatar.setAttribute('enable-grounding', 'false');
+
+      // Apply theme
+      applyAvatarTheme('Kira', avatar, customAvatars, elements);
+
+      // Hide external transcript if needed
+      if (externalTranscriptSection) {
+        externalTranscriptSection.style.display = 'none';
+      }
+
+      // Disable chroma key checkbox for presets (Kira is a preset)
+      if (enableChromaKey) {
+        enableChromaKey.disabled = true;
+      }
+
+      showMessageModal(
+        'Success',
+        'Avatar settings reset to defaults (not saved yet).',
+      );
     };
   }
 
@@ -614,7 +691,8 @@ document.addEventListener('DOMContentLoaded', () => {
   avatar.addEventListener('avatar-setup-error', () => {
     const userName = store.userName || 'The current user';
     const projectName = store.projectId || 'the project';
-    alert(
+    showMessageModal(
+      'Setup Error',
       `Something went wrong. Likely causes: User ${userName} has no permission to use the Gemini Live model in project ${projectName}.`,
     );
   });
@@ -745,7 +823,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'gemini_custom_avatars',
           JSON.stringify(customAvatars),
         );
-        alert(`Custom avatar "${name}" saved.`);
+        showMessageModal('Success', `Custom avatar "${name}" saved.`);
       }
     };
   }
@@ -757,11 +835,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ? elements.originalImg.src
         : '';
       if (!name) {
-        alert('Please enter a name for the custom avatar.');
+        showMessageModal('Error', 'Please enter a name for the custom avatar.');
         return;
       }
       if (!originalImageUrl) {
-        alert('No original image to improve.');
+        showMessageModal('Error', 'No original image to improve.');
         return;
       }
 
@@ -1002,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
         systemInstructionInput.value = text.trim();
         luckyPersonaBtn.textContent = originalText;
       } catch (e: any) {
-        alert(`Failed to generate persona: ${e.message}`);
+        showMessageModal('Error', `Failed to generate persona: ${e.message}`);
         luckyPersonaBtn.textContent = "I'm feeling lucky";
       } finally {
         luckyPersonaBtn.disabled = false;
@@ -1041,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultGreetingInput.value = text.trim();
         luckyGreetingBtn.textContent = originalText;
       } catch (e: any) {
-        alert(`Failed to generate greeting: ${e.message}`);
+        showMessageModal('Error', `Failed to generate greeting: ${e.message}`);
         luckyGreetingBtn.textContent = "I'm feeling lucky";
       } finally {
         luckyGreetingBtn.disabled = false;
@@ -1080,7 +1158,10 @@ document.addEventListener('DOMContentLoaded', () => {
         imagePromptInput.value = text.trim();
         luckyImageBtn.textContent = originalText;
       } catch (e: any) {
-        alert(`Failed to generate image prompt: ${e.message}`);
+        showMessageModal(
+          'Error',
+          `Failed to generate image prompt: ${e.message}`,
+        );
         luckyImageBtn.textContent = "I'm feeling lucky";
       } finally {
         luckyImageBtn.disabled = false;
@@ -1214,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
               });
               cameraVideo.srcObject = stream;
             } catch (e2) {
-              alert('Failed to access camera: ' + e2);
+              showMessageModal('Error', 'Failed to access camera: ' + e2);
               cameraModal.classList.remove('active');
             }
           }
@@ -1243,7 +1324,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!(await ensureValidToken(store, tokenClient, elements))) return;
       const name = customAvatarName.value.trim();
       if (!name) {
-        alert('Please enter a name for the custom avatar.');
+        showMessageModal('Error', 'Please enter a name for the custom avatar.');
         return;
       }
       await handleCameraCapture(
@@ -1278,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadBtn.onclick = () => {
       const name = customAvatarName.value.trim();
       if (!name) {
-        alert('Please enter a name for the custom avatar.');
+        showMessageModal('Error', 'Please enter a name for the custom avatar.');
         return;
       }
 
@@ -1440,7 +1521,9 @@ document.addEventListener('DOMContentLoaded', () => {
           streamBtn.disabled = true;
           streamBtn.textContent = 'Connecting...';
 
-          const micStream = await navigator.mediaDevices.getUserMedia({});
+          const micStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
 
           const stream1 = avatar.getAudioOutputStream();
 
@@ -1504,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }, 1000);
         } catch (e: any) {
-          alert('Failed to start session: ' + e.message);
+          showMessageModal('Error', 'Failed to start session: ' + e.message);
           streamBtn.textContent = 'Start';
           streamBtn.style.background =
             'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';

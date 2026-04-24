@@ -205,8 +205,11 @@
             </div>
         </details>
 
-        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5">
+        <details open class="bg-slate-800/60 backdrop-blur-sm border border-white/5 rounded-2xl p-5 mb-5 relative">
             <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Avatar</summary>
+            <div class="absolute top-5 right-5 flex items-center gap-2">
+                <button id="resetAvatarBtn" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-1.5 px-3 rounded-lg transition-all text-sm">Reset to Default</button>
+            </div>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div class="flex flex-col gap-1">
@@ -491,6 +494,17 @@
             <div id="tokenErrorDetails" class="text-xs text-slate-400 bg-black/20 p-3 rounded-lg mb-4 text-left hidden overflow-auto max-h-40 flex flex-col gap-1"></div>
             <div class="flex gap-2 mt-2">
                 <button class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="closeTokenErrorBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Message Modal -->
+    <div class="modal-overlay" id="messageModal">
+        <div class="bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-2xl p-6 text-center shadow-2xl transform scale-95 transition-all active:scale-100 mx-auto my-5 max-w-md flex flex-col justify-center">
+            <h2 id="messageModalTitle" class="text-xl font-semibold text-slate-100 mb-4">Notification</h2>
+            <p id="messageModalText" class="text-sm text-slate-300 mb-4"></p>
+            <div class="flex gap-2 mt-2">
+                <button class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="closeMessageModalBtn">Close</button>
             </div>
         </div>
     </div>

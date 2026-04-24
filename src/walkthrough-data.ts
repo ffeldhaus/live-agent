@@ -74,6 +74,24 @@ export const qaScenarios = [
   },
   {
     id: '2.1',
+    title: 'Avatar with Default Settings',
+    description: 'Verify operation with default settings.',
+    steps: [
+      'Click the "Reset to Default" button on the Avatar section.',
+      'Verify that all settings are reset to their default values.',
+      'Click "Save Configuration".',
+      'Reload the page.',
+      'Verify that defaults are still applied.',
+      'Click "Start".',
+    ],
+    verification: [
+      'Component connects successfully.',
+      'Avatar uses default preset (Kira).',
+      'No avatar related values are stored in local storage if they match defaults.',
+    ],
+  },
+  {
+    id: '2.2',
     title: 'Microphone Mute & Silence Padding',
     description: 'Verify mic muting and timeline alignment.',
     steps: [

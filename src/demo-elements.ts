@@ -3,6 +3,9 @@ import {GeminiAvatar} from './gemini-avatar';
 export function queryElements() {
   const avatar = document.getElementById('my-avatar') as GeminiAvatar;
   const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+  const resetAvatarBtn = document.getElementById(
+    'resetAvatarBtn',
+  ) as HTMLButtonElement;
   const tokenInput = document.getElementById('accessToken') as HTMLInputElement;
   const saveVideoToggle = document.getElementById(
     'saveVideoToggle',
@@ -413,6 +416,7 @@ export function queryElements() {
     uploadBgBtn,
     generateBgBtn,
     saveBtn,
+    resetAvatarBtn,
     sendBtn,
     textInput,
     copyHtmlBtn,

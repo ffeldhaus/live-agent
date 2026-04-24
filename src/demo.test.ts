@@ -3,6 +3,7 @@ import './demo';
 import {GeminiAvatar} from './gemini-avatar';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as uiHelpers from './ui-helpers';
 
 describe('Demo App', () => {
   let avatar: GeminiAvatar;
@@ -254,7 +255,7 @@ describe('Demo App', () => {
   it('should alert on avatar-setup-error', async () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
 
-    const alertSpy = vi.spyOn(global, 'alert');
+    const modalSpy = vi.spyOn(uiHelpers, 'showMessageModal');
 
     avatar.dispatchEvent(
       new CustomEvent('avatar-setup-error', {
@@ -262,7 +263,8 @@ describe('Demo App', () => {
       }),
     );
 
-    expect(alertSpy).toHaveBeenCalledWith(
+    expect(modalSpy).toHaveBeenCalledWith(
+      'Setup Error',
       expect.stringContaining('Something went wrong. Likely causes:'),
     );
   });

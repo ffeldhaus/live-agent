@@ -1,3 +1,5 @@
+import {showMessageModal} from './ui-helpers';
+
 const isLocal =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' ||
@@ -106,7 +108,10 @@ export async function ensureValidToken(
       tokenClient.requestAccessToken();
       return false;
     } else {
-      alert('OAuth Client ID is required to acquire a token.');
+      showMessageModal(
+        'Error',
+        'OAuth Client ID is required to acquire a token.',
+      );
       return false;
     }
   }

@@ -1,5 +1,6 @@
 import {GeminiAvatar} from './gemini-avatar';
 import {generateContent, updateBackground, applyTheme} from './demo-helpers';
+import {showMessageModal} from './ui-helpers';
 
 export async function handleImageGeneration(
   name: string,
@@ -25,12 +26,15 @@ export async function handleImageGeneration(
   onColorsDetected?: (colors: string[]) => void,
 ) {
   if (!name) {
-    alert('Please enter a name for the custom avatar.');
+    showMessageModal('Error', 'Please enter a name for the custom avatar.');
     return;
   }
 
   if (!userPrompt) {
-    alert('Please enter a prompt or use "I\'m feeling lucky".');
+    showMessageModal(
+      'Error',
+      'Please enter a prompt or use "I\'m feeling lucky".',
+    );
     return;
   }
 
@@ -136,13 +140,14 @@ export async function handleImageGeneration(
         );
       }
     } else {
-      alert(
+      showMessageModal(
+        'Error',
         'Failed to generate image (no image data in response). See console.',
       );
     }
   } catch (e: any) {
     console.error('Image gen error:', e);
-    alert(`Failed to generate image: ${e.message}`);
+    showMessageModal('Error', `Failed to generate image: ${e.message}`);
   } finally {
     elements.generateImageBtn.disabled = false;
     elements.generateImageBtn.textContent = 'Generate';
@@ -291,11 +296,14 @@ export async function handleCameraCapture(
             keyColor,
           );
         } else {
-          alert('Model did not return an image. See console.');
+          showMessageModal(
+            'Error',
+            'Model did not return an image. See console.',
+          );
         }
       } catch (e: any) {
         console.error('Image improvement error:', e);
-        alert('Failed to improve image: ' + e.message);
+        showMessageModal('Error', 'Failed to improve image: ' + e.message);
       } finally {
         elements.captureBtn.disabled = false;
         elements.captureBtn.textContent = originalText;
@@ -400,11 +408,14 @@ export async function handleUpload(
             keyColor,
           );
         } else {
-          alert('Model did not return an image. See console.');
+          showMessageModal(
+            'Error',
+            'Model did not return an image. See console.',
+          );
         }
       } catch (e: any) {
         console.error('Image improvement error:', e);
-        alert('Failed to improve image: ' + e.message);
+        showMessageModal('Error', 'Failed to improve image: ' + e.message);
       } finally {
         elements.uploadBtn.disabled = false;
         elements.uploadBtn.textContent = originalText;
@@ -530,11 +541,11 @@ export async function handleImageImprovement(
         keyColor,
       );
     } else {
-      alert('Model did not return an image. See console.');
+      showMessageModal('Error', 'Model did not return an image. See console.');
     }
   } catch (e: any) {
     console.error('Image improvement error:', e);
-    alert('Failed to improve image: ' + e.message);
+    showMessageModal('Error', 'Failed to improve image: ' + e.message);
   } finally {
     if (elements.redoImprovementBtn)
       elements.redoImprovementBtn.disabled = false;
@@ -554,7 +565,7 @@ export async function handleBackgroundGeneration(
   },
 ) {
   if (!userPrompt) {
-    alert('Please enter a prompt for the background.');
+    showMessageModal('Error', 'Please enter a prompt for the background.');
     return;
   }
 
@@ -595,10 +606,10 @@ export async function handleBackgroundGeneration(
       localStorage.setItem('gemini_background_image', url);
       elements.bgImageUrl.value = 'Generated Image';
     } else {
-      alert('Failed to generate background image.');
+      showMessageModal('Error', 'Failed to generate background image.');
     }
   } catch (e: any) {
-    alert(`Failed to generate background: ${e.message}`);
+    showMessageModal('Error', `Failed to generate background: ${e.message}`);
   } finally {
     elements.generateBgBtn.disabled = false;
     elements.generateBgBtn.textContent = 'Lucky Generate';
@@ -656,7 +667,10 @@ export async function handleLuckyBgPrompt(
     elements.bgImagePrompt.value = text.trim();
     elements.luckyBgPromptBtn.textContent = originalText;
   } catch (e: any) {
-    alert(`Failed to generate background prompt: ${e.message}`);
+    showMessageModal(
+      'Error',
+      `Failed to generate background prompt: ${e.message}`,
+    );
     elements.luckyBgPromptBtn.textContent = "I'm feeling lucky";
   } finally {
     elements.luckyBgPromptBtn.disabled = false;

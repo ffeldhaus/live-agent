@@ -81,3 +81,29 @@ export async function populateDevices(
     selectedSpeakerDeviceId,
   };
 }
+
+export function showMessageModal(title: string, text: string) {
+  const modal = document.getElementById('messageModal') as HTMLDivElement;
+  const modalTitle = document.getElementById(
+    'messageModalTitle',
+  ) as HTMLHeadingElement;
+  const modalText = document.getElementById(
+    'messageModalText',
+  ) as HTMLParagraphElement;
+  const closeBtn = document.getElementById(
+    'closeMessageModalBtn',
+  ) as HTMLButtonElement;
+
+  if (modal && modalTitle && modalText && closeBtn) {
+    modalTitle.textContent = title;
+    modalText.textContent = text;
+    modal.classList.add('active');
+
+    closeBtn.onclick = () => {
+      modal.classList.remove('active');
+    };
+  } else {
+    // Fallback to alert if elements not found
+    alert(text);
+  }
+}
