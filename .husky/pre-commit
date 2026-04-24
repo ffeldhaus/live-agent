@@ -1,2 +1,5 @@
 npm run lint
+npm outdated
+npm run fix
+npm run build
 npm test
