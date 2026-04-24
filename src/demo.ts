@@ -1290,26 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     streamBtn.disabled = true;
                 }
                 
-                if (savingVideo || recordingAudio) {
-                    if (avatar2 && isAvatar2Active) {
-                        const files = avatar2.getSessionFiles();
-                        console.log("[Demo] Attempting to download Avatar 2 files", { hasAudio: !!files.audioBlob, size: files.audioBlob?.size });
-                        if (files.audioBlob && files.audioBlob.size > 0) {
-                            downloadBlob(files.audioBlob, `avatar2_input_${new Date().toISOString()}.pcm`);
-                        } else {
-                            console.log("[Demo] Avatar 2 audio blob is empty or null, skipping download");
-                        }
-                    }
-                    
-                    // Download Avatar 1 output instead of input!
-                    const outputBlob1 = avatar.getRecordedOutput();
-                    console.log("[Demo] Attempting to download Avatar 1 output", { size: outputBlob1?.size });
-                    if (outputBlob1 && outputBlob1.size > 0) {
-                        downloadBlob(outputBlob1, `avatar1_output_${new Date().toISOString()}.pcm`);
-                    } else {
-                        console.log("[Demo] Avatar 1 output blob is empty or null, skipping download");
-                    }
-                }
+
 
                 await avatar.stop();
                 
@@ -1350,7 +1331,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     
                     const stream1 = avatar.getAudioOutputStream();
-                    console.log("[Demo] stream1 tracks:", stream1.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, readyState: t.readyState })));
                     
                     let stream2: MediaStream | null = null;
                     if (avatar2 && isAvatar2Active) {
@@ -1369,7 +1349,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         avatar2.setAttribute('enable-session-resumption', elements.enableSessionResumption2.checked.toString());
                         
                         stream2 = avatar2.getAudioOutputStream();
-                        console.log("[Demo] stream2 tracks:", stream2.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, readyState: t.readyState })));
                     }
                     
                     await avatar.start(undefined, micStream);

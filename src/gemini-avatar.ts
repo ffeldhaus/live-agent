@@ -640,32 +640,7 @@ export class GeminiAvatar extends HTMLElement {
     this.appendTranscript("User", text);
   }
 
-  public getSessionFiles() {
-    const recordedChunks = this.mediaManager?.getRecordedChunks() || [];
-    const accumulatedPcmData = this.mediaManager?.getAccumulatedPcmData() || [];
 
-    const videoBlob = new Blob(recordedChunks, { type: "video/mp4" });
-
-    const totalLength = accumulatedPcmData.reduce(
-      (acc, chunk) => acc + chunk.length,
-      0,
-    );
-    const result = new Int16Array(totalLength);
-    let offset = 0;
-    for (const chunk of accumulatedPcmData) {
-      result.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    const audioBlob = new Blob([result.buffer], {
-      type: "application/octet-stream",
-    });
-    return { videoBlob, audioBlob };
-  }
-
-  public getRecordedOutput() {
-    return this.mediaManager?.getRecordedOutput();
-  }
 
   public getAudioOutputStream(): MediaStream {
     if (!this.mediaManager) {
