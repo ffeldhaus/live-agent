@@ -229,6 +229,21 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
   );
   set('statFps', stats.averageFps ? stats.averageFps.toString() : '-');
   set(
+    'statChromaKeyDuration',
+    stats.chromaKeyDurationMs ? stats.chromaKeyDurationMs.toFixed(1) : '-',
+  );
+
+  const chromaEl = elements['statChromaKeyDuration' + suffix];
+  if (chromaEl && stats.chromaKeyDurationMs) {
+    if (stats.chromaKeyDurationMs > 40) {
+      chromaEl.style.color = '#ef4444';
+    } else if (stats.chromaKeyDurationMs > 30) {
+      chromaEl.style.color = '#eab308';
+    } else {
+      chromaEl.style.color = '';
+    }
+  }
+  set(
     'statDownlink',
     stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-',
   );

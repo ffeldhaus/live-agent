@@ -55,6 +55,7 @@ export class GeminiAvatar extends HTMLElement {
   private audioChunksSent = 0;
   private videoFramesSent = 0;
   private videoFramesReceived = 0;
+  private chromaKeyDurationMs = 0;
 
   private isStreamingCamera = false;
   private isStreamingScreen = false;
@@ -717,6 +718,7 @@ export class GeminiAvatar extends HTMLElement {
       sessionDurationMs,
       averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
       networkInfo,
+      chromaKeyDurationMs: this.chromaKeyDurationMs,
     };
   }
 
@@ -975,6 +977,8 @@ export class GeminiAvatar extends HTMLElement {
 
     if (typeof this.displayCanvas.getContext !== 'function') return;
 
+    const startTime = performance.now();
+
     let source: TexImageSource | null = null;
     let width = 0;
     let height = 0;
@@ -1150,6 +1154,7 @@ export class GeminiAvatar extends HTMLElement {
       maskW,
       maskH,
     );
+    this.chromaKeyDurationMs = performance.now() - startTime;
   }
 
   private appendTranscript(sender: string, text: string) {

@@ -92,6 +92,9 @@ export function queryElements() {
     'statSessionDuration',
   ) as HTMLSpanElement;
   const statFps = document.getElementById('statFps') as HTMLSpanElement;
+  const statChromaKeyDuration = document.getElementById(
+    'statChromaKeyDuration',
+  ) as HTMLSpanElement;
   const statDownlink = document.getElementById(
     'statDownlink',
   ) as HTMLSpanElement;
@@ -330,6 +333,9 @@ export function queryElements() {
     'statSessionDuration2',
   ) as HTMLSpanElement;
   const statFps2 = document.getElementById('statFps2') as HTMLSpanElement;
+  const statChromaKeyDuration2 = document.getElementById(
+    'statChromaKeyDuration2',
+  ) as HTMLSpanElement;
   const statCpuPressure = document.getElementById(
     'statCpuPressure',
   ) as HTMLSpanElement;
@@ -431,6 +437,7 @@ export function queryElements() {
     statTotalFrames,
     statSessionDuration,
     statFps,
+    statChromaKeyDuration,
     statDownlink,
     statRtt,
     statConnType,
@@ -460,6 +467,7 @@ export function queryElements() {
     statTotalFrames2,
     statSessionDuration2,
     statFps2,
+    statChromaKeyDuration2,
     statCpuPressure,
   };
 
