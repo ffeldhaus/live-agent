@@ -7,16 +7,18 @@ describe('GeminiAvatar', () => {
   beforeEach(() => {
     // Mock MediaSource on window
     // @ts-ignore
-    window.MediaSource = vi.fn().mockImplementation(() => ({
-      addEventListener: vi.fn(),
-      readyState: 'closed',
-      addSourceBuffer: vi.fn().mockReturnValue({
+    window.MediaSource = vi.fn().mockImplementation(function () {
+      return {
         addEventListener: vi.fn(),
-        appendBuffer: vi.fn(),
-      }),
-    }));
+        readyState: 'closed',
+        addSourceBuffer: vi.fn().mockReturnValue({
+          addEventListener: vi.fn(),
+          appendBuffer: vi.fn(),
+        }),
+      };
+    });
     // @ts-ignore
-    global.MediaSource = window.MediaSource;
+    globalThis.MediaSource = window.MediaSource;
 
     // Mock URL.createObjectURL
     URL.createObjectURL = vi
@@ -36,35 +38,41 @@ describe('GeminiAvatar', () => {
 
     // Mock AudioContext
     // @ts-ignore
-    window.AudioContext = vi.fn().mockImplementation(() => ({
-      createMediaStreamSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-      }),
-      audioWorklet: {
-        addModule: vi.fn().mockResolvedValue(undefined),
-      },
-      createGain: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        gain: {value: 1},
-      }),
-      destination: {},
-      currentTime: 0,
-      close: vi.fn().mockResolvedValue(undefined),
-    }));
+    window.AudioContext = vi.fn().mockImplementation(function () {
+      return {
+        createMediaStreamSource: vi.fn().mockReturnValue({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }),
+        audioWorklet: {
+          addModule: vi.fn().mockResolvedValue(undefined),
+        },
+        createGain: vi.fn().mockReturnValue({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          gain: {value: 1},
+        }),
+        destination: {},
+        currentTime: 0,
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+    });
+    globalThis.AudioContext = window.AudioContext;
 
     // Mock AudioWorkletNode
     // @ts-ignore
-    window.AudioWorkletNode = vi.fn().mockImplementation(() => ({
-      connect: vi.fn(),
-      port: {
-        onmessage: null,
-        postMessage: vi.fn(),
-      },
-    }));
+    window.AudioWorkletNode = vi.fn().mockImplementation(function () {
+      return {
+        connect: vi.fn(),
+        port: {
+          onmessage: null,
+          postMessage: vi.fn(),
+        },
+      };
+    });
+    globalThis.AudioWorkletNode = window.AudioWorkletNode;
     // @ts-ignore
-    global.AudioWorkletNode = window.AudioWorkletNode;
+    globalThis.AudioWorkletNode = window.AudioWorkletNode;
 
     if (!customElements.get('gemini-avatar')) {
       customElements.define('gemini-avatar', GeminiAvatar);

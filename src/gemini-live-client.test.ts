@@ -12,9 +12,13 @@ describe('GeminiLiveClient', () => {
       readyState: 1, // WebSocket.OPEN
     };
     // Mock global WebSocket
-    global.WebSocket = vi.fn().mockImplementation(() => mockWs) as any;
+    const mockWebSocket = vi.fn().mockImplementation(function () {
+      console.log('Mock WebSocket created!');
+      return mockWs;
+    });
     // @ts-ignore
-    global.WebSocket.OPEN = 1;
+    mockWebSocket.OPEN = 1;
+    vi.stubGlobal('WebSocket', mockWebSocket);
 
     client = new GeminiLiveClient({
       projectId: 'test-project',
@@ -26,7 +30,7 @@ describe('GeminiLiveClient', () => {
 
   it('should connect with correct URL', () => {
     client.connect();
-    expect(global.WebSocket).toHaveBeenCalledWith(
+    expect(globalThis.WebSocket).toHaveBeenCalledWith(
       expect.stringContaining(
         'wss://us-central1-aiplatform.googleapis.com/ws/google.cloud.aiplatform.v1beta1.LlmBidiService/BidiGenerateContent?access_token=test-token',
       ),
@@ -246,7 +250,7 @@ describe('GeminiLiveClient', () => {
 
     mockWs.onclose({code: 1000, reason: 'test'});
 
-    expect(global.WebSocket).toHaveBeenCalledTimes(2);
+    expect(globalThis.WebSocket).toHaveBeenCalledTimes(2);
   });
 
   it('should send setup with session handle on reconnection', async () => {
@@ -357,11 +361,11 @@ describe('GeminiLiveClient', () => {
     mockWs.onclose({code: 1000, reason: 'test'});
 
     // Should not reconnect immediately
-    expect(global.WebSocket).toHaveBeenCalledTimes(1);
+    expect(globalThis.WebSocket).toHaveBeenCalledTimes(1);
 
     // Should reconnect after queue processing
     await vi.waitFor(() => {
-      expect(global.WebSocket).toHaveBeenCalledTimes(2);
+      expect(globalThis.WebSocket).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -453,7 +457,7 @@ describe('GeminiLiveClient', () => {
 
     mockWs.onclose({code: 1000, reason: 'test'});
 
-    expect(global.WebSocket).toHaveBeenCalledTimes(1);
+    expect(globalThis.WebSocket).toHaveBeenCalledTimes(1);
     expect(onDisconnected).toHaveBeenCalled();
   });
 
@@ -463,7 +467,9 @@ describe('GeminiLiveClient', () => {
       accessToken: 'test-token',
     });
     // Reset mock to clear calls from beforeEach client
-    global.WebSocket = vi.fn().mockImplementation(() => mockWs) as any;
+    globalThis.WebSocket = vi.fn().mockImplementation(function () {
+      return mockWs;
+    }) as any;
 
     defaultClient.connect();
     mockWs.onopen();
@@ -479,7 +485,9 @@ describe('GeminiLiveClient', () => {
       accessToken: 'test-token',
       enableTranscript: true,
     });
-    global.WebSocket = vi.fn().mockImplementation(() => mockWs) as any;
+    globalThis.WebSocket = vi.fn().mockImplementation(function () {
+      return mockWs;
+    }) as any;
 
     clientWithTranscript.connect();
     mockWs.onopen();

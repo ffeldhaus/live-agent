@@ -79,7 +79,9 @@ export class GeminiLiveClient {
     this._log('Connecting to WebSocket...', {url}, true);
 
     try {
+      console.log('Creating WebSocket with URL:', url);
       this.ws = new WebSocket(url);
+      console.log('WebSocket created successfully!');
 
       this.ws.onopen = () => {
         this._log('WebSocket Connected', null, true);

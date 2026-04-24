@@ -228,8 +228,10 @@ export class MediaManager {
         url: 'custom',
       },
       {
-        customLoader: function () {
-          this.open = () => {};
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        customLoader: function (url: any, config: any) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          this.open = (url: any, range: any) => {};
           this.close = () => {};
           instance.customVideoLoader = this;
         },
@@ -536,7 +538,7 @@ export class MediaManager {
       this._log('Microphone started');
       return true;
     } catch (e) {
-      console.error('Failed to start mic:', e);
+      console.error('Failed to start mic error caught:', e);
       this._log('Failed to start mic', e, true);
       return false;
     }

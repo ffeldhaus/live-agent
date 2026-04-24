@@ -25,7 +25,8 @@ module.exports = [
       '@typescript-eslint/no-unused-vars': 'error',
       'no-empty': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
-      'no-prototype-builtins': 'off'
+      'no-prototype-builtins': 'off',
+      'prefer-arrow-callback': 'off'
     }
   }
 ];

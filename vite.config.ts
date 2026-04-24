@@ -78,7 +78,7 @@ export default defineConfig({
       entry: "src/gemini-avatar.ts",
       name: "GeminiAvatar",
       fileName: (format) => `gemini-avatar.${format}.js`,
-      formats: ["es", "umd"],
+      formats: ["es"],
     },
     rollupOptions: {
       external: [], // Bundle everything for standalone use, or adjust as needed
@@ -87,6 +87,6 @@ export default defineConfig({
   // @ts-ignore
   test: {
     globals: true,
-    environment: "happy-dom",
+    environment: "jsdom",
   },
 });

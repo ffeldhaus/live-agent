@@ -11,22 +11,24 @@ describe('MediaManager', () => {
 
     // Mock MediaSource
     // @ts-ignore
-    global.MediaSource = vi.fn().mockImplementation(() => ({
-      addEventListener: vi.fn().mockImplementation((event, cb) => {
-        if (event === 'sourceopen') {
-          setTimeout(cb, 0); // Simulate async open
-        }
-      }),
-      readyState: 'open',
-      addSourceBuffer: vi.fn().mockReturnValue({
-        addEventListener: vi.fn(),
-        appendBuffer: vi.fn(),
-        updating: false,
-      }),
-      endOfStream: vi.fn(),
-    }));
+    globalThis.MediaSource = vi.fn().mockImplementation(function () {
+      return {
+        addEventListener: vi.fn().mockImplementation((event, cb) => {
+          if (event === 'sourceopen') {
+            setTimeout(cb, 0); // Simulate async open
+          }
+        }),
+        readyState: 'open',
+        addSourceBuffer: vi.fn().mockReturnValue({
+          addEventListener: vi.fn(),
+          appendBuffer: vi.fn(),
+          updating: false,
+        }),
+        endOfStream: vi.fn(),
+      };
+    });
     // @ts-ignore
-    global.MediaSource.isTypeSupported = vi.fn().mockReturnValue(true);
+    globalThis.MediaSource.isTypeSupported = vi.fn().mockReturnValue(true);
 
     // Mock URL.createObjectURL
     URL.createObjectURL = vi
@@ -46,45 +48,51 @@ describe('MediaManager', () => {
 
     // Mock AudioContext
     // @ts-ignore
-    window.AudioContext = vi.fn().mockImplementation(() => ({
-      createMediaStreamSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-      }),
-      audioWorklet: {
-        addModule: vi.fn().mockResolvedValue(undefined),
-      },
-      createGain: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        gain: {value: 1},
-      }),
-      createBufferSource: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        start: vi.fn(),
-        buffer: null,
-      }),
-      createBuffer: vi.fn().mockReturnValue({
-        copyToChannel: vi.fn(),
-        duration: 1,
-      }),
-      destination: {},
-      currentTime: 0,
-      close: vi.fn().mockResolvedValue(undefined),
-    }));
+    window.AudioContext = vi.fn().mockImplementation(function () {
+      return {
+        createMediaStreamSource: vi.fn().mockReturnValue({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        }),
+        audioWorklet: {
+          addModule: vi.fn().mockResolvedValue(undefined),
+        },
+        createGain: vi.fn().mockReturnValue({
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          gain: {value: 1},
+        }),
+        createBufferSource: vi.fn().mockReturnValue({
+          connect: vi.fn(),
+          start: vi.fn(),
+          buffer: null,
+        }),
+        createBuffer: vi.fn().mockReturnValue({
+          copyToChannel: vi.fn(),
+          duration: 1,
+        }),
+        destination: {},
+        currentTime: 0,
+        close: vi.fn().mockResolvedValue(undefined),
+      };
+    });
+    globalThis.AudioContext = window.AudioContext;
 
     // Mock AudioWorkletNode
     // @ts-ignore
-    window.AudioWorkletNode = vi.fn().mockImplementation(() => ({
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      port: {
-        onmessage: null,
-        postMessage: vi.fn(),
-      },
-    }));
+    window.AudioWorkletNode = vi.fn().mockImplementation(function () {
+      return {
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        port: {
+          onmessage: null,
+          postMessage: vi.fn(),
+        },
+      };
+    });
+    globalThis.AudioWorkletNode = window.AudioWorkletNode;
     // @ts-ignore
-    global.AudioWorkletNode = window.AudioWorkletNode;
+    globalThis.AudioWorkletNode = window.AudioWorkletNode;
   });
 
   afterEach(() => {
@@ -93,7 +101,7 @@ describe('MediaManager', () => {
 
   it('should initialize MediaSource', async () => {
     manager.init(false);
-    expect(global.MediaSource).toHaveBeenCalled();
+    expect(globalThis.MediaSource).toHaveBeenCalled();
 
     // Wait for sourceopen callback
     await vi.waitFor(() => {
