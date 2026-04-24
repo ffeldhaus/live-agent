@@ -74,27 +74,27 @@
                 
                 <!-- Prompt Input & Lucky Button -->
                 <div class="flex flex-col gap-1">
-                    <label for="bgImagePrompt" class="text-xs text-slate-300">Background Prompt</label>
+                    <label for="bgImagePrompt" class="text-sm font-medium text-slate-300">Background Prompt</label>
                     <div class="flex items-center gap-2">
-                        <input type="text" id="bgImagePrompt" placeholder="Describe background..." class="flex-1 text-xs bg-slate-900 border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button id="luckyBgPromptBtn" class="px-2 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">I'm feeling lucky</button>
+                        <input type="text" id="bgImagePrompt" placeholder="Describe background..." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button id="luckyBgPromptBtn" class="bg-purple-600 hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">I'm feeling lucky</button>
+                        <button id="generateBgBtn" class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">Generate Background Image</button>
                     </div>
                 </div>
 
                 <!-- URL Input & Clear -->
                 <div class="flex flex-col gap-1 mt-1">
-                    <label for="bgImageUrl" class="text-xs text-slate-300">Image URL</label>
+                    <label for="bgImageUrl" class="text-sm font-medium text-slate-300">Image URL</label>
                     <div class="flex items-center gap-2">
-                        <input type="text" id="bgImageUrl" placeholder="http://... or data:..." class="flex-1 text-xs bg-slate-900 border-slate-700 rounded-lg p-1.5 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button id="clearBgBtn" class="px-2 py-1.5 text-xs bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">Clear</button>
+                        <input type="text" id="bgImageUrl" placeholder="http://... or data:..." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button id="clearBgBtn" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">Clear</button>
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-2 mt-1">
                     <input type="file" id="bgImageUpload" class="hidden" accept="image/*">
-                    <button id="uploadBgBtn" class="flex-1 px-2 py-1.5 text-xs bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">Upload Image</button>
-                    <button id="generateBgBtn" class="flex-1 px-2 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Generate Image</button>
+                    <button id="uploadBgBtn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">Upload Image</button>
                 </div>
             </div>
             
@@ -173,14 +173,14 @@
                     <div class="flex gap-2">
                         <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
-                        <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate</button>
+                        <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate Avatar Image</button>
                     </div>
                 </div>
 
                 <!-- Chroma Keying Color (for generation) -->
                 <div class="flex flex-col gap-1">
                     <label for="chromaKeyColor" class="text-sm font-medium text-slate-300">Chroma Key Color (for Generation):</label>
-                    <select id="chromaKeyColor" class="bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select id="chromaKeyColor" class="w-48 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <option value="green">Light Green Key</option>
                         <option value="blue">Blue Key</option>
                     </select>
@@ -415,10 +415,12 @@
         </details>
         
         <!-- Actions -->
-        <div class="flex gap-2 mt-5">
-            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="saveBtn">Save Configuration</button>
-            <button class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="streamBtn" disabled>Start</button>
-            <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="addAvatarBtn">Add Avatar</button>
+        <div class="flex flex-col gap-2 mt-5">
+            <button class="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="streamBtn" disabled>Start</button>
+            <div class="flex gap-2">
+                <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="saveBtn">Save Configuration</button>
+                <button class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition-all text-sm" id="addAvatarBtn">Add Avatar</button>
+            </div>
         </div>
         
         <div class="flex gap-2 mt-2">
@@ -477,6 +479,18 @@
             <div class="flex gap-2 mt-5 flex-none">
                 <button class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="captureBtn">Capture</button>
                 <button class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="closeCameraBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Error Modal -->
+    <div class="modal-overlay" id="tokenErrorModal">
+        <div class="bg-slate-800/90 backdrop-blur-md border border-white/10 rounded-2xl p-6 text-center shadow-2xl transform scale-95 transition-all active:scale-100 mx-auto my-5 max-w-md flex flex-col justify-center">
+            <h2 class="text-xl font-semibold text-rose-400 mb-4">Token Verification Failed</h2>
+            <p id="tokenErrorMsg" class="text-sm text-slate-300 mb-4">Invalid token or failed to verify.</p>
+            <div id="tokenErrorDetails" class="text-xs text-slate-400 bg-black/20 p-3 rounded-lg mb-4 text-left hidden overflow-auto max-h-40 flex flex-col gap-1"></div>
+            <div class="flex gap-2 mt-2">
+                <button class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="closeTokenErrorBtn">Close</button>
             </div>
         </div>
     </div>

@@ -4,15 +4,15 @@ export async function verifyToken(token: string) {
     try {
         const tokenInfoUrl = isLocal ? `/tokeninfo` : `https://oauth2.googleapis.com/tokeninfo`;
         const response = await fetch(`${tokenInfoUrl}?access_token=${token}`);
-        if (!response.ok) {
-            throw new Error(`Token verification failed: ${response.statusText}`);
-        }
         const data = await response.json();
+        if (!response.ok) {
+            return { success: false, error: data.error || response.statusText, details: data };
+        }
         console.log('Token info:', data);
-        return data;
-    } catch (e) {
+        return { success: true, data };
+    } catch (e: any) {
         console.error('Error verifying token:', e);
-        return null;
+        return { success: false, error: e.message || 'Unknown error' };
     }
 }
 

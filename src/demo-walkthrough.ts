@@ -13,10 +13,61 @@ export function setupWalkthrough(
         qaState[scenario.id] = savedState === 'true';
     });
 
+    // Create Filter Switch
+    const switchDiv = document.createElement('div');
+    switchDiv.className = 'flex gap-2 mb-4 p-1 bg-slate-800 rounded-lg w-fit';
+    
+    const mainBtn = document.createElement('button');
+    mainBtn.textContent = 'Main Features';
+    mainBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all bg-indigo-600 text-white';
+    
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All Features';
+    allBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white';
+    
+    switchDiv.appendChild(mainBtn);
+    switchDiv.appendChild(allBtn);
+    
+    if (qaContainer && qaList) {
+        qaContainer.insertBefore(switchDiv, qaList);
+    }
+    
+    let currentFilter = 'main';
+    
+    const updateSwitchUI = () => {
+        if (currentFilter === 'main') {
+            mainBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all bg-indigo-600 text-white';
+            allBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white';
+        } else {
+            allBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all bg-indigo-600 text-white';
+            mainBtn.className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-white';
+        }
+    };
+    
+    mainBtn.onclick = () => {
+        currentFilter = 'main';
+        updateSwitchUI();
+        renderQA();
+    };
+    
+    allBtn.onclick = () => {
+        currentFilter = 'all';
+        updateSwitchUI();
+        renderQA();
+    };
+
     const renderQA = () => {
         if (!qaList) return;
         qaList.innerHTML = '';
-        qaScenarios.forEach(scenario => {
+        
+        const filteredScenarios = qaScenarios.filter(scenario => {
+            if (currentFilter === 'main') {
+                return !scenario.isDetailed;
+            }
+            return true;
+        });
+        
+        filteredScenarios.forEach(scenario => {
             const div = document.createElement('div');
             div.className = 'qa-scenario';
             div.style.marginBottom = '15px';
@@ -126,7 +177,7 @@ export function setupWalkthrough(
     if (toggleQaBtn) {
         toggleQaBtn.onclick = () => {
             if (qaContainer) {
-                const isVisible = qaContainer.style.display !== 'none';
+                const isVisible = window.getComputedStyle(qaContainer).display !== 'none';
                 qaContainer.style.display = isVisible ? 'none' : 'block';
                 toggleQaBtn.textContent = isVisible ? 'Open Feature Walkthrough' : 'Close Feature Walkthrough';
                 if (!isVisible) {

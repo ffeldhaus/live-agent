@@ -15,6 +15,7 @@ import { setupWalkthrough } from './demo-walkthrough';
 import { verifyToken, fetchUserProfile, ensureValidToken, displayUserProfile } from './auth';
 import { loadSettings, saveSettings } from './settings';
 import { queryElements } from './demo-elements';
+import { setupAvatar2 } from './demo-avatar2';
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Demo script started');
@@ -207,30 +208,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     function validateForm() {
-      const project = store.projectId.trim();
-      const loc = store.location.trim();
-      const token = store.accessToken.trim();
-      const oauth = store.oauthClientId.trim();
+      if (!projectIdInput || !locationInput || !tokenInput || !oauthClientIdInput) return;
+
+      const project = projectIdInput.value.trim();
+      const loc = locationInput.value.trim();
+      const token = tokenInput.value.trim();
+      const oauth = oauthClientIdInput.value.trim();
 
       // Show/hide Google Sign-in button based on OAuth Client ID availability
       if (googleSignInBtn) {
         googleSignInBtn.classList.toggle("hidden", oauth.length === 0);
       }
 
+      const now = new Date().getTime();
+      const isTokenValid = token.length > 0 && store.tokenExpiry > now;
+
       const isValid =
         project.length > 0 &&
         loc.length > 0 &&
-        (token.length > 0 || oauth.length > 0);
+        (isTokenValid || oauth.length > 0);
 
       if (!avatar.isConnected && streamBtn) {
         streamBtn.disabled = !isValid;
       }
 
-      // Lucky buttons require project, location, and token!
+      // Lucky buttons require project, location, and valid token!
       const isLuckyValid =
-        project.length > 0 && loc.length > 0 && token.length > 0;
+        project.length > 0 && loc.length > 0 && isTokenValid;
+      
       if (luckyPersonaBtn) luckyPersonaBtn.disabled = !isLuckyValid;
       if (luckyGreetingBtn) luckyGreetingBtn.disabled = !isLuckyValid;
+      if (luckyBgPromptBtn) luckyBgPromptBtn.disabled = !isLuckyValid;
+      if (luckyImageBtn) luckyImageBtn.disabled = !isLuckyValid;
+      
+      if (generateBgBtn) generateBgBtn.disabled = !isLuckyValid;
 
       // Custom Avatar validation!
       const customName = store.customAvatarName.trim();
@@ -241,9 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
       if (uploadBtn) uploadBtn.disabled = !isValidForCustom;
       if (generateImageBtn) generateImageBtn.disabled = !isValidForCustom;
-
-      // Lucky image button only requires project, location, and token!
-      if (luckyImageBtn) luckyImageBtn.disabled = !isLuckyValid;
 
       // Update tooltips
       const missingGeneral = [];
@@ -348,108 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       };
     }
-    function setupAvatar2() {
-        if (!avatar2) return;
-        
-        if (elements.avatarName2) {
-            elements.avatarName2.innerHTML = "";
-            Object.values(AVATAR_PRESETS).forEach((preset) => {
-                const option = document.createElement("option");
-                option.value = preset.id;
-                option.textContent = `${preset.displayName} (${preset.style})`;
-                elements.avatarName2.appendChild(option);
-            });
-            const audioOnlyOption = document.createElement("option");
-            audioOnlyOption.value = "AudioOnly";
-            audioOnlyOption.textContent = "Audio Only";
-            elements.avatarName2.appendChild(audioOnlyOption);
-            
-            Object.keys(customAvatars).forEach(name => {
-                const option = document.createElement("option");
-                option.value = name;
-                option.textContent = name;
-                elements.avatarName2.appendChild(option);
-            });
-            
-            elements.avatarName2.value = "Kira";
-            avatar2.setPreview("Kira");
-        }
-        
-        if (elements.voiceSelect2) {
-            elements.voiceSelect2.innerHTML = "";
-            Object.values(VOICE_PRESETS).forEach((preset) => {
-                const option = document.createElement("option");
-                option.value = preset.id;
-                option.textContent = `${preset.displayName} (${preset.description})`;
-                elements.voiceSelect2.appendChild(option);
-            });
-        }
-        
-        if (elements.size2) elements.size2.onchange = () => avatar2?.setAttribute("size", elements.size2.value);
-        
-        if (elements.position2) {
-            elements.position2.onchange = () => {
-                const newPos = elements.position2.value;
-                const oldPos2 = avatar2?.getAttribute('position') || 'top-left';
-                const pos1 = avatar.getAttribute('position') || 'top-right';
-                if (newPos === pos1) {
-                    avatar.setAttribute('position', oldPos2);
-                    if (positionSelect) positionSelect.value = oldPos2;
-                    store.position = oldPos2;
-                }
-                avatar2?.setAttribute('position', newPos);
-            };
-        }
-        
-        if (elements.avatarName2) {
-            elements.avatarName2.onchange = () => {
-                const val = elements.avatarName2.value;
-                const isPreset = val in AVATAR_PRESETS;
-                
-                if (elements.enableChromaKey2) {
-                    elements.enableChromaKey2.disabled = isPreset;
-                    if (isPreset) {
-                        avatar2?.setAttribute("enable-chroma-key", "false");
-                    } else {
-                        avatar2?.setAttribute("enable-chroma-key", elements.enableChromaKey2.checked.toString());
-                    }
-                }
-
-                avatar2?.setAttribute("avatar-name", val);
-                const preset = (AVATAR_PRESETS as any)[val];
-                if (preset) {
-                    avatar2?.setPreview(val);
-                } else if (customAvatars[val]) {
-                    avatar2?.setAttribute('custom-avatar-url', customAvatars[val].image);
-                }
-            };
-        }
-        
-        if (elements.languageSelect2) elements.languageSelect2.onchange = () => avatar2?.setAttribute("language", elements.languageSelect2.value);
-        if (elements.enableChromaKey2) elements.enableChromaKey2.onchange = () => avatar2?.setAttribute("enable-chroma-key", elements.enableChromaKey2.checked.toString());
-        if (elements.chromaKeyTolerance2) {
-            elements.chromaKeyTolerance2.oninput = () => {
-                if (elements.chromaKeyToleranceVal2) elements.chromaKeyToleranceVal2.textContent = elements.chromaKeyTolerance2.value;
-                avatar2?.setAttribute("chroma-key-tolerance", elements.chromaKeyTolerance2.value);
-            };
-        }
-        if (elements.enableTranscript2) elements.enableTranscript2.onchange = () => avatar2?.setAttribute("enable-transcript", elements.enableTranscript2.checked.toString());
-        if (elements.enableChatInput2) elements.enableChatInput2.onchange = () => avatar2?.setAttribute("enable-chat-input", elements.enableChatInput2.checked.toString());
-        if (elements.enableSessionResumption2) elements.enableSessionResumption2.onchange = () => avatar2?.setAttribute("enable-session-resumption", elements.enableSessionResumption2.checked.toString());
-        if (elements.enableGrounding2) elements.enableGrounding2.onchange = () => avatar2?.setAttribute("enable-grounding", elements.enableGrounding2.checked.toString());
-
-        // Initial state for transparency checkbox for Avatar 2
-        if (elements.avatarName2) {
-            const val = elements.avatarName2.value;
-            const isPreset = val in AVATAR_PRESETS;
-            if (elements.enableChromaKey2) {
-                elements.enableChromaKey2.disabled = isPreset;
-                if (isPreset) {
-                    avatar2?.setAttribute("enable-chroma-key", "false");
-                }
-            }
-        }
-    }
+    // setupAvatar2 moved to demo-avatar2.ts
 
     if (elements.addAvatarBtn) {
         elements.addAvatarBtn.onclick = () => {
@@ -482,13 +389,23 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (elements.position2) elements.position2.value = pos2;
             
-            setupAvatar2();
+            setupAvatar2(avatar2, elements, customAvatars, avatar, store);
         };
     }
 
     projectIdInput.addEventListener(
       "input",
-      () => (store.projectId = projectIdInput.value),
+      () => {
+        store.projectId = projectIdInput.value;
+        if (projectIdInput.value.trim().length === 0) {
+            if (luckyPersonaBtn) luckyPersonaBtn.disabled = true;
+            if (luckyGreetingBtn) luckyGreetingBtn.disabled = true;
+            if (luckyBgPromptBtn) luckyBgPromptBtn.disabled = true;
+            if (luckyImageBtn) luckyImageBtn.disabled = true;
+            if (generateBgBtn) generateBgBtn.disabled = true;
+            if (generateImageBtn) generateImageBtn.disabled = true;
+        }
+      },
     );
     locationInput.addEventListener(
       "input",
@@ -496,13 +413,26 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     tokenInput.addEventListener(
       "input",
-      () => (store.accessToken = tokenInput.value),
+      () => {
+        store.accessToken = tokenInput.value;
+        store.tokenExpiry = 0; // Reset expiry on input change
+        
+        if (tokenInput.value.trim().length === 0) {
+            if (luckyPersonaBtn) luckyPersonaBtn.disabled = true;
+            if (luckyGreetingBtn) luckyGreetingBtn.disabled = true;
+            if (luckyBgPromptBtn) luckyBgPromptBtn.disabled = true;
+            if (luckyImageBtn) luckyImageBtn.disabled = true;
+            if (generateBgBtn) generateBgBtn.disabled = true;
+            if (generateImageBtn) generateImageBtn.disabled = true;
+        }
+      },
     );
     tokenInput.addEventListener("change", async () => {
       const token = tokenInput.value.trim();
       if (token) {
-        const data = await verifyToken(token);
-        if (data && data.expires_in) {
+        const result = await verifyToken(token);
+        if (result.success && result.data && result.data.expires_in) {
+          const data = result.data;
           const now = new Date().getTime();
           store.tokenExpiry = now + parseInt(data.expires_in) * 1000;
           console.log("Token verified, set expiry to:", store.tokenExpiry);
@@ -518,10 +448,67 @@ document.addEventListener('DOMContentLoaded', () => {
             displayUserProfile(fallbackName, store.userAvatar || "", elements);
           }
         } else {
-          alert("Invalid token or failed to verify.");
+          if (elements.tokenErrorModal) {
+            elements.tokenErrorModal.classList.add('active');
+            if (elements.tokenErrorMsg) {
+                elements.tokenErrorMsg.textContent = result.error || "Invalid token or failed to verify.";
+            }
+            if (elements.tokenErrorDetails) {
+                if (result.details) {
+                    const details = result.details;
+                    let html = '';
+                    if (details.error) html += `<div><strong>Error:</strong> ${details.error}</div>`;
+                    if (details.error_description) html += `<div><strong>Description:</strong> ${details.error_description}</div>`;
+                    
+                    // If no specific fields but details exist, show JSON
+                    if (!html && Object.keys(details).length > 0) {
+                        html = `<pre class="text-xs text-slate-500">${JSON.stringify(details, null, 2)}</pre>`;
+                    }
+                    
+                    elements.tokenErrorDetails.innerHTML = html;
+                    elements.tokenErrorDetails.classList.remove('hidden');
+                } else {
+                    elements.tokenErrorDetails.classList.add('hidden');
+                }
+            }
+          } else {
+            alert("Invalid token or failed to verify.");
+          }
         }
+      } else {
+        // Token cleared!
+        store.accessToken = '';
+        store.tokenExpiry = 0;
+        store.userName = '';
+        store.userAvatar = '';
+        
+        // Hide user profile
+        if (elements.userProfile) elements.userProfile.classList.add('hidden');
+        if (elements.userName) elements.userName.textContent = '';
+        if (elements.userAvatar) elements.userAvatar.src = '';
+        
+        // Show Google Sign-in btn if OAuth ID is present
+        const oauth = store.oauthClientId.trim();
+        if (elements.googleSignInBtn) {
+            elements.googleSignInBtn.classList.toggle("hidden", oauth.length === 0);
+        }
+        
+        // Clear local storage
+        localStorage.removeItem("gemini_access_token");
+        localStorage.removeItem("gemini_token_time");
+        localStorage.removeItem("gemini_token_expiry");
+        localStorage.removeItem("gemini_user_name");
+        localStorage.removeItem("gemini_user_avatar");
+        
+        validateForm();
       }
     });
+
+    if (elements.closeTokenErrorBtn) {
+      elements.closeTokenErrorBtn.onclick = () => {
+        elements.tokenErrorModal?.classList.remove('active');
+      };
+    }
     oauthClientIdInput.addEventListener(
       "input",
       () => (store.oauthClientId = oauthClientIdInput.value),

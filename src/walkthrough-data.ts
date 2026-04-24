@@ -3,21 +3,35 @@ export const qaScenarios = [
         id: '1.1',
         title: 'Direct Access Token',
         description: 'Verify connection using a direct access token.',
+        isDetailed: true,
         steps: [
-            'Enter a valid Access Token in the form.',
-            'Click "Save Configuration".',
-            'Click "Start".'
+            'Enter a valid Access Token in the input.',
+            'Change focus of the input (e.g., click outside the input).'
         ],
         verification: [
-            'Component connects to WebSocket.',
-            'Button changes to "Stop".',
-            'Video starts playing.'
+            'User information is loaded and displayed right beside Settings.',
+            'Buttons like "Generate Avatar Image", "I\'m feeling lucky", "Generate Background Image", and "Start" are enabled.'
         ]
     },
     {
         id: '1.2',
+        title: 'Invalid Direct Access Token',
+        description: 'Verify error handling for invalid tokens.',
+        isDetailed: true,
+        steps: [
+            'Enter an invalid Access Token in the input.',
+            'Change focus of the input (e.g., click outside the input).'
+        ],
+        verification: [
+            'A modal appears with the title "Token Verification Failed".',
+            'The modal displays the error message and details from the API response.'
+        ]
+    },
+    {
+        id: '1.3',
         title: 'OAuth Sign-in',
         description: 'Verify authentication via Google OAuth.',
+        isDetailed: true,
         steps: [
             'Enter a valid OAuth Client ID in the form.',
             'Click the "Sign in with Google" button that appears.',
@@ -29,6 +43,35 @@ export const qaScenarios = [
             'A Google sign-in popup appears.',
             'User avatar and name are displayed upon successful sign-in.',
             'Component connects successfully after acquiring token.'
+        ]
+    },
+    {
+        id: '1.4',
+        title: 'Removing Access Token',
+        description: 'Verify UI state when token is removed.',
+        isDetailed: true,
+        steps: [
+            'Enter a valid Access Token and verify buttons are enabled.',
+            'Clear the Access Token input.',
+            'Change focus of the input.'
+        ],
+        verification: [
+            'User information is removed from the display.',
+            'Buttons requiring token are disabled.'
+        ]
+    },
+    {
+        id: '1.5',
+        title: 'Removing Project ID',
+        description: 'Verify UI state when Project ID is removed.',
+        isDetailed: true,
+        steps: [
+            'Ensure a valid token is present.',
+            'Clear the Project ID input.',
+            'Change focus of the input.'
+        ],
+        verification: [
+            'Buttons requiring Project ID are disabled.'
         ]
     },
     {
@@ -83,6 +126,19 @@ export const qaScenarios = [
         ],
         verification: [
             'The component updates its size and position on screen immediately.'
+        ]
+    },
+    {
+        id: '3.3',
+        title: 'Session Resumption',
+        description: 'Verify session resumption behavior.',
+        steps: [
+            'Ensure "Enable Session Resumption" is checked in settings.',
+            'Start a session.',
+            'Simulate a connection drop or check logs to verify resumption is enabled.'
+        ],
+        verification: [
+            'The session can resume after a drop if supported by the backend.'
         ]
     },
     {

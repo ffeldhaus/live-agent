@@ -92,6 +92,11 @@ export function queryElements() {
     const captureBtn = document.getElementById("captureBtn") as HTMLButtonElement;
     const closeCameraBtn = document.getElementById("closeCameraBtn") as HTMLButtonElement;
     
+    const tokenErrorModal = document.getElementById('tokenErrorModal') as HTMLDivElement;
+    const tokenErrorMsg = document.getElementById('tokenErrorMsg') as HTMLParagraphElement;
+    const tokenErrorDetails = document.getElementById('tokenErrorDetails') as HTMLDivElement;
+    const closeTokenErrorBtn = document.getElementById('closeTokenErrorBtn') as HTMLButtonElement;
+    
     const googleSignInBtn = document.getElementById("googleSignInBtn") as HTMLDivElement;
     const userProfile = document.getElementById("userProfile") as HTMLDivElement;
     const userAvatar = document.getElementById("userAvatar") as HTMLImageElement;
@@ -153,6 +158,7 @@ export function queryElements() {
       externalTranscript, externalChatInput, externalSendBtn, barSetup, barLatency,
       statTotalLatency, cameraBtn, uploadBtn, enableGrounding, cameraModal,
       cameraVideo, cameraVideoContainer, captureBtn, closeCameraBtn,
+      tokenErrorModal, tokenErrorMsg, tokenErrorDetails, closeTokenErrorBtn,
       customAvatarName, generatedImg, originalImg, generatedImageContainer, newCustomAvatarBtn,
       saveCustomAvatarBtn, toggleImageImprovement, imageProcessingMessage, redoImprovementBtn,
       luckyPersonaBtn, luckyGreetingBtn, luckyImageBtn, streamBtn,

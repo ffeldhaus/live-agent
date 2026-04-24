@@ -176,7 +176,17 @@ export function loadSettings(elements: any, store: any, customAvatars: Record<st
         document.body.classList.remove('animated-bg');
         if (elements.bgImageUrl) elements.bgImageUrl.value = savedBg.startsWith('data:') ? "Stored Image" : savedBg;
     } else {
-        document.body.classList.add('animated-bg');
+        const defaultBg = "https://storage.googleapis.com/gweb-cloudblog-publish/images/GCN26_102_BlogHeader_2436x1200_Opt_4_Dark.max-2500x2500.jpg";
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const finalUrl = isLocal ? `/proxy?url=${encodeURIComponent(defaultBg)}` : defaultBg;
+        
+        document.body.style.backgroundImage = `url(${finalUrl})`;
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundPosition = 'center center';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundSize = 'cover';
+        document.body.classList.remove('animated-bg');
+        if (elements.bgImageUrl) elements.bgImageUrl.value = defaultBg;
     }
 
     if (elements.enableGrounding) {
