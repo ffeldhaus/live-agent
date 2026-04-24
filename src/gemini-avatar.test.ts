@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GeminiAvatar } from './gemini-avatar';
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {GeminiAvatar} from './gemini-avatar';
 
 describe('GeminiAvatar', () => {
   let element: GeminiAvatar;
@@ -19,14 +19,16 @@ describe('GeminiAvatar', () => {
     global.MediaSource = window.MediaSource;
 
     // Mock URL.createObjectURL
-    URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/mock-url');
+    URL.createObjectURL = vi
+      .fn()
+      .mockReturnValue('blob:http://localhost/mock-url');
 
     // Mock navigator.mediaDevices
     // @ts-ignore
     Object.defineProperty(navigator, 'mediaDevices', {
       value: {
         getUserMedia: vi.fn().mockResolvedValue({
-          getTracks: () => [{ stop: vi.fn() }],
+          getTracks: () => [{stop: vi.fn()}],
         }),
       },
       configurable: true,
@@ -45,7 +47,7 @@ describe('GeminiAvatar', () => {
       createGain: vi.fn().mockReturnValue({
         connect: vi.fn(),
         disconnect: vi.fn(),
-        gain: { value: 1 },
+        gain: {value: 1},
       }),
       destination: {},
       currentTime: 0,
@@ -102,14 +104,18 @@ describe('GeminiAvatar', () => {
 
   it('should set preview image correctly', () => {
     element.setAttribute('avatar-name', 'Kira');
-    const img = element.shadowRoot?.querySelector('#preview-image') as HTMLImageElement;
+    const img = element.shadowRoot?.querySelector(
+      '#preview-image',
+    ) as HTMLImageElement;
     expect(img.src).toContain('kira.png');
     expect(img.style.display).toBe('block');
   });
 
   it('should hide preview image for AudioOnly', () => {
     element.setAttribute('avatar-name', 'AudioOnly');
-    const img = element.shadowRoot?.querySelector('#preview-image') as HTMLImageElement;
+    const img = element.shadowRoot?.querySelector(
+      '#preview-image',
+    ) as HTMLImageElement;
     expect(img.style.display).toBe('none');
   });
 
@@ -143,9 +149,11 @@ describe('GeminiAvatar', () => {
     anyEl.packetsReceived = 10;
     anyEl.mediaManager.audioChunksSent = 5;
     anyEl.mediaManager.videoFramesReceived = 48;
-    
+
     anyEl.videoEl = document.createElement('video');
-    anyEl.videoEl.getVideoPlaybackQuality = vi.fn().mockReturnValue({ totalVideoFrames: 48 });
+    anyEl.videoEl.getVideoPlaybackQuality = vi
+      .fn()
+      .mockReturnValue({totalVideoFrames: 48});
 
     const stats = element.getStats();
     expect(stats.setupDurationMs).toBe(1000);
@@ -157,12 +165,22 @@ describe('GeminiAvatar', () => {
 
   it('should show/hide controls based on visible-controls attribute', () => {
     element.setAttribute('visible-controls', 'mic,mute');
-    
-    const micBtn = element.shadowRoot?.querySelector('button:nth-child(1)') as HTMLButtonElement;
-    const camBtn = element.shadowRoot?.querySelector('button:nth-child(2)') as HTMLButtonElement;
-    const screenBtn = element.shadowRoot?.querySelector('button:nth-child(3)') as HTMLButtonElement;
-    const muteBtn = element.shadowRoot?.querySelector('button:nth-child(4)') as HTMLButtonElement;
-    const snapshotBtn = element.shadowRoot?.querySelector('button:nth-child(5)') as HTMLButtonElement;
+
+    const micBtn = element.shadowRoot?.querySelector(
+      'button:nth-child(1)',
+    ) as HTMLButtonElement;
+    const camBtn = element.shadowRoot?.querySelector(
+      'button:nth-child(2)',
+    ) as HTMLButtonElement;
+    const screenBtn = element.shadowRoot?.querySelector(
+      'button:nth-child(3)',
+    ) as HTMLButtonElement;
+    const muteBtn = element.shadowRoot?.querySelector(
+      'button:nth-child(4)',
+    ) as HTMLButtonElement;
+    const snapshotBtn = element.shadowRoot?.querySelector(
+      'button:nth-child(5)',
+    ) as HTMLButtonElement;
 
     expect(micBtn.style.display).toBe('');
     expect(camBtn.style.display).toBe('none');
@@ -174,20 +192,20 @@ describe('GeminiAvatar', () => {
   it('should call mediaManager.startMic and client.connect on start', async () => {
     const anyEl = element as any;
     anyEl.mediaManager = {
-        startMic: vi.fn().mockResolvedValue(true),
-        setRecordingVideo: vi.fn(),
-        setupMicRecorder: vi.fn(),
-        stopMic: vi.fn(),
-        stopVideoStreaming: vi.fn(),
-        resetMediaSource: vi.fn()
+      startMic: vi.fn().mockResolvedValue(true),
+      setRecordingVideo: vi.fn(),
+      setupMicRecorder: vi.fn(),
+      stopMic: vi.fn(),
+      stopVideoStreaming: vi.fn(),
+      resetMediaSource: vi.fn(),
     };
     anyEl.tryConnect = vi.fn().mockResolvedValue(undefined);
 
     element.setAttribute('access-token', 'test-token');
     element.setAttribute('project-id', 'test-project');
-    
+
     await element.start();
-    
+
     expect(anyEl.mediaManager.startMic).toHaveBeenCalled();
     expect(anyEl.tryConnect).toHaveBeenCalled();
   });

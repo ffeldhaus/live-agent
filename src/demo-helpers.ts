@@ -1,65 +1,73 @@
-import { AVATAR_PRESETS } from './constants';
-import { GeminiAvatar } from './gemini-avatar';
+import {AVATAR_PRESETS} from './constants';
+import {GeminiAvatar} from './gemini-avatar';
 
 // REST API Helper
 export async function generateContent(
-    model: string, 
-    prompt: string, 
-    project: string,
-    location: string,
-    token: string,
-    inlineData?: { mimeType: string, data: string }
+  model: string,
+  prompt: string,
+  project: string,
+  location: string,
+  token: string,
+  inlineData?: {mimeType: string; data: string},
 ) {
-    if (!project || !token) {
-        throw new Error('Project ID and Access Token are required for AI generation features.');
-    }
-    
-    // Override location for models only available on global endpoint
-    if (model === 'gemini-3.1-flash-image-preview' || model === 'gemini-3-flash-preview') {
-        location = 'global';
-    }
-    
-    const host = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`;
-    const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
-    
-    const parts: any[] = [{ text: prompt }];
-    if (inlineData) {
-        parts.push({ inlineData });
-    }
+  if (!project || !token) {
+    throw new Error(
+      'Project ID and Access Token are required for AI generation features.',
+    );
+  }
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            contents: [{ role: 'user', parts }]
-        })
-    });
-    
-    if (!response.ok) {
-        const err = await response.text();
-        console.error(`API Error (${model}):`, err);
-        throw new Error(`API Error: ${response.statusText}`);
-    }
-    
-    return await response.json();
+  // Override location for models only available on global endpoint
+  if (
+    model === 'gemini-3.1-flash-image-preview' ||
+    model === 'gemini-3-flash-preview'
+  ) {
+    location = 'global';
+  }
+
+  const host =
+    location === 'global'
+      ? 'aiplatform.googleapis.com'
+      : `${location}-aiplatform.googleapis.com`;
+  const url = `https://${host}/v1/projects/${project}/locations/${location}/publishers/google/models/${model}:generateContent`;
+
+  const parts: any[] = [{text: prompt}];
+  if (inlineData) {
+    parts.push({inlineData});
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [{role: 'user', parts}],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    console.error(`API Error (${model}):`, err);
+    throw new Error(`API Error: ${response.statusText}`);
+  }
+
+  return await response.json();
 }
 
 // Background Color Adaptation
 export function updateBackground(
   imageUrl: string,
   onThemeApplied: (colors: string[], speed: string) => void,
-  keyColor?: string
+  keyColor?: string,
 ) {
   const img = new Image();
-  img.crossOrigin = "Anonymous";
+  img.crossOrigin = 'Anonymous';
   img.onload = () => {
-    const canvas = document.createElement("canvas");
+    const canvas = document.createElement('canvas');
     canvas.width = 100;
     canvas.height = 100;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(img, 0, 0, 100, 100);
 
@@ -92,13 +100,13 @@ export function updateBackground(
         const color3 = sortedColors[2] ? sortedColors[2][0] : color2;
 
         console.log(
-          "Dominant colors detected (bottom half):",
+          'Dominant colors detected (bottom half):',
           color1,
           color2,
           color3,
         );
 
-        onThemeApplied([color1, color2, color3], "15s");
+        onThemeApplied([color1, color2, color3], '15s');
       }
     }
   };
@@ -106,114 +114,144 @@ export function updateBackground(
 }
 
 export function applyTheme(colors: string[], speed: string) {
-    const body = document.body;
-    
-    // Only add animated-bg if no background image is set
-    if (!body.style.backgroundImage || body.style.backgroundImage === 'none') {
-        body.classList.add("animated-bg");
-    }
-    
-    body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
-    body.style.setProperty('--c2', colors[1] ? colors[1] + '44' : colors[0] + '44');
-    body.style.setProperty('--c3', colors[2] ? colors[2] + '44' : colors[0] + '44');
-    body.style.setProperty('--c4', colors[2] ? colors[2] + '44' : colors[0] + '44'); // Repeat c3
-    body.style.setProperty('--speed', speed);
+  const body = document.body;
+
+  // Only add animated-bg if no background image is set
+  if (!body.style.backgroundImage || body.style.backgroundImage === 'none') {
+    body.classList.add('animated-bg');
+  }
+
+  body.style.setProperty('--c1', colors[0] + '44'); // Low opacity
+  body.style.setProperty(
+    '--c2',
+    colors[1] ? colors[1] + '44' : colors[0] + '44',
+  );
+  body.style.setProperty(
+    '--c3',
+    colors[2] ? colors[2] + '44' : colors[0] + '44',
+  );
+  body.style.setProperty(
+    '--c4',
+    colors[2] ? colors[2] + '44' : colors[0] + '44',
+  ); // Repeat c3
+  body.style.setProperty('--speed', speed);
 }
 
 export function applyAvatarTheme(
-    avatarName: string,
-    avatar: GeminiAvatar,
-    customAvatars: Record<string, { image: string, originalImage?: string, type: 'custom', palette?: string[] }>,
-    elements: {
-        customAvatarName?: HTMLInputElement,
-        generatedImg?: HTMLImageElement,
-        originalImg?: HTMLImageElement,
-        generatedImageContainer?: HTMLDivElement,
-        newCustomAvatarBtn?: HTMLButtonElement
-    }
+  avatarName: string,
+  avatar: GeminiAvatar,
+  customAvatars: Record<
+    string,
+    {image: string; originalImage?: string; type: 'custom'; palette?: string[]}
+  >,
+  elements: {
+    customAvatarName?: HTMLInputElement;
+    generatedImg?: HTMLImageElement;
+    originalImg?: HTMLImageElement;
+    generatedImageContainer?: HTMLDivElement;
+    newCustomAvatarBtn?: HTMLButtonElement;
+  },
 ) {
-    const keyColor = avatar.getAttribute('chroma-key-color') || 'green';
-    const preset = (AVATAR_PRESETS as any)[avatarName];
-    if (preset && preset.palette) {
-        // Map mood to animation speed
-        let speed = '15s';
-        if (preset.mood.includes('Breezy') || preset.mood.includes('Vibrant')) speed = '10s';
-        if (preset.mood.includes('Calm') || preset.mood.includes('Gentle')) speed = '25s';
-        
-        applyTheme(preset.palette, speed);
-        avatar.setPreview(avatarName);
-    } else if (customAvatars[avatarName]) {
-        const customAvatar = customAvatars[avatarName];
-        if (elements.customAvatarName)
-          elements.customAvatarName.value = avatarName;
-        if (elements.generatedImg)
-          elements.generatedImg.src = customAvatar.image;
-        if (elements.originalImg && customAvatar.originalImage)
-          elements.originalImg.src = customAvatar.originalImage;
-        if (elements.generatedImageContainer) elements.generatedImageContainer.style.display = 'block';
-        avatar.setAttribute('custom-avatar-url', customAvatar.image);
-        
-        if (customAvatar.palette) {
-            applyTheme(customAvatar.palette, '15s');
-        } else {
-            updateBackground(customAvatar.image, applyTheme, keyColor);
-        }
-        
-        if (elements.customAvatarName) elements.customAvatarName.dispatchEvent(new Event('input'));
+  const keyColor = avatar.getAttribute('chroma-key-color') || 'green';
+  const preset = (AVATAR_PRESETS as any)[avatarName];
+  if (preset && preset.palette) {
+    // Map mood to animation speed
+    let speed = '15s';
+    if (preset.mood.includes('Breezy') || preset.mood.includes('Vibrant'))
+      speed = '10s';
+    if (preset.mood.includes('Calm') || preset.mood.includes('Gentle'))
+      speed = '25s';
+
+    applyTheme(preset.palette, speed);
+    avatar.setPreview(avatarName);
+  } else if (customAvatars[avatarName]) {
+    const customAvatar = customAvatars[avatarName];
+    if (elements.customAvatarName) elements.customAvatarName.value = avatarName;
+    if (elements.generatedImg) elements.generatedImg.src = customAvatar.image;
+    if (elements.originalImg && customAvatar.originalImage)
+      elements.originalImg.src = customAvatar.originalImage;
+    if (elements.generatedImageContainer)
+      elements.generatedImageContainer.style.display = 'block';
+    avatar.setAttribute('custom-avatar-url', customAvatar.image);
+
+    if (customAvatar.palette) {
+      applyTheme(customAvatar.palette, '15s');
     } else {
-        avatar.setPreview(avatarName);
-        const pr = (AVATAR_PRESETS as any)[avatarName];
-        if (pr && pr.image) {
-            updateBackground(pr.image, applyTheme, keyColor);
-        }
+      updateBackground(customAvatar.image, applyTheme, keyColor);
     }
+
+    if (elements.customAvatarName)
+      elements.customAvatarName.dispatchEvent(new Event('input'));
+  } else {
+    avatar.setPreview(avatarName);
+    const pr = (AVATAR_PRESETS as any)[avatarName];
+    if (pr && pr.image) {
+      updateBackground(pr.image, applyTheme, keyColor);
+    }
+  }
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
-export function updateStats(avatar: any, elements: any, suffix: string = "") {
-    const stats = avatar.getStats();
-    
-    const set = (id: string, val: string) => {
-        const fullId = id + suffix;
-        if (elements[fullId]) elements[fullId].textContent = val;
-    };
+export function updateStats(avatar: any, elements: any, suffix: string = '') {
+  const stats = avatar.getStats();
 
-    set('statSetupDuration', stats.setupDurationMs ? stats.setupDurationMs.toString() : '-');
-    set('statLatency', stats.setupToFirstFrameDurationMs ? stats.setupToFirstFrameDurationMs.toString() : '-');
-    set('statPacketsReceived', stats.packetsReceived.toString());
-    set('statAudioSent', stats.audioChunksSent.toString());
-    set('statVideoSent', stats.videoFramesSent.toString());
-    set('statVideoPackets', stats.videoPacketsReceived.toString());
-    set('statTotalFrames', stats.totalVideoFrames.toString());
-    set('statSessionDuration', stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-');
-    set('statFps', stats.averageFps ? stats.averageFps.toString() : '-');
-    
-    set('statDownlink', stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-');
-    set('statRtt', stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-');
-    set('statConnType', stats.networkInfo?.type || '-');
-    
-    const setup = stats.setupDurationMs || 0;
-    const latency = stats.setupToFirstFrameDurationMs || 0;
-    const total = setup + latency;
+  const set = (id: string, val: string) => {
+    const fullId = id + suffix;
+    if (elements[fullId]) elements[fullId].textContent = val;
+  };
 
-    set('statTotalLatency', total.toString());
+  set(
+    'statSetupDuration',
+    stats.setupDurationMs ? stats.setupDurationMs.toString() : '-',
+  );
+  set(
+    'statLatency',
+    stats.setupToFirstFrameDurationMs
+      ? stats.setupToFirstFrameDurationMs.toString()
+      : '-',
+  );
+  set('statPacketsReceived', stats.packetsReceived.toString());
+  set('statAudioSent', stats.audioChunksSent.toString());
+  set('statVideoSent', stats.videoFramesSent.toString());
+  set('statVideoPackets', stats.videoPacketsReceived.toString());
+  set('statTotalFrames', stats.totalVideoFrames.toString());
+  set(
+    'statSessionDuration',
+    stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-',
+  );
+  set('statFps', stats.averageFps ? stats.averageFps.toString() : '-');
+  set(
+    'statDownlink',
+    stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-',
+  );
+  set(
+    'statRtt',
+    stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-',
+  );
+  set('statConnType', stats.networkInfo?.type || '-');
 
-    if (!suffix && elements.barSetup && elements.barLatency && total > 0) {
-        const setupPct = (setup / total) * 100;
-        const latencyPct = (latency / total) * 100;
+  const setup = stats.setupDurationMs || 0;
+  const latency = stats.setupToFirstFrameDurationMs || 0;
+  const total = setup + latency;
 
-        elements.barSetup.style.width = `${setupPct}%`;
-        elements.barSetup.textContent = setup > 0 ? `${setup}ms` : "";
+  set('statTotalLatency', total.toString());
 
-        elements.barLatency.style.width = `${latencyPct}%`;
-        elements.barLatency.textContent = latency > 0 ? `${latency}ms` : "";
-    }
+  if (!suffix && elements.barSetup && elements.barLatency && total > 0) {
+    const setupPct = (setup / total) * 100;
+    const latencyPct = (latency / total) * 100;
+
+    elements.barSetup.style.width = `${setupPct}%`;
+    elements.barSetup.textContent = setup > 0 ? `${setup}ms` : '';
+
+    elements.barLatency.style.width = `${latencyPct}%`;
+    elements.barLatency.textContent = latency > 0 ? `${latency}ms` : '';
+  }
 }

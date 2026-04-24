@@ -1,2 +1,2 @@
-.husky/check-file-size.sh
+npm run lint
 npm test
