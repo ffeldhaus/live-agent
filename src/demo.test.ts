@@ -56,28 +56,24 @@ describe('Demo App', () => {
       createMediaStreamSource: vi
         .fn()
         .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
-      createGain: vi
-        .fn()
-        .mockReturnValue({
-          gain: {value: 1},
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        }),
+      createGain: vi.fn().mockReturnValue({
+        gain: {value: 1},
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+      }),
       createMediaElementSource: vi
         .fn()
         .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
       createMediaStreamDestination: vi.fn().mockReturnValue({
         stream: {
-          getTracks: vi
-            .fn()
-            .mockReturnValue([
-              {
-                kind: 'audio',
-                label: 'mock-track',
-                enabled: true,
-                readyState: 'live',
-              },
-            ]),
+          getTracks: vi.fn().mockReturnValue([
+            {
+              kind: 'audio',
+              label: 'mock-track',
+              enabled: true,
+              readyState: 'live',
+            },
+          ]),
         },
       }),
       destination: {},
@@ -177,7 +173,7 @@ describe('Demo App', () => {
 
   it('should update avatar-name attribute on start', async () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
-    const startSpy = vi.spyOn(avatar, 'start').mockResolvedValue(undefined);
+    vi.spyOn(avatar, 'start').mockResolvedValue(undefined);
     vi.spyOn(avatar, 'isConnected', 'get').mockReturnValue(false);
 
     const avatarNameSelect = document.getElementById(
@@ -254,7 +250,7 @@ describe('Demo App', () => {
     avatar.dispatchEvent(
       new CustomEvent('avatar-setup-error', {
         detail: {error: new Error('test')},
-      })
+      }),
     );
 
     expect(alertSpy).toHaveBeenCalledWith(

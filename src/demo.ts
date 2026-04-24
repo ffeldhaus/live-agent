@@ -1,14 +1,7 @@
 import {GeminiAvatar} from './gemini-avatar';
 import {AVATAR_PRESETS, VOICE_PRESETS} from './constants';
 import {qaScenarios} from './walkthrough-data';
-import {
-  generateContent,
-  updateBackground,
-  applyTheme,
-  applyAvatarTheme,
-  downloadBlob,
-  updateStats,
-} from './demo-helpers';
+import {generateContent, applyAvatarTheme, updateStats} from './demo-helpers';
 import {
   handleImageGeneration,
   handleCameraCapture,
@@ -39,9 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const {
     avatar,
     tokenInput,
-    userName,
-    userAvatar,
-    userProfile,
     googleSignInBtn,
     projectIdInput,
     locationInput,
@@ -78,17 +68,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderOutsideToggle,
     externalTranscriptSection,
     externalTranscript,
-    externalChatInput,
     externalSendBtn,
-    barSetup,
-    barLatency,
-    statTotalLatency,
     cameraBtn,
     uploadBtn,
     enableGrounding,
     cameraModal,
     cameraVideo,
-    cameraVideoContainer,
     captureBtn,
     closeCameraBtn,
     customAvatarName,
@@ -103,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
     luckyImageBtn,
     streamBtn,
     enableSessionResumption,
-    bgImagePrompt,
     luckyBgPromptBtn,
     bgImageUrl,
     clearBgBtn,
@@ -112,8 +96,6 @@ document.addEventListener('DOMContentLoaded', () => {
     generateBgBtn,
     generateImageBtn,
     saveBtn,
-    sendBtn,
-    textInput,
     copyHtmlBtn,
     expandBtn,
     configContainer,
@@ -144,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.statCpuPressure.style.color = '#ef4444';
         }
       },
-      {sampleInterval: 1000}
+      {sampleInterval: 1000},
     );
 
     try {
@@ -434,10 +416,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const isCollapsed = configContainer.classList.toggle('hidden');
 
       if (isCollapsed) {
-        expandBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
+        expandBtn.innerHTML =
+          '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>';
         expandBtn.title = 'Expand Configuration';
       } else {
-        expandBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>';
+        expandBtn.innerHTML =
+          '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>';
         expandBtn.title = 'Collapse Configuration';
       }
     };
@@ -627,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
     validateForm();
   });
 
-  avatar.addEventListener('avatar-setup-error', (e: any) => {
+  avatar.addEventListener('avatar-setup-error', () => {
     const userName = store.userName || 'The current user';
     const projectName = store.projectId || 'the project';
     alert(
@@ -939,7 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const finalUrl =
           isLocal && url.startsWith('http')
             ? `/proxy?url=${encodeURIComponent(url)}`
-
+            : url;
 
         document.body.style.backgroundImage = `url(${finalUrl})`;
         document.body.style.backgroundRepeat = 'no-repeat';
@@ -998,8 +982,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const name = avatarNameSelect.value;
       const voice = voiceSelect.value;
       const preset = (AVATAR_PRESETS as any)[name];
-      let texture = preset ? preset.texture : 'nice and random';
-      let mood = preset ? preset.mood : 'pleasant and engaging';
+      const texture = preset ? preset.texture : 'nice and random';
+      const mood = preset ? preset.mood : 'pleasant and engaging';
 
       const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. The avatar has style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the persona description.`;
 
@@ -1032,8 +1016,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const persona = systemInstructionInput.value;
       const name = avatarNameSelect.value;
       const preset = (AVATAR_PRESETS as any)[name];
-      let texture = preset ? preset.texture : 'custom';
-      let mood = preset ? preset.mood : 'pleasant';
+      const texture = preset ? preset.texture : 'custom';
+      const mood = preset ? preset.mood : 'pleasant';
 
       let prompt = '';
       if (persona) {
@@ -1071,8 +1055,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const persona = systemInstructionInput.value;
       const name = avatarNameSelect.value;
       const preset = (AVATAR_PRESETS as any)[name];
-      let texture = preset ? preset.texture : 'custom';
-      let mood = preset ? preset.mood : 'pleasant';
+      const texture = preset ? preset.texture : 'custom';
+      const mood = preset ? preset.mood : 'pleasant';
 
       let prompt = '';
       if (persona) {
@@ -1214,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
               (constraints.video as any).facingMode = 'user';
             }
 
-              await navigator.mediaDevices.getUserMedia(constraints);
+            await navigator.mediaDevices.getUserMedia(constraints);
             cameraVideo.srcObject = stream;
 
             // Labels might only be available AFTER getUserMedia!
@@ -1407,8 +1391,6 @@ document.addEventListener('DOMContentLoaded', () => {
     streamBtn.onclick = async () => {
       if (avatar.isConnected) {
         const savingVideo = saveVideoToggle.checked;
-        const recordingAudio = recordUserAudioCheckbox
-          ? recordUserAudioCheckbox.checked
 
         if (savingVideo) {
           streamBtn.textContent = 'Processing video...';
@@ -1452,14 +1434,13 @@ document.addEventListener('DOMContentLoaded', () => {
             'record-user-audio',
             recordUserAudioCheckbox.checked.toString(),
           );
+        }
 
         try {
           streamBtn.disabled = true;
           streamBtn.textContent = 'Connecting...';
 
-          const micStream = await navigator.mediaDevices.getUserMedia({
-
-          });
+          const micStream = await navigator.mediaDevices.getUserMedia({});
 
           const stream1 = avatar.getAudioOutputStream();
 
@@ -1495,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar2.setAttribute(
               'enable-session-resumption',
               elements.enableSessionResumption2.checked.toString(),
-
+            );
 
             stream2 = avatar2.getAudioOutputStream();
           }

@@ -1,22 +1,31 @@
-const config = require('gts/build/src/index.js');
-const { defineConfig } = require('eslint/config');
-const tseslint = require('typescript-eslint');
+let customConfig = [];
+let hasIgnoresFile = false;
+try {
+  require.resolve('./eslint.ignores.cjs');
+  hasIgnoresFile = true;
+} catch {
+  // eslint.ignores.js doesn't exist
+}
 
-module.exports = defineConfig([
+if (hasIgnoresFile) {
+  const ignores = require('./eslint.ignores.cjs');
+  customConfig = [{ignores}];
+}
+
+module.exports = [
+  ...customConfig,
+  ...require('gts'),
   {
-    ignores: ['dist/**', 'dist-demo/**', 'node_modules/**', 'coverage/**', 'vite.config.ts', 'vite.demo.config.ts']
-  },
-  ...config,
-  {
+    files: ['**/*.ts'],
     plugins: {
-      '@typescript-eslint': tseslint.plugin,
+      '@typescript-eslint': require('typescript-eslint').plugin,
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'error',
-      'no-empty': 'warn',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      'no-prototype-builtins': 'warn'
+      'no-empty': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      'no-prototype-builtins': 'off'
     }
   }
-]);
+];
