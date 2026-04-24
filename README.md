@@ -85,6 +85,8 @@ Add the `<gemini-avatar>` tag to your page:
 | `enable-chat-input` | Set to `"true"` to enable chat input field | No |
 | `render-transcript-outside` | Set to `"true"` to render transcript outside component | No |
 | `enable-grounding` | Set to `"true"` to enable Google Search Grounding | No |
+| `enable-session-resumption` | Set to `"false"` to disable session resumption (default: `"true"`) | No |
+| `use-mpegts` | Set to `"true"` to use mpegts.js fallback player | No |
 
 *
 
@@ -176,6 +178,7 @@ The demo app included in this repository demonstrates advanced usage of the web 
 -   **AI Image Generation**: Generate custom avatar images using the `gemini-3.1-flash-image-preview` model. It also uses `gemini-3-flash` to enhance your prompt for better results.
 -   **Session Statistics**: Real-time display of latency, frame rate, and packet counts.
 -   **Video Recording**: Download combined video and audio files of the session (processed via FFmpeg in the browser).
+-   **Multi-Avatar Interaction**: Support for adding a second avatar and cross-connecting their audio streams so they can talk to each other.
 
 ## Development
 
