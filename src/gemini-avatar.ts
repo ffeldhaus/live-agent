@@ -434,6 +434,7 @@ export class GeminiAvatar extends HTMLElement {
         break;
       case 'record-video':
         this.isRecordingVideo = newValue === 'true';
+        this.mediaManager?.setRecordingVideo(this.isRecordingVideo);
         this._log(
           `Video recording ${this.isRecordingVideo ? 'enabled' : 'disabled'}`,
         );
@@ -598,15 +599,8 @@ export class GeminiAvatar extends HTMLElement {
 
   public stop() {
     this._log('Stopping session...');
-    if (this.silenceInterval) {
-      clearInterval(this.silenceInterval);
-      this.silenceInterval = null;
-      this._log('Silence padding stopped');
-    }
-    if (this.micRecorder && this.micRecorder.state !== 'inactive') {
-      this.micRecorder.stop();
-      this._log('Microphone recording stopped');
-    }
+
+    this.mediaManager?.stopRecording();
     this.mediaManager?.stopVideoStreaming();
     this.mediaManager?.resetMediaSource();
     this.receivedFirstVideoFrame = false;
@@ -719,6 +713,14 @@ export class GeminiAvatar extends HTMLElement {
       averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
       networkInfo,
       chromaKeyDurationMs: this.chromaKeyDurationMs,
+    };
+  }
+
+  public getRecordingData() {
+    if (!this.mediaManager) return null;
+    return {
+      videoChunks: this.mediaManager.getRecordedChunks(),
+      micChunks: this.mediaManager.getMicChunks(),
     };
   }
 

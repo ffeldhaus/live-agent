@@ -13,7 +13,7 @@ export class MediaManager {
   private audioGainNode: GainNode | null = null;
   private nextPlaybackTime = 0;
   private audioDestination: MediaStreamAudioDestinationNode | null = null;
-  private recordedChunks: Blob[] = [];
+  private recordedChunks: ArrayBuffer[] = [];
   private mpegtsPlayer: any = null;
   private customVideoLoader: any = null;
   private receivedBytes = 0;
@@ -30,7 +30,6 @@ export class MediaManager {
   private videoInputInterval: any = null;
   private micRecorder: MediaRecorder | null = null;
   private micChunks: Blob[] = [];
-  private silenceInterval: any = null;
 
   // State
   private isMuted = false;
@@ -78,8 +77,10 @@ export class MediaManager {
   public setSetupComplete(value: boolean) {
     this.isSetupComplete = value;
     if (value && this.micRecorder && this.micRecorder.state === 'inactive') {
-      this.micRecorder.start();
-      this._log('Microphone recording started (Setup Complete)');
+      this.micRecorder.start(1000);
+      this._log(
+        'Microphone recording started (Setup Complete) with 1000ms slice',
+      );
     }
   }
 
@@ -340,6 +341,7 @@ export class MediaManager {
   }
 
   public async handleVideoDataChunk(base64Data: string, mimeType: string) {
+    void mimeType;
     try {
       this.checkFirstFrame();
       this.videoFramesReceived++;
@@ -350,8 +352,12 @@ export class MediaManager {
         bytes[i] = binaryString.charCodeAt(i);
 
       const arrayBuffer = bytes.buffer;
-      if (this.isRecordingVideo)
-        this.recordedChunks.push(new Blob([arrayBuffer], {type: mimeType}));
+      if (this.isRecordingVideo) {
+        this.recordedChunks.push(arrayBuffer);
+        this._log(
+          `Collected video chunk: ${arrayBuffer.byteLength} bytes, total: ${this.recordedChunks.length}`,
+        );
+      }
 
       if (this.sourceBuffer) {
         this.videoChunkQueue.push(arrayBuffer);
@@ -366,12 +372,17 @@ export class MediaManager {
   }
 
   public async handleVideoChunk(blob: Blob) {
-    if (this.isRecordingVideo) this.recordedChunks.push(blob);
-
     this.checkFirstFrame();
     this.videoFramesReceived++;
 
     const arrayBuffer = await blob.arrayBuffer();
+    if (this.isRecordingVideo) {
+      this.recordedChunks.push(arrayBuffer);
+      this._log(
+        `Collected video chunk (blob): ${arrayBuffer.byteLength} bytes, total: ${this.recordedChunks.length}`,
+      );
+    }
+
     if (this.sourceBuffer) {
       this.videoChunkQueue.push(arrayBuffer);
       this.processVideoQueue();
@@ -385,32 +396,6 @@ export class MediaManager {
       this.receivedFirstVideoFrame = true;
       this._log('First video frame received!');
       if (this.onFirstFrame) this.onFirstFrame();
-
-      if (!this.micStream && this.isRecordingVideo) {
-        this.startSilencePadding();
-      }
-    }
-  }
-
-  public startSilencePadding() {
-    this._log('Starting silence padding...');
-    const sampleRate = 16000;
-    const bufferSize = 2048;
-    const intervalMs = (bufferSize / sampleRate) * 1000;
-
-    this.silenceInterval = setInterval(() => {
-      if (this.isRecordingVideo) {
-        const pcmData = new Int16Array(bufferSize);
-        this.accumulatedPcmData.push(pcmData);
-      }
-    }, intervalMs);
-  }
-
-  public stopSilencePadding() {
-    if (this.silenceInterval) {
-      clearInterval(this.silenceInterval);
-      this.silenceInterval = null;
-      this._log('Silence padding stopped');
     }
   }
 
@@ -430,8 +415,6 @@ export class MediaManager {
         });
         this.isExternalMicStream = false;
       }
-
-      this.stopSilencePadding();
 
       if (!this.audioContext) {
         this.audioContext = new (
@@ -573,11 +556,13 @@ export class MediaManager {
   }
 
   public setupMicRecorder() {
-    if (this.isRecordingVideo && this.micStream) {
+    if (this.isRecordingVideo && this.micStream && this.audioContext) {
       this.micChunks = [];
-      this.accumulatedPcmData = [];
-      this.accumulatedOutputPcmData = [];
-      this.micRecorder = new MediaRecorder(this.micStream);
+
+      const micDestination = this.audioContext.createMediaStreamDestination();
+      this.micGain?.connect(micDestination);
+
+      this.micRecorder = new MediaRecorder(micDestination.stream);
       this.micRecorder.ondataavailable = e => {
         if (e.data.size > 0) {
           this.micChunks.push(e.data);
@@ -585,8 +570,10 @@ export class MediaManager {
       };
 
       if (this.isSetupComplete && this.micRecorder.state === 'inactive') {
-        this.micRecorder.start();
-        this._log('Microphone recording started (Setup Complete)');
+        this.micRecorder.start(1000);
+        this._log(
+          'Microphone recording started (Setup Complete) with 1000ms slice',
+        );
       }
     }
   }
@@ -662,6 +649,17 @@ export class MediaManager {
 
   public setMicRecorder(recorder: MediaRecorder | null) {
     this.micRecorder = recorder;
+  }
+
+  public stopRecording() {
+    if (this.micRecorder && this.micRecorder.state !== 'inactive') {
+      this.micRecorder.stop();
+      this._log('Microphone recording stopped');
+    }
+  }
+
+  public getMicChunks() {
+    return this.micChunks;
   }
 
   private float32ToInt16(float32Array: Float32Array): Int16Array {

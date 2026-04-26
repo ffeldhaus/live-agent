@@ -22,6 +22,7 @@ import {
 import {loadSettings, saveSettings} from './settings';
 import {queryElements} from './demo-elements';
 import {setupAvatar2} from './demo-avatar2';
+import {processAndDownloadVideo} from './video-recorder';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Demo script started');
@@ -43,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     voiceSelect,
     languageSelect,
     saveVideoToggle,
+    saveVideoToggle2,
     debugToggle,
-    recordUserAudioCheckbox,
     micAutoRequestToggle,
     ctrlMic,
     ctrlCamera,
@@ -155,8 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
     size: '300px',
     position: 'top-right',
     saveVideo: false,
+    saveVideo2: false,
     debug: false,
-    recordUserAudio: false,
+    recordUserAudio: true,
     micAutoRequest: true,
     ctrlMic: true,
     ctrlCamera: true,
@@ -967,6 +969,20 @@ document.addEventListener('DOMContentLoaded', () => {
         enableSessionResumption.checked.toString(),
       );
 
+  if (saveVideoToggle) {
+    saveVideoToggle.onchange = () =>
+      avatar.setAttribute('record-video', saveVideoToggle.checked.toString());
+  }
+  if (saveVideoToggle2) {
+    saveVideoToggle2.onchange = () => {
+      if (avatar2)
+        avatar2.setAttribute(
+          'record-video',
+          saveVideoToggle2.checked.toString(),
+        );
+    };
+  }
+
   if (renderOutsideToggle) {
     renderOutsideToggle.onchange = () => {
       avatar.setAttribute(
@@ -1442,8 +1458,7 @@ document.addEventListener('DOMContentLoaded', () => {
   store.position = positionSelect.value;
   store.saveVideo = saveVideoToggle.checked;
   store.debug = debugToggle.checked;
-  if (recordUserAudioCheckbox)
-    store.recordUserAudio = recordUserAudioCheckbox.checked;
+  store.recordUserAudio = true;
   if (micAutoRequestToggle) store.micAutoRequest = micAutoRequestToggle.checked;
   store.ctrlMic = ctrlMic.checked;
   store.ctrlCamera = ctrlCamera.checked;
@@ -1472,16 +1487,51 @@ document.addEventListener('DOMContentLoaded', () => {
     streamBtn.onclick = async () => {
       if (avatar.isConnected) {
         const savingVideo = saveVideoToggle.checked;
+        const savingVideo2 = saveVideoToggle2
+          ? saveVideoToggle2.checked
+          : false;
 
-        if (savingVideo) {
+        if (savingVideo || savingVideo2) {
           streamBtn.textContent = 'Processing video...';
           streamBtn.disabled = true;
         }
+
+        const recordingData1 = avatar.getRecordingData();
+        const recordingData2 =
+          avatar2 && isAvatar2Active ? avatar2.getRecordingData() : null;
 
         await avatar.stop();
 
         if (avatar2 && isAvatar2Active) {
           await avatar2.stop();
+        }
+
+        if (savingVideo && recordingData1) {
+          const mimeType = 'video/mp4';
+          await processAndDownloadVideo(
+            recordingData1.videoChunks,
+            recordingData1.micChunks,
+            avatar.getAttribute('position') || 'top-right',
+            recordingData2 ? recordingData2.videoChunks : undefined,
+            avatar2 ? avatar2.getAttribute('position') : undefined,
+            mimeType,
+            'avatar1_session.mp4',
+          );
+        }
+
+        if (savingVideo2 && recordingData2) {
+          const mimeType = 'video/mp4';
+          await processAndDownloadVideo(
+            recordingData2.videoChunks,
+            recordingData1
+              ? recordingData1.micChunks
+              : recordingData2.micChunks,
+            avatar2!.getAttribute('position') || 'top-left',
+            recordingData1 ? recordingData1.videoChunks : undefined,
+            avatar.getAttribute('position') || 'top-right',
+            mimeType,
+            'avatar2_session.mp4',
+          );
         }
 
         streamBtn.textContent = 'Start';
@@ -1510,12 +1560,7 @@ document.addEventListener('DOMContentLoaded', () => {
           'enable-session-resumption',
           enableSessionResumption.checked.toString(),
         );
-        if (recordUserAudioCheckbox) {
-          avatar.setAttribute(
-            'record-user-audio',
-            recordUserAudioCheckbox.checked.toString(),
-          );
-        }
+        avatar.setAttribute('record-user-audio', 'true');
 
         try {
           streamBtn.disabled = true;
@@ -1549,12 +1594,9 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             avatar2.setAttribute(
               'record-video',
-              saveVideoToggle.checked.toString(),
+              saveVideoToggle2 ? saveVideoToggle2.checked.toString() : 'false',
             );
-            avatar2.setAttribute(
-              'record-user-audio',
-              recordUserAudioCheckbox.checked.toString(),
-            );
+            avatar2.setAttribute('record-user-audio', 'true');
             avatar2.setAttribute('debug', debugToggle.checked.toString());
             avatar2.setAttribute(
               'enable-session-resumption',

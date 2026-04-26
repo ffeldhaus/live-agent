@@ -92,6 +92,20 @@ export const qaScenarios = [
   },
   {
     id: '2.2',
+    title: 'Recording an Avatar Session',
+    description: 'Verify recording and downloading the session video.',
+    steps: [
+      'Enable "Save and download video session" in the Avatar section.',
+      'Start session, speak, and wait for avatar response.',
+      'Stop session.',
+    ],
+    verification: [
+      'Button shows "Processing video..." and is disabled.',
+      'A `.mp4` file is downloaded containing all audio streams.',
+    ],
+  },
+  {
+    id: '2.3',
     title: 'Microphone Mute & Silence Padding',
     description: 'Verify mic muting and timeline alignment.',
     steps: [
@@ -99,7 +113,7 @@ export const qaScenarios = [
       'Click the Microphone button on the component to mute.',
       'Speak into the microphone.',
       'Unmute and speak.',
-      'Stop session and download video (with user audio enabled).',
+      'Stop session.',
     ],
     verification: [
       'The Avatar does not respond when muted.',
@@ -108,7 +122,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '2.3',
+    id: '2.4',
     title: 'Camera & Screen Sharing',
     description: 'Verify camera and screen sharing activation.',
     steps: [
@@ -122,6 +136,58 @@ export const qaScenarios = [
   },
   {
     id: '3.1',
+    title: '2 Agents Interaction',
+    description:
+      "Verify that two agents work together (e.g., one agent's greeting triggers the other).",
+    steps: [
+      'Start session with both avatars enabled.',
+      'Avatar 1 speaks greeting.',
+    ],
+    verification: ['Avatar 2 responds to Avatar 1.'],
+  },
+  {
+    id: '3.2',
+    title: 'Avatar 2 Video Download',
+    description: 'Verify downloading Avatar 2 video.',
+    steps: [
+      'Enable "Save and download video session" in Avatar 2 section.',
+      'Start session and interact.',
+      'Stop session.',
+    ],
+    verification: ['A `.mp4` file is downloaded for Avatar 2.'],
+  },
+  {
+    id: '3.3',
+    title: 'Avatar 2 Microphone Mute & Silence Padding',
+    description: 'Verify mic muting and timeline alignment for Avatar 2.',
+    steps: [
+      'Start a session.',
+      'Click the Microphone button on Avatar 2 to mute.',
+      'Speak into the microphone.',
+      'Unmute and speak.',
+      'Stop session.',
+    ],
+    verification: [
+      'Avatar 2 does not respond when muted.',
+      'Avatar 2 responds when unmuted.',
+      'The recorded user audio has silence in the muted segment, maintaining alignment.',
+    ],
+  },
+  {
+    id: '3.4',
+    title: 'Avatar 2 Camera & Screen Sharing',
+    description: 'Verify camera and screen sharing activation for Avatar 2.',
+    steps: [
+      'Start a session.',
+      'Click the Camera or Screen Share button on Avatar 2.',
+    ],
+    verification: [
+      'Permissions are requested if not already granted.',
+      'Button changes state to active.',
+    ],
+  },
+  {
+    id: '4.1',
     title: 'Persistence across page reload',
     description: 'Verify settings are saved and restored.',
     steps: [
@@ -132,7 +198,7 @@ export const qaScenarios = [
     verification: ['All settings are restored to the UI controls.'],
   },
   {
-    id: '3.2',
+    id: '4.2',
     title: 'Dynamic Size & Position',
     description: 'Verify immediate update of size and position.',
     steps: ['Change Size or Position in the form while session is active.'],
@@ -141,7 +207,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '3.3',
+    id: '4.3',
     title: 'Session Resumption',
     description: 'Verify session resumption behavior.',
     steps: [
@@ -154,7 +220,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '4.1',
+    id: '5.1',
     title: 'Combined Video & Audio Download',
     description: 'Verify FFmpeg muxing and panned audio.',
     steps: [
@@ -170,7 +236,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '4.2',
+    id: '5.2',
     title: 'Fallback on Failure',
     description: 'Verify fallback behavior when FFmpeg fails.',
     steps: [
@@ -183,7 +249,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '5.1',
+    id: '6.1',
     title: 'System Instructions (Persona)',
     description: 'Verify custom persona behavior.',
     steps: [
@@ -194,7 +260,7 @@ export const qaScenarios = [
     verification: ['Avatar responds in character.'],
   },
   {
-    id: '5.2',
+    id: '6.2',
     title: 'Default Greeting',
     description: 'Verify automatic greeting on start.',
     steps: ['Enter a greeting: "Welcome aboard!".', 'Click "Start".'],
@@ -203,14 +269,14 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '5.3',
+    id: '6.3',
     title: '"I\'m feeling lucky" Generation',
     description: 'Verify AI generation of persona and greeting.',
     steps: ['Click "I\'m feeling lucky" next to Persona or Greeting.'],
     verification: ['Field is populated with generated text.'],
   },
   {
-    id: '5.4',
+    id: '6.4',
     title: 'Image Generation',
     description: 'Verify custom avatar image generation.',
     steps: [
@@ -223,7 +289,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '5.5',
+    id: '6.5',
     title: 'Custom Avatar Creation',
     description: 'Verify camera capture and auto-improvement.',
     steps: [
@@ -237,7 +303,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '6.1',
+    id: '7.1',
     title: 'Real-time Stats',
     description: 'Verify statistics display.',
     steps: ['Start a session.', 'Watch the "Session Statistics" panel.'],
@@ -248,7 +314,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '6.2',
+    id: '7.2',
     title: 'Latency Visualizer',
     description: 'Verify visual latency bar.',
     steps: ['Start a session.', 'Watch the latency bar in Statistics.'],
@@ -258,7 +324,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '7.1',
+    id: '8.1',
     title: 'Background Removal',
     description: 'Verify Chroma Keying.',
     steps: [
@@ -269,7 +335,7 @@ export const qaScenarios = [
     verification: ['The green background disappears.'],
   },
   {
-    id: '8.1',
+    id: '9.1',
     title: 'External Transcript',
     description: 'Verify rendering transcript outside the component.',
     steps: [
@@ -283,7 +349,7 @@ export const qaScenarios = [
     ],
   },
   {
-    id: '9.1',
+    id: '10.1',
     title: 'Google Search Grounding',
     description: 'Verify enabling search grounding.',
     steps: [
@@ -294,7 +360,7 @@ export const qaScenarios = [
     verification: ['Avatar provides accurate, grounded answer.'],
   },
   {
-    id: '10.1',
+    id: '11.1',
     title: 'Audio Only Mode',
     description: 'Verify operation in audio-only mode.',
     steps: [

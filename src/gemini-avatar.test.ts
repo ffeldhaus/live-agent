@@ -206,6 +206,7 @@ describe('GeminiAvatar', () => {
       stopMic: vi.fn(),
       stopVideoStreaming: vi.fn(),
       resetMediaSource: vi.fn(),
+      stopRecording: vi.fn(),
     };
     anyEl.tryConnect = vi.fn().mockResolvedValue(undefined);
 

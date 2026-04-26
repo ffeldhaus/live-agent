@@ -10,6 +10,9 @@ export function queryElements() {
   const saveVideoToggle = document.getElementById(
     'saveVideoToggle',
   ) as HTMLInputElement;
+  const saveVideoToggle2 = document.getElementById(
+    'saveVideoToggle2',
+  ) as HTMLInputElement;
   const debugToggle = document.getElementById(
     'debugToggle',
   ) as HTMLInputElement;
@@ -356,6 +359,7 @@ export function queryElements() {
     voiceSelect,
     languageSelect,
     saveVideoToggle,
+    saveVideoToggle2,
     debugToggle,
     recordUserAudioCheckbox,
     micAutoRequestToggle,
