@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     string,
     {image: string; originalImage?: string; type: 'custom'; palette?: string[]}
   > = {};
+  let detectedPalette: string[] = [];
   const {
     avatar,
     tokenInput,
@@ -345,7 +346,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (cameraBtn) cameraBtn.disabled = !isValidForCustom;
     if (uploadBtn) uploadBtn.disabled = !isValidForCustom;
-    if (generateImageBtn) generateImageBtn.disabled = !isValidForCustom;
+    if (generateImageBtn) {
+      const hasPrompt = imagePromptInput.value.trim().length > 0;
+      generateImageBtn.disabled = !(isValidForCustom && hasPrompt);
+    }
 
     // Update tooltips
     const missingGeneral = [];
@@ -432,6 +436,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ctrlSettings && ctrlSettings.checked) list.push('settings');
     avatar.setAttribute('visible-controls', list.join(','));
   };
+
+  const updateVideoContainerWidth = () => {
+    const modal = document.getElementById('cameraModal');
+    if (modal && modal.classList.contains('active')) {
+      const container = document.getElementById('cameraVideoContainer');
+      if (container) {
+        const height = container.offsetHeight;
+        const width = height * (704 / 1280);
+        container.style.width = `${width}px`;
+      }
+    }
+  };
+
+  window.addEventListener('resize', updateVideoContainerWidth);
 
   // Listeners
   if (expandBtn) {
@@ -720,6 +738,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(pollValidation, 500);
   }
   pollValidation();
+
+  if (imagePromptInput) {
+    imagePromptInput.addEventListener('input', () => {
+      store.imagePrompt = imagePromptInput.value;
+      validateForm();
+    });
+  }
 
   if (customAvatarName) {
     customAvatarName.addEventListener('input', () => {
@@ -1201,6 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraBtn.onclick = async () => {
       if (cameraModal && cameraVideo) {
         cameraModal.classList.add('active');
+
         // Wait for layout to finish before reading offsetHeight
         setTimeout(updateVideoContainerWidth, 0);
 
@@ -1259,7 +1285,8 @@ document.addEventListener('DOMContentLoaded', () => {
               (constraints.video as any).facingMode = 'user';
             }
 
-            await navigator.mediaDevices.getUserMedia(constraints);
+            const stream =
+              await navigator.mediaDevices.getUserMedia(constraints);
             cameraVideo.srcObject = stream;
 
             // Labels might only be available AFTER getUserMedia!

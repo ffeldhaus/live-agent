@@ -509,6 +509,7 @@ export class GeminiAvatar extends HTMLElement {
     if (!preset && customUrl) {
       this.previewImg.src = customUrl;
       this.previewImg.style.display = shouldChromaKey ? 'none' : 'block';
+      this.updateChromaKeyState();
       return;
     }
 

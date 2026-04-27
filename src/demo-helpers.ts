@@ -10,6 +10,7 @@ export async function generateContent(
   token: string,
   inlineData?: {mimeType: string; data: string},
   label?: string,
+  generationConfig?: any,
 ) {
   if (!project || !token) {
     throw new Error(
@@ -44,6 +45,7 @@ export async function generateContent(
     },
     body: JSON.stringify({
       contents: [{role: 'user', parts}],
+      ...(generationConfig ? {generationConfig} : {}),
     }),
   });
 

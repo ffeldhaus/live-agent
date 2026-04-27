@@ -40,34 +40,27 @@ export async function handleImageGeneration(
 
   try {
     elements.generateImageBtn.disabled = true;
-    elements.generateImageBtn.textContent = 'Enhancing...';
-
-    // 1. Enhance prompt with gemini-3-flash-preview
-    const enhancePrompt = `Enhance this image generation prompt to follow best practices (add details, style, lighting, etc.): "${userPrompt}". Return only the enhanced prompt text.`;
-    const enhanceData = await generateContent(
-      'gemini-3-flash-preview',
-      enhancePrompt,
-      project,
-      location,
-      token,
-      undefined,
-      'Avatar Prompt Enhancement',
-    );
-    const enhancedPrompt =
-      enhanceData.candidates[0].content.parts[0].text.trim();
-    console.log('Enhanced Prompt:', enhancedPrompt);
-
     elements.generateImageBtn.textContent = 'Generating...';
 
     // Add background settings and resolution to prompt!
-    let finalPrompt = enhancedPrompt + ', resolution 704x1280 in PNG format';
-    if (useChromaKey && keyColor !== 'disabled') {
-      finalPrompt += ` with a solid ${keyColor} background.`;
+    // Add background settings to prompt!
+    let finalPrompt = userPrompt;
+    if (keyColor !== 'disabled') {
+      let colorCode = '#00FF00';
+      if (keyColor === 'blue') colorCode = '#0000FF';
+      finalPrompt += `. Ensure the background is a solid uniform color with hex code ${colorCode} (pure ${keyColor}), suitable for chroma keying.`;
     } else {
-      finalPrompt += ' with a nice, unobtrusive uniform background.';
+      finalPrompt += '. Use a nice, unobtrusive uniform background.';
     }
 
     // 2. Generate image with gemini-3.1-flash-image-preview
+    const generationConfig = {
+      imageConfig: {
+        aspectRatio: '9:16',
+        imageSize: '1K',
+      },
+    };
+
     const data = await generateContent(
       'gemini-3.1-flash-image-preview',
       finalPrompt,
@@ -76,6 +69,7 @@ export async function handleImageGeneration(
       token,
       undefined,
       'Avatar Image Generation',
+      generationConfig,
     );
 
     console.log('Image Gen Response:', data);
@@ -85,68 +79,61 @@ export async function handleImageGeneration(
 
     if (part && part.inlineData && part.inlineData.data) {
       const base64 = part.inlineData.data;
-      elements.generatedImg.src = `data:${part.inlineData.mimeType};base64,${base64}`;
+      const dataUrl = `data:${part.inlineData.mimeType};base64,${base64}`;
+
+      // Load image to process
+      const img = new Image();
+      await new Promise(resolve => {
+        img.onload = resolve;
+        img.src = dataUrl;
+      });
+
+      // Step 1: Downscale to 706x1280
+      const canvas1 = document.createElement('canvas');
+      canvas1.width = 706;
+      canvas1.height = 1280;
+      const ctx1 = canvas1.getContext('2d');
+      if (ctx1) {
+        ctx1.drawImage(img, 0, 0, 706, 1280);
+      }
+
+      // Step 2: Crop to 704x1280 (center crop)
+      const canvas2 = document.createElement('canvas');
+      canvas2.width = 704;
+      canvas2.height = 1280;
+      const ctx2 = canvas2.getContext('2d');
+      if (ctx2 && ctx1) {
+        // Crop 1 pixel from left and right (source x=1, width=704)
+        ctx2.drawImage(canvas1, 1, 0, 704, 1280, 0, 0, 704, 1280);
+      }
+
+      const finalUrl = canvas2.toDataURL('image/png');
+
+      elements.generatedImg.src = finalUrl;
       elements.generatedImageContainer.style.display = 'block';
+
+      const originalImgContainer = document.getElementById(
+        'originalImgContainer',
+      );
+      const generatedImageLabel = document.getElementById(
+        'generatedImageLabel',
+      );
+      if (originalImgContainer) originalImgContainer.style.display = 'none';
+      if (generatedImageLabel)
+        generatedImageLabel.textContent = 'Generated Image';
+
       if (elements.customAvatarName)
         elements.customAvatarName.dispatchEvent(new Event('input'));
 
-      let finalUrl = elements.generatedImg.src;
-
-      // Apply transparency via canvas if needed!
-      if (
-        useChromaKey &&
-        bgColor === 'transparent' &&
-        keyColor !== 'disabled'
-      ) {
-        const img = new Image();
-        img.onload = () => {
-          const canv = document.createElement('canvas');
-          canv.width = img.width;
-          canv.height = img.height;
-          const cx = canv.getContext('2d');
-          if (cx) {
-            cx.drawImage(img, 0, 0);
-            const imgData = cx.getImageData(0, 0, canv.width, canv.height);
-            const data = imgData.data;
-
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-
-              if (keyColor === 'green' && g > r && g > b) {
-                data[i + 3] = 0; // Transparent!
-              } else if (keyColor === 'blue' && b > r && b > g) {
-                data[i + 3] = 0; // Transparent!
-              }
-            }
-            cx.putImageData(imgData, 0, 0);
-            finalUrl = canv.toDataURL('image/png');
-            elements.generatedImg.src = finalUrl;
-
-            // Update background preview and detect palette
-            updateBackground(
-              finalUrl,
-              (colors, speed) => {
-                applyTheme(colors, speed);
-                if (onColorsDetected) onColorsDetected(colors);
-              },
-              keyColor,
-            );
-          }
-        };
-        img.src = elements.generatedImg.src;
-      } else {
-        // Update background preview and detect palette
-        updateBackground(
-          finalUrl,
-          (colors, speed) => {
-            applyTheme(colors, speed);
-            if (onColorsDetected) onColorsDetected(colors);
-          },
-          keyColor,
-        );
-      }
+      // Update background preview and detect palette
+      updateBackground(
+        finalUrl,
+        (colors, speed) => {
+          applyTheme(colors, speed);
+          if (onColorsDetected) onColorsDetected(colors);
+        },
+        keyColor,
+      );
     } else {
       showMessageModal(
         'Error',
@@ -252,6 +239,13 @@ export async function handleCameraCapture(
     if (elements.originalImg) elements.originalImg.src = dataUrl;
     elements.generatedImg.src = dataUrl;
     elements.generatedImageContainer.style.display = 'block';
+    const originalImgContainer = document.getElementById(
+      'originalImgContainer',
+    );
+    const generatedImageLabel = document.getElementById('generatedImageLabel');
+    if (originalImgContainer) originalImgContainer.style.display = 'block';
+    if (generatedImageLabel) generatedImageLabel.textContent = 'Improved';
+
     if (elements.customAvatarName)
       elements.customAvatarName.dispatchEvent(new Event('input'));
 
@@ -269,8 +263,10 @@ export async function handleCameraCapture(
         let instruction =
           "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-        if (useChromaKey && keyColor !== 'disabled') {
-          instruction += ` Replace the background with a solid ${keyColor} color.`;
+        if (keyColor !== 'disabled') {
+          let colorCode = '#00FF00';
+          if (keyColor === 'blue') colorCode = '#0000FF';
+          instruction += `. Replace the background with a solid uniform color with hex code ${colorCode} (pure ${keyColor}), suitable for chroma keying.`;
         } else {
           instruction += ' Use a nice, unobtrusive uniform background.';
         }
@@ -365,6 +361,13 @@ export async function handleUpload(
     if (elements.originalImg) elements.originalImg.src = dataUrl;
     elements.generatedImg.src = dataUrl;
     elements.generatedImageContainer.style.display = 'block';
+    const originalImgContainer = document.getElementById(
+      'originalImgContainer',
+    );
+    const generatedImageLabel = document.getElementById('generatedImageLabel');
+    if (originalImgContainer) originalImgContainer.style.display = 'block';
+    if (generatedImageLabel) generatedImageLabel.textContent = 'Improved';
+
     if (elements.customAvatarName)
       elements.customAvatarName.dispatchEvent(new Event('input'));
 
@@ -382,8 +385,10 @@ export async function handleUpload(
         let instruction =
           "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-        if (useChromaKey && keyColor !== 'disabled') {
-          instruction += ` Replace the background with a solid ${keyColor} color.`;
+        if (keyColor !== 'disabled') {
+          let colorCode = '#00FF00';
+          if (keyColor === 'blue') colorCode = '#0000FF';
+          instruction += `. Replace the background with a solid uniform color with hex code ${colorCode} (pure ${keyColor}), suitable for chroma keying.`;
         } else {
           instruction += ' Use a nice, unobtrusive uniform background.';
         }
@@ -517,8 +522,10 @@ export async function handleImageImprovement(
     let instruction =
       "Improve this photo for a professional avatar profile picture. Follow best practices for lighting, clarity, and style. Output resolution must be 704x1280 in PNG format. Do NOT modify the person's features (e.g., hair, face, eyes).";
 
-    if (useChromaKey && keyColor !== 'disabled') {
-      instruction += ` Replace the background with a solid ${keyColor} color.`;
+    if (keyColor !== 'disabled') {
+      let colorCode = '#00FF00';
+      if (keyColor === 'blue') colorCode = '#0000FF';
+      instruction += `. Replace the background with a solid uniform color with hex code ${colorCode} (pure ${keyColor}), suitable for chroma keying.`;
     } else {
       instruction += ' Use a nice, unobtrusive uniform background.';
     }
