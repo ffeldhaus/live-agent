@@ -271,14 +271,16 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
 
   set('statTotalLatency', total.toString());
 
-  if (!suffix && elements.barSetup && elements.barLatency && total > 0) {
+  const barSetupEl = elements['barSetup' + suffix];
+  const barLatencyEl = elements['barLatency' + suffix];
+  if (barSetupEl && barLatencyEl && total > 0) {
     const setupPct = (setup / total) * 100;
     const latencyPct = (latency / total) * 100;
 
-    elements.barSetup.style.width = `${setupPct}%`;
-    elements.barSetup.textContent = setup > 0 ? `${setup}ms` : '';
+    barSetupEl.style.width = `${setupPct}%`;
+    barSetupEl.textContent = setup > 0 ? `${setup}ms` : '';
 
-    elements.barLatency.style.width = `${latencyPct}%`;
-    elements.barLatency.textContent = latency > 0 ? `${latency}ms` : '';
+    barLatencyEl.style.width = `${latencyPct}%`;
+    barLatencyEl.textContent = latency > 0 ? `${latency}ms` : '';
   }
 }

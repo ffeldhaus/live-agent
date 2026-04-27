@@ -303,6 +303,16 @@ export function queryElements() {
     'luckyGreetingBtn2',
   ) as HTMLButtonElement;
 
+  const statsAvatar2 = document.getElementById(
+    'statsAvatar2',
+  ) as HTMLDivElement;
+  const latencyBar2 = document.getElementById('latencyBar2') as HTMLDivElement;
+  const barSetup2 = document.getElementById('barSetup2') as HTMLDivElement;
+  const barLatency2 = document.getElementById('barLatency2') as HTMLDivElement;
+  const statTotalLatency2 = document.getElementById(
+    'statTotalLatency2',
+  ) as HTMLSpanElement;
+
   const statPacketsReceived2 = document.getElementById(
     'statPacketsReceived2',
   ) as HTMLSpanElement;
@@ -445,6 +455,11 @@ export function queryElements() {
     luckyPersonaBtn2,
     defaultGreeting2,
     luckyGreetingBtn2,
+    statsAvatar2,
+    latencyBar2,
+    barSetup2,
+    barLatency2,
+    statTotalLatency2,
     statPacketsReceived2,
     statAudioSent2,
     statVideoSent2,

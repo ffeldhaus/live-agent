@@ -501,6 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elements.avatar2Config) {
         elements.avatar2Config.style.display = 'block';
       }
+      if (elements.statsAvatar2) {
+        elements.statsAvatar2.style.display = 'block';
+      }
 
       isAvatar2Active = true;
       elements.addAvatarBtn.disabled = true;

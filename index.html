@@ -421,28 +421,64 @@
         <!-- Session Statistics -->
         <details open class="bg-slate-800/60 backdrop-blur-sm rounded-2xl p-5 mt-5">
             <summary class="cursor-pointer text-xl font-semibold text-slate-100 mb-3">Session Statistics</summary>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
-                <!-- Latency Visualizer -->
-                <div class="sm:col-span-2 flex items-center gap-3 mt-2">
-                    <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
-                    <div id="latencyBar" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
-                        <div id="barSetup" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
-                        <div id="barLatency" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
-                    </div>
-                    <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
+            
+            <!-- General Section -->
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">General</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                    <div>Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
+                    <div>RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
+                    <div>Connection Type: <span id="statConnType" class="font-medium text-slate-200">-</span></div>
+                    <div>CPU Pressure: <span id="statCpuPressure" class="font-medium text-slate-200">-</span></div>
                 </div>
-                <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span> / <span id="statPacketsReceived2" class="font-medium text-slate-200">0</span></div>
-                <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span> / <span id="statAudioSent2" class="font-medium text-slate-200">0</span></div>
-                <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span> / <span id="statVideoSent2" class="font-medium text-slate-200">0</span></div>
-                <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span> / <span id="statVideoPackets2" class="font-medium text-slate-200">0</span></div>
-                <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span> / <span id="statTotalFrames2" class="font-medium text-slate-200">0</span></div>
-                <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> / <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
-                <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span> / <span id="statFps2" class="font-medium text-slate-200">-</span></div>
-                <div>Transparency Calc: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> / <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
-                <div>CPU Pressure: <span id="statCpuPressure" class="font-medium text-slate-200">-</span></div>
-                <div>Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
-                <div>RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
-                <div>Connection Type: <span id="statConnType" class="font-medium text-slate-200">-</span></div>
+            </div>
+
+            <!-- Avatar 1 Section -->
+            <div id="statsAvatar1" class="mb-4">
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">Avatar 1</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                    <!-- Latency Visualizer -->
+                    <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+                        <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
+                        <div id="latencyBar" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
+                            <div id="barSetup" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barLatency" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
+                        </div>
+                        <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
+                    </div>
+                    <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span></div>
+                    <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span></div>
+                    <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span></div>
+                    <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span></div>
+                    <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span></div>
+                    <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
+                    <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span></div>
+                    <div>Transparency Calc: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> ms</div>
+                </div>
+            </div>
+
+            <!-- Avatar 2 Section -->
+            <div id="statsAvatar2" class="mb-4" style="display: none;">
+                <h3 class="text-lg font-semibold text-slate-200 mb-2">Avatar 2</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                    <!-- Latency Visualizer -->
+                    <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+                        <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
+                        <div id="latencyBar2" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
+                            <div id="barSetup2" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barLatency2" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
+                        </div>
+                        <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency2" class="font-medium text-slate-200">-</span> ms</div>
+                    </div>
+                    <div>Total Packets Received: <span id="statPacketsReceived2" class="font-medium text-slate-200">0</span></div>
+                    <div>Audio Chunks Sent: <span id="statAudioSent2" class="font-medium text-slate-200">0</span></div>
+                    <div>Video Frames Sent: <span id="statVideoSent2" class="font-medium text-slate-200">0</span></div>
+                    <div>Video Packets Received: <span id="statVideoPackets2" class="font-medium text-slate-200">0</span></div>
+                    <div>Total Video Frames: <span id="statTotalFrames2" class="font-medium text-slate-200">0</span></div>
+                    <div>Session Duration: <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
+                    <div>Average FPS: <span id="statFps2" class="font-medium text-slate-200">-</span></div>
+                    <div>Transparency Calc: <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
+                </div>
             </div>
         </details>
 
