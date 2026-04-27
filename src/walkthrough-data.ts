@@ -6,7 +6,7 @@ export const qaScenarios = [
     isDetailed: true,
     steps: [
       'Enter a valid Access Token in the input.',
-      'Change focus of the input (e.g., click outside the input).',
+      'Click the "Verify Token" button that appears (or change focus of the input).',
     ],
     verification: [
       'User information is loaded and displayed right beside Settings.',
@@ -20,7 +20,7 @@ export const qaScenarios = [
     isDetailed: true,
     steps: [
       'Enter an invalid Access Token in the input.',
-      'Change focus of the input (e.g., click outside the input).',
+      'Click the "Verify Token" button that appears (or change focus of the input).',
     ],
     verification: [
       'A modal appears with the title "Token Verification Failed".',
@@ -34,7 +34,8 @@ export const qaScenarios = [
     isDetailed: true,
     steps: [
       'Enter a valid OAuth Client ID in the form.',
-      'Click the "Sign in with Google" button that appears.',
+      'Observe that the "Sign in with Google" button appears immediately.',
+      'Click the "Sign in with Google" button.',
       'Complete the sign-in flow in the popup.',
       'Verify that your user avatar and name appear.',
       'Click "Start".',
@@ -53,7 +54,8 @@ export const qaScenarios = [
     steps: [
       'Enter a valid Access Token and verify buttons are enabled.',
       'Clear the Access Token input.',
-      'Change focus of the input.',
+      'Observe that the button text reverts to "Sign in with Google" and lucky buttons are disabled immediately.',
+      'Change focus of the input to complete clearing profile.',
     ],
     verification: [
       'User information is removed from the display.',
@@ -68,7 +70,7 @@ export const qaScenarios = [
     steps: [
       'Ensure a valid token is present.',
       'Clear the Project ID input.',
-      'Change focus of the input.',
+      'Observe that buttons requiring Project ID are disabled immediately.',
     ],
     verification: ['Buttons requiring Project ID are disabled.'],
   },
@@ -336,20 +338,6 @@ export const qaScenarios = [
   },
   {
     id: '9.1',
-    title: 'External Transcript',
-    description: 'Verify rendering transcript outside the component.',
-    steps: [
-      'Enable "Render Transcript Outside Component" in Avatar settings.',
-      'Start session.',
-      'Speak or send message.',
-    ],
-    verification: [
-      'Transcript appears in the section above Settings.',
-      'Internal transcript in component is hidden.',
-    ],
-  },
-  {
-    id: '10.1',
     title: 'Google Search Grounding',
     description: 'Verify enabling search grounding.',
     steps: [
@@ -360,7 +348,7 @@ export const qaScenarios = [
     verification: ['Avatar provides accurate, grounded answer.'],
   },
   {
-    id: '11.1',
+    id: '10.1',
     title: 'Audio Only Mode',
     description: 'Verify operation in audio-only mode.',
     steps: [

@@ -50,6 +50,8 @@ export async function handleImageGeneration(
       project,
       location,
       token,
+      undefined,
+      'Avatar Prompt Enhancement',
     );
     const enhancedPrompt =
       enhanceData.candidates[0].content.parts[0].text.trim();
@@ -72,6 +74,8 @@ export async function handleImageGeneration(
       project,
       location,
       token,
+      undefined,
+      'Avatar Image Generation',
     );
 
     console.log('Image Gen Response:', data);
@@ -278,6 +282,7 @@ export async function handleCameraCapture(
           location,
           token,
           {mimeType: 'image/png', data: base64Data},
+          'Camera Image Improvement',
         );
 
         console.log('Image Gen Response:', data);
@@ -390,6 +395,7 @@ export async function handleUpload(
           location,
           token,
           {mimeType: file.type, data: base64Data},
+          'Uploaded Image Improvement',
         );
 
         console.log('Image Gen Response:', data);
@@ -524,6 +530,7 @@ export async function handleImageImprovement(
       location,
       token,
       {mimeType: mimeType, data: base64Data},
+      'Image Improvement',
     );
 
     console.log('Image Gen Response:', data);
@@ -577,23 +584,14 @@ export async function handleBackgroundGeneration(
     elements.generateBgBtn.disabled = true;
     elements.generateBgBtn.textContent = 'Generating...';
 
-    const enhancePrompt = `Enhance this background image generation prompt: "${userPrompt}". Return only the enhanced prompt text.`;
-    const enhanceData = await generateContent(
-      'gemini-3-flash-preview',
-      enhancePrompt,
-      project,
-      location,
-      token,
-    );
-    const enhancedPrompt =
-      enhanceData.candidates[0].content.parts[0].text.trim();
-
     const data = await generateContent(
       'gemini-3.1-flash-image-preview',
-      enhancedPrompt,
+      userPrompt,
       project,
       location,
       token,
+      undefined,
+      'Background Image Generation',
     );
     const part = data.candidates[0].content.parts.find(
       (p: any) => p.inlineData,
@@ -666,6 +664,8 @@ export async function handleLuckyBgPrompt(
       elements.projectIdInput.value,
       elements.locationInput.value || 'us-central1',
       elements.tokenInput.value,
+      undefined,
+      'Lucky Background Prompt Generation',
     );
     const text = data.candidates[0].content.parts[0].text;
     elements.bgImagePrompt.value = text.trim();

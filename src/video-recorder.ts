@@ -10,6 +10,7 @@ export async function processAndDownloadVideo(
   avatar2Position?: string,
   videoMimeType: string = 'video/mp4',
   filename: string = 'avatar_session.mp4',
+  sherlogLink?: string,
 ) {
   console.log('Starting video processing...');
 
@@ -89,8 +90,13 @@ export async function processAndDownloadVideo(
       'copy',
       '-c:a',
       'aac',
-      'output.mp4',
     );
+
+    if (sherlogLink) {
+      execArgs.push('-metadata', `comment=Sherlog Link: ${sherlogLink}`);
+    }
+
+    execArgs.push('output.mp4');
 
     console.log('Running FFmpeg with args:', execArgs);
     await ffmpeg.exec(execArgs);

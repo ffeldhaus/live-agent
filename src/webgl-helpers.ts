@@ -110,7 +110,7 @@ export function detectKeyColor(
   }
   samplingCanvas.width = 16;
   samplingCanvas.height = 8;
-  const sCtx = samplingCanvas.getContext('2d');
+  const sCtx = samplingCanvas.getContext('2d', {willReadFrequently: true});
 
   let targetR = 0,
     targetG = 255,

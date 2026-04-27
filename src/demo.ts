@@ -67,10 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleQaBtn,
     enableTranscript,
     enableChatInput,
-    renderOutsideToggle,
-    externalTranscriptSection,
-    externalTranscript,
-    externalSendBtn,
     cameraBtn,
     uploadBtn,
     enableGrounding,
@@ -148,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const appState = {
     projectId: '',
     location: 'us-central1',
+    sherlogLink: '',
     accessToken: '',
     oauthClientId: '',
     avatarName: 'Kira',
@@ -175,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
     enableTranscript: false,
     enableChatInput: false,
     enableSessionResumption: false,
-    renderTranscriptOutside: false,
     enableGrounding: false,
     customAvatarName: '',
     tokenExpiry: 0,
@@ -191,12 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     },
   });
+
+  window.addEventListener('gemini-sherlog-link', (e: any) => {
+    store.sherlogLink = e.detail;
+  });
+
   let tokenClient: any = null;
   function initGoogleAuth() {
     const clientId = oauthClientIdInput.value.trim();
     if (!clientId) return;
     try {
-      // @ts-ignore
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope:
@@ -231,7 +231,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (googleSignInBtn) {
         googleSignInBtn.onclick = () => {
           console.log('Google Sign-in button clicked');
-          tokenClient.requestAccessToken();
+          if (tokenInput.value.trim()) {
+            tokenInput.dispatchEvent(new Event('change'));
+          } else {
+            tokenClient.requestAccessToken();
+          }
         };
       }
     } catch (e) {
@@ -291,13 +295,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const token = tokenInput.value.trim();
     const oauth = oauthClientIdInput.value.trim();
 
-    // Show/hide Google Sign-in button based on OAuth Client ID availability
-    if (googleSignInBtn) {
-      googleSignInBtn.classList.toggle('hidden', oauth.length === 0);
-    }
-
     const now = new Date().getTime();
     const isTokenValid = token.length > 0 && store.tokenExpiry > now;
+
+    // Show/hide Google Sign-in button based on OAuth Client ID or Token availability
+    if (googleSignInBtn) {
+      let showButton = false;
+      if (token.length > 0) {
+        showButton = !isTokenValid;
+      } else {
+        showButton = oauth.length > 0;
+      }
+      googleSignInBtn.classList.toggle('hidden', !showButton);
+
+      const span = googleSignInBtn.querySelector('span');
+      if (span) {
+        if (token.length > 0) {
+          span.textContent = 'Verify Token';
+        } else {
+          span.textContent = 'Sign in with Google';
+        }
+      }
+    }
 
     const isValid =
       project.length > 0 &&
@@ -587,10 +606,10 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.tokenErrorModal?.classList.remove('active');
     };
   }
-  oauthClientIdInput.addEventListener(
-    'input',
-    () => (store.oauthClientId = oauthClientIdInput.value),
-  );
+  oauthClientIdInput.addEventListener('input', () => {
+    store.oauthClientId = oauthClientIdInput.value;
+    validateForm();
+  });
   oauthClientIdInput.addEventListener('change', () => initGoogleAuth());
 
   if (saveBtn) {
@@ -617,7 +636,6 @@ document.addEventListener('DOMContentLoaded', () => {
       enableTranscript.checked = false;
       enableChatInput.checked = false;
       enableSessionResumption.checked = false;
-      renderOutsideToggle.checked = false;
       if (enableGrounding) enableGrounding.checked = false;
       systemInstructionInput.value = '';
 
@@ -659,11 +677,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Apply theme
       applyAvatarTheme('Kira', avatar, customAvatars, elements);
 
-      // Hide external transcript if needed
-      if (externalTranscriptSection) {
-        externalTranscriptSection.style.display = 'none';
-      }
-
       // Disable chroma key checkbox for presets (Kira is a preset)
       if (enableChromaKey) {
         enableChromaKey.disabled = true;
@@ -697,50 +710,6 @@ document.addEventListener('DOMContentLoaded', () => {
       'Setup Error',
       `Something went wrong. Likely causes: User ${userName} has no permission to use the Gemini Live model in project ${projectName}.`,
     );
-  });
-
-  avatar.addEventListener('transcript-item', (e: any) => {
-    const {sender, text} = e.detail;
-    if (
-      renderOutsideToggle &&
-      renderOutsideToggle.checked &&
-      externalTranscript
-    ) {
-      const lastChild = externalTranscript.lastElementChild;
-      if (lastChild && lastChild.getAttribute('data-sender') === sender) {
-        lastChild.innerHTML += ' ' + text;
-      } else {
-        const p = document.createElement('p');
-        p.setAttribute('data-sender', sender);
-        p.style.margin = '5px 0';
-        p.style.fontSize = '0.95rem';
-        p.style.padding = '5px 10px';
-        p.style.borderRadius = '8px';
-        p.style.maxWidth = '80%';
-        p.style.wordBreak = 'break-word';
-
-        const isUser = sender === 'User';
-        const icon = isUser ? '👤' : '🤖';
-
-        p.innerHTML = `<span>${icon}</span> ${text}`;
-
-        if (isUser) {
-          p.style.alignSelf = 'flex-end';
-          p.style.background = 'rgba(99, 102, 241, 0.3)';
-          p.style.marginLeft = 'auto';
-          p.style.color = '#f8fafc';
-        } else {
-          p.style.alignSelf = 'flex-start';
-          p.style.background = 'rgba(255, 255, 255, 0.1)';
-          p.style.marginRight = 'auto';
-          p.style.color = '#cbd5e1';
-        }
-
-        externalTranscript.appendChild(p);
-      }
-      // Scroll to bottom
-      externalTranscript.scrollTop = externalTranscript.scrollHeight;
-    }
   });
 
   function pollValidation() {
@@ -983,20 +952,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  if (renderOutsideToggle) {
-    renderOutsideToggle.onchange = () => {
-      avatar.setAttribute(
-        'render-transcript-outside',
-        renderOutsideToggle.checked.toString(),
-      );
-      if (externalTranscriptSection) {
-        externalTranscriptSection.style.display = renderOutsideToggle.checked
-          ? 'block'
-          : 'none';
-      }
-    };
-  }
-
   // Grounding Listener
   if (enableGrounding) {
     enableGrounding.onchange = () =>
@@ -1091,6 +1046,8 @@ document.addEventListener('DOMContentLoaded', () => {
           projectIdInput.value,
           locationInput.value || 'us-central1',
           tokenInput.value,
+          undefined,
+          'Lucky Persona Generation',
         );
         const text = data.candidates[0].content.parts[0].text;
         systemInstructionInput.value = text.trim();
@@ -1130,6 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
           projectIdInput.value,
           locationInput.value || 'us-central1',
           tokenInput.value,
+          undefined,
+          'Lucky Greeting Generation',
         );
         const text = data.candidates[0].content.parts[0].text;
         defaultGreetingInput.value = text.trim();
@@ -1169,6 +1128,8 @@ document.addEventListener('DOMContentLoaded', () => {
           projectIdInput.value,
           locationInput.value || 'us-central1',
           tokenInput.value,
+          undefined,
+          'Lucky Image Prompt Generation',
         );
         const text = data.candidates[0].content.parts[0].text;
         imagePromptInput.value = text.trim();
@@ -1429,8 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'data-tooltip',
       'Open or close the Feature Walkthrough panel.',
     );
-  if (externalSendBtn)
-    externalSendBtn.setAttribute('data-tooltip', 'Send message to the avatar.');
+
   if (newCustomAvatarBtn)
     newCustomAvatarBtn.setAttribute(
       'data-tooltip',
@@ -1474,7 +1434,6 @@ document.addEventListener('DOMContentLoaded', () => {
   store.backgroundColor = 'transparent';
   store.enableTranscript = enableTranscript.checked;
   store.enableChatInput = enableChatInput.checked;
-  store.renderTranscriptOutside = renderOutsideToggle.checked;
   if (enableGrounding) store.enableGrounding = enableGrounding.checked;
   if (customAvatarName) store.customAvatarName = customAvatarName.value;
 
@@ -1516,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar2 ? avatar2.getAttribute('position') : undefined,
             mimeType,
             'avatar1_session.mp4',
+            store.sherlogLink,
           );
         }
 
@@ -1531,6 +1491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar.getAttribute('position') || 'top-right',
             mimeType,
             'avatar2_session.mp4',
+            store.sherlogLink,
           );
         }
 

@@ -9,6 +9,7 @@ export async function generateContent(
   location: string,
   token: string,
   inlineData?: {mimeType: string; data: string},
+  label?: string,
 ) {
   if (!project || !token) {
     throw new Error(
@@ -45,6 +46,15 @@ export async function generateContent(
       contents: [{role: 'user', parts}],
     }),
   });
+
+  const sherlogLink = response.headers.get('x-goog-sherlog-link');
+  if (sherlogLink) {
+    const callLabel = label ? ` for ${label}` : '';
+    console.log(`Sherlog Link${callLabel}: ${sherlogLink}`);
+    window.dispatchEvent(
+      new CustomEvent('gemini-sherlog-link', {detail: sherlogLink}),
+    );
+  }
 
   if (!response.ok) {
     const err = await response.text();

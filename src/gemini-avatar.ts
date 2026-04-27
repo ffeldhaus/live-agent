@@ -1,4 +1,3 @@
-// @ts-ignore
 import styles from './styles/gemini-avatar.css?inline';
 import {AVATAR_PRESETS} from './constants';
 import {GeminiLiveClient} from './gemini-live-client';
@@ -1054,7 +1053,9 @@ export class GeminiAvatar extends HTMLElement {
       this.maskCanvas = document.createElement('canvas');
       this.maskCanvas.width = maskW;
       this.maskCanvas.height = maskH;
-      this.maskCtx = this.maskCanvas.getContext('2d');
+      this.maskCtx = this.maskCanvas.getContext('2d', {
+        willReadFrequently: true,
+      });
     }
 
     const maskData = new Uint8Array(maskW * maskH);

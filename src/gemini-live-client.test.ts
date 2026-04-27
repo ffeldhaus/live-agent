@@ -12,13 +12,18 @@ describe('GeminiLiveClient', () => {
       readyState: 1, // WebSocket.OPEN
     };
     // Mock global WebSocket
-    const mockWebSocket = vi.fn().mockImplementation(function () {
-      console.log('Mock WebSocket created!');
-      return mockWs;
+    class MockWebSocket {
+      static OPEN = 1;
+      constructor() {
+        console.log('Mock WebSocket created!');
+        return mockWs;
+      }
+    }
+    const mockWebSocketConstructor = vi.fn().mockImplementation(function () {
+      return new MockWebSocket();
     });
-    // @ts-ignore
-    mockWebSocket.OPEN = 1;
-    vi.stubGlobal('WebSocket', mockWebSocket);
+    Object.assign(mockWebSocketConstructor, MockWebSocket);
+    vi.stubGlobal('WebSocket', mockWebSocketConstructor);
 
     client = new GeminiLiveClient({
       projectId: 'test-project',

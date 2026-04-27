@@ -169,21 +169,6 @@ export function queryElements() {
   const enableSessionResumption = document.getElementById(
     'enableSessionResumption',
   ) as HTMLInputElement;
-  const renderOutsideToggle = document.getElementById(
-    'renderOutsideToggle',
-  ) as HTMLInputElement;
-  const externalTranscriptSection = document.getElementById(
-    'externalTranscriptSection',
-  ) as HTMLDivElement;
-  const externalTranscript = document.getElementById(
-    'externalTranscript',
-  ) as HTMLDivElement;
-  const externalChatInput = document.getElementById(
-    'externalChatInput',
-  ) as HTMLInputElement;
-  const externalSendBtn = document.getElementById(
-    'externalSendBtn',
-  ) as HTMLButtonElement;
 
   const barSetup = document.getElementById('barSetup') as HTMLDivElement;
   const barLatency = document.getElementById('barLatency') as HTMLDivElement;
@@ -292,9 +277,7 @@ export function queryElements() {
   const enableTranscript2 = document.getElementById(
     'enableTranscript2',
   ) as HTMLInputElement;
-  const renderOutsideToggle2 = document.getElementById(
-    'renderOutsideToggle2',
-  ) as HTMLInputElement;
+
   const enableChatInput2 = document.getElementById(
     'enableChatInput2',
   ) as HTMLInputElement;
@@ -383,11 +366,6 @@ export function queryElements() {
     toggleQaBtn,
     enableTranscript,
     enableChatInput,
-    renderOutsideToggle,
-    externalTranscriptSection,
-    externalTranscript,
-    externalChatInput,
-    externalSendBtn,
     barSetup,
     barLatency,
     statTotalLatency,
@@ -456,7 +434,6 @@ export function queryElements() {
     chromaKeyTolerance2,
     chromaKeyToleranceVal2,
     enableTranscript2,
-    renderOutsideToggle2,
     enableChatInput2,
     enableSessionResumption2,
     enableGrounding2,

@@ -212,19 +212,6 @@ export function loadSettings(
     elements.enableSessionResumption.checked.toString(),
   );
 
-  elements.renderOutsideToggle.checked =
-    localStorage.getItem('gemini_enable_transcript_outside') === 'true';
-  avatar.setAttribute(
-    'render-transcript-outside',
-    elements.renderOutsideToggle.checked.toString(),
-  );
-  if (elements.externalTranscriptSection) {
-    elements.externalTranscriptSection.style.display = elements
-      .renderOutsideToggle.checked
-      ? 'block'
-      : 'none';
-  }
-
   const savedBg = localStorage.getItem('gemini_background_image');
   if (savedBg) {
     const isLocal =
@@ -310,7 +297,10 @@ export function saveSettings(
   }
 
   const token = elements.tokenInput.value;
-  if (token) {
+  const now = new Date().getTime();
+  const isTokenValid = token.length > 0 && store.tokenExpiry > now;
+
+  if (isTokenValid) {
     localStorage.setItem('gemini_access_token', token);
     localStorage.setItem('gemini_token_time', new Date().getTime().toString());
     localStorage.setItem('gemini_token_expiry', store.tokenExpiry.toString());
@@ -420,11 +410,6 @@ export function saveSettings(
   setOrRemove(
     'gemini_enable_session_resumption',
     elements.enableSessionResumption.checked.toString(),
-    'false',
-  );
-  setOrRemove(
-    'gemini_enable_transcript_outside',
-    elements.renderOutsideToggle.checked.toString(),
     'false',
   );
 

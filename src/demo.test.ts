@@ -11,23 +11,49 @@ describe('Demo App', () => {
   let mockTokenClient: any;
 
   beforeEach(() => {
-    // @ts-ignore
-    globalThis.MediaSource = vi.fn().mockImplementation(function () {
-      return {
-        addEventListener: vi.fn(),
-        readyState: 'closed',
-        addSourceBuffer: vi.fn().mockReturnValue({
+    vi.stubGlobal(
+      'MediaSource',
+      vi.fn().mockImplementation(function () {
+        return {
           addEventListener: vi.fn(),
-          appendBuffer: vi.fn(),
-        }),
-      };
-    });
+          readyState: 'closed',
+          addSourceBuffer: vi.fn().mockReturnValue({
+            addEventListener: vi.fn(),
+            appendBuffer: vi.fn(),
+          }),
+        };
+      }),
+    );
     window.MediaSource = globalThis.MediaSource;
 
-    // @ts-ignore
-    URL.createObjectURL = vi
-      .fn()
-      .mockReturnValue('blob:http://localhost/mock-url');
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue(
+      'blob:http://localhost/mock-url',
+    );
+
+    // Mock fetch
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(url => {
+        if (url.startsWith('/tokeninfo')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({expires_in: '3600', email: 'test@example.com'}),
+          });
+        }
+        if (url.startsWith('/oauth2/v3/userinfo')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                name: 'Test User',
+                picture: 'https://example.com/avatar.png',
+              }),
+          });
+        }
+        return Promise.reject(new Error(`Unhandled fetch in test: ${url}`));
+      }),
+    );
 
     // Mock localStorage
     const localStorageMock = {
@@ -42,62 +68,67 @@ describe('Demo App', () => {
       removeItem: vi.fn(),
       clear: vi.fn(),
     };
-    // @ts-ignore
-    global.localStorage = localStorageMock;
+    vi.stubGlobal('localStorage', localStorageMock);
 
     // Mock navigator.mediaDevices
-    // @ts-ignore
-    global.navigator.mediaDevices = {
-      getUserMedia: vi.fn().mockResolvedValue({
-        getTracks: vi.fn().mockReturnValue([{stop: vi.fn()}]),
-      }),
-      enumerateDevices: vi.fn().mockResolvedValue([]),
-    };
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue({
+          getTracks: vi.fn().mockReturnValue([{stop: vi.fn()}]),
+        }),
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+      },
+      configurable: true,
+    });
 
     // Mock AudioContext
-    // @ts-ignore
-    globalThis.AudioContext = vi.fn().mockImplementation(function () {
-      return {
-        createMediaStreamSource: vi
-          .fn()
-          .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
-        createGain: vi.fn().mockReturnValue({
-          gain: {value: 1},
-          connect: vi.fn(),
-          disconnect: vi.fn(),
-        }),
-        createMediaElementSource: vi
-          .fn()
-          .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
-        createMediaStreamDestination: vi.fn().mockReturnValue({
-          stream: {
-            getTracks: vi.fn().mockReturnValue([
-              {
-                kind: 'audio',
-                label: 'mock-track',
-                enabled: true,
-                readyState: 'live',
-              },
-            ]),
-          },
-        }),
-        destination: {},
-        currentTime: 0,
-        audioWorklet: {addModule: vi.fn().mockResolvedValue(undefined)},
-        close: vi.fn().mockResolvedValue(undefined),
-      };
-    });
+    vi.stubGlobal(
+      'AudioContext',
+      vi.fn().mockImplementation(function () {
+        return {
+          createMediaStreamSource: vi
+            .fn()
+            .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
+          createGain: vi.fn().mockReturnValue({
+            gain: {value: 1},
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+          }),
+          createMediaElementSource: vi
+            .fn()
+            .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),
+          createMediaStreamDestination: vi.fn().mockReturnValue({
+            stream: {
+              getTracks: vi.fn().mockReturnValue([
+                {
+                  kind: 'audio',
+                  label: 'mock-track',
+                  enabled: true,
+                  readyState: 'live',
+                },
+              ]),
+            },
+          }),
+          destination: {},
+          currentTime: 0,
+          audioWorklet: {addModule: vi.fn().mockResolvedValue(undefined)},
+          close: vi.fn().mockResolvedValue(undefined),
+        };
+      }),
+    );
     window.AudioContext = globalThis.AudioContext;
 
     // Mock AudioWorkletNode
-    // @ts-ignore
-    globalThis.AudioWorkletNode = vi.fn().mockImplementation(function () {
-      return {
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        port: {onmessage: vi.fn()},
-      };
-    });
+    vi.stubGlobal(
+      'AudioWorkletNode',
+      vi.fn().mockImplementation(function () {
+        return {
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+          port: {onmessage: vi.fn()},
+        };
+      }),
+    );
     window.AudioWorkletNode = globalThis.AudioWorkletNode;
 
     if (!customElements.get('gemini-avatar')) {
@@ -120,14 +151,13 @@ describe('Demo App', () => {
     streamBtn = document.getElementById('streamBtn') as HTMLButtonElement;
 
     // Mock alert
-    global.alert = vi.fn();
+    vi.stubGlobal('alert', vi.fn());
 
     // Mock Google Identity Services
     mockTokenClient = {
       requestAccessToken: vi.fn(),
     };
-    // @ts-ignore
-    global.google = {
+    vi.stubGlobal('google', {
       accounts: {
         id: {
           initialize: vi.fn(),
@@ -137,12 +167,17 @@ describe('Demo App', () => {
           initTokenClient: vi.fn().mockReturnValue(mockTokenClient),
         },
       },
-    };
+    });
 
     const oauthClientIdInput = document.getElementById(
       'oauthClientId',
     ) as HTMLInputElement;
     if (oauthClientIdInput) oauthClientIdInput.value = 'test-client-id';
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    vi.restoreAllMocks();
   });
 
   it('should call avatar.start() when clicked and not connected', async () => {
@@ -201,8 +236,7 @@ describe('Demo App', () => {
 
   it('should only load from localStorage on page load', async () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
-    // @ts-ignore
-    const getItemSpy = global.localStorage.getItem;
+    const getItemSpy = vi.mocked(localStorage.getItem);
 
     // Reset mock calls after page load (which happens in beforeEach)
     getItemSpy.mockClear();
@@ -219,8 +253,7 @@ describe('Demo App', () => {
 
   it('should trigger OAuth flow when clicking start without token', async () => {
     // Override localStorage mock for this test to return null for token
-    // @ts-ignore
-    global.localStorage.getItem.mockImplementation(key => {
+    vi.mocked(localStorage.getItem).mockImplementation(key => {
       if (key === 'gemini_oauth_client_id') return 'test-client-id';
       return null;
     });
@@ -242,6 +275,11 @@ describe('Demo App', () => {
 
   it('should trigger OAuth flow when clicking login button', async () => {
     document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    const tokenInput = document.getElementById(
+      'accessToken',
+    ) as HTMLInputElement;
+    if (tokenInput) tokenInput.value = '';
 
     const googleSignInBtn = document.getElementById(
       'googleSignInBtn',

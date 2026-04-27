@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import tailwindcss from "@tailwindcss/vite";
 
@@ -84,7 +84,6 @@ export default defineConfig({
       external: [], // Bundle everything for standalone use, or adjust as needed
     },
   },
-  // @ts-ignore
   test: {
     globals: true,
     environment: "jsdom",
