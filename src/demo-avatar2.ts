@@ -136,15 +136,95 @@ export function setupAvatar2(
         elements.enableGrounding2.checked.toString(),
       );
 
-  // Initial state for transparency checkbox for Avatar 2
+  // Initial state for attributes for Avatar 2 based on UI (loaded from settings)
   if (elements.avatarName2) {
     const val = elements.avatarName2.value;
     const isPreset = val in AVATAR_PRESETS;
     if (elements.enableChromaKey2) {
       elements.enableChromaKey2.disabled = isPreset;
-      if (isPreset) {
-        avatar2?.setAttribute('enable-chroma-key', 'false');
-      }
+      avatar2?.setAttribute(
+        'enable-chroma-key',
+        isPreset ? 'false' : elements.enableChromaKey2.checked.toString(),
+      );
     }
+    avatar2?.setAttribute('avatar-name', val);
+    if (isPreset) {
+      avatar2?.setPreview(val);
+    }
+  }
+
+  avatar2?.setAttribute('voice', elements.voiceSelect2.value);
+  avatar2?.setAttribute('language', elements.languageSelect2.value);
+  avatar2?.setAttribute('size', elements.size2.value);
+  avatar2?.setAttribute('position', elements.position2.value);
+  avatar2?.setAttribute(
+    'record-video',
+    elements.saveVideoToggle2.checked.toString(),
+  );
+  avatar2?.setAttribute(
+    'enable-transcript',
+    elements.enableTranscript2.checked.toString(),
+  );
+  avatar2?.setAttribute(
+    'enable-chat-input',
+    elements.enableChatInput2.checked.toString(),
+  );
+  avatar2?.setAttribute(
+    'enable-session-resumption',
+    elements.enableSessionResumption2.checked.toString(),
+  );
+  avatar2?.setAttribute(
+    'enable-grounding',
+    elements.enableGrounding2.checked.toString(),
+  );
+  avatar2?.setAttribute(
+    'system-instruction',
+    elements.systemInstruction2.value,
+  );
+  avatar2?.setAttribute('default-greeting', elements.defaultGreeting2.value);
+
+  // Reset Button for Avatar 2
+  if (elements.resetAvatarBtn2) {
+    elements.resetAvatarBtn2.onclick = () => {
+      // Reset UI elements to defaults
+      elements.avatarName2.value = 'Kira';
+      elements.size2.value = '300px';
+      elements.position2.value = 'top-left';
+      elements.voiceSelect2.value = 'kore';
+      elements.languageSelect2.value = 'en-US';
+      elements.saveVideoToggle2.checked = false;
+      elements.enableChromaKey2.checked = false;
+      elements.chromaKeyTolerance2.value = '50';
+      if (elements.chromaKeyToleranceVal2)
+        elements.chromaKeyToleranceVal2.textContent = '50';
+      elements.enableTranscript2.checked = false;
+      elements.enableChatInput2.checked = false;
+      elements.enableSessionResumption2.checked = false;
+      if (elements.enableGrounding2) elements.enableGrounding2.checked = false;
+      elements.systemInstruction2.value = '';
+
+      const preset = (AVATAR_PRESETS as any)['Kira'];
+      elements.defaultGreeting2.value = preset ? preset.defaultGreeting : '';
+
+      // Update avatar attributes
+      avatar2?.setAttribute('avatar-name', 'Kira');
+      avatar2?.setAttribute('size', '300px');
+      avatar2?.setAttribute('position', 'top-left');
+      avatar2?.setAttribute('voice', 'kore');
+      avatar2?.setAttribute('language', 'en-US');
+      avatar2?.setAttribute('record-video', 'false');
+      avatar2?.setAttribute('enable-chroma-key', 'false');
+      avatar2?.setAttribute('chroma-key-tolerance', '50');
+      avatar2?.setAttribute('enable-transcript', 'false');
+      avatar2?.setAttribute('enable-chat-input', 'false');
+      avatar2?.setAttribute('enable-session-resumption', 'false');
+      avatar2?.setAttribute('enable-grounding', 'false');
+      avatar2?.setAttribute('system-instruction', '');
+      avatar2?.setAttribute(
+        'default-greeting',
+        elements.defaultGreeting2.value,
+      );
+      avatar2?.setPreview('Kira');
+    };
   }
 }

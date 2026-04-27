@@ -254,6 +254,9 @@ export function queryElements() {
   const avatar2Config = document.getElementById(
     'avatar2Config',
   ) as HTMLDetailsElement;
+  const resetAvatarBtn2 = document.getElementById(
+    'resetAvatarBtn2',
+  ) as HTMLButtonElement;
   const avatarName2 = document.getElementById(
     'avatarName2',
   ) as HTMLSelectElement;
@@ -425,6 +428,7 @@ export function queryElements() {
     statConnType,
     addAvatarBtn,
     avatar2Config,
+    resetAvatarBtn2,
     avatarName2,
     voiceSelect2,
     size2,

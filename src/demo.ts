@@ -628,6 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
       positionSelect.value = 'top-right';
       voiceSelect.value = 'kore';
       languageSelect.value = 'en-US';
+      saveVideoToggle.checked = false;
       enableChromaKey.checked = false;
       chromaKeyColor.value = 'green';
       chromaKeyTolerance.value = '50';
@@ -648,6 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
       store.position = 'top-right';
       store.voice = 'kore';
       store.language = 'en-US';
+      store.saveVideo = false;
       store.enableChromaKey = false;
       store.chromaKeyColor = 'green';
       store.chromaKeyTolerance = '50';
@@ -665,6 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
       avatar.setAttribute('position', 'top-right');
       avatar.setAttribute('voice', 'kore');
       avatar.setAttribute('language', 'en-US');
+      avatar.setAttribute('record-video', 'false');
       avatar.setAttribute('enable-chroma-key', 'false');
       avatar.setAttribute('chroma-key-color', 'green');
       avatar.setAttribute('chroma-key-tolerance', '50');

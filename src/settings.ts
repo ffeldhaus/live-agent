@@ -67,48 +67,201 @@ export function loadSettings(
     });
   }
 
-  if (localStorage.getItem('gemini_avatar_name')) {
-    const name = localStorage.getItem('gemini_avatar_name')!;
-    elements.avatarNameSelect.value = name;
-    avatar.setAttribute('avatar-name', name);
-    applyAvatarTheme(name, avatar, customAvatars, elements);
+  // Avatar Configurations
+  const avatarConfigs = [
+    {
+      num: 1,
+      els: {
+        avatarName: elements.avatarNameSelect,
+        voice: elements.voiceSelect,
+        size: elements.sizeSelect,
+        position: elements.positionSelect,
+        language: elements.languageSelect,
+        saveVideo: elements.saveVideoToggle,
+        enableChromaKey: elements.enableChromaKey,
+        chromaKeyTolerance: elements.chromaKeyTolerance,
+        chromaKeyToleranceVal: elements.chromaKeyToleranceVal,
+        enableTranscript: elements.enableTranscript,
+        enableChatInput: elements.enableChatInput,
+        enableSessionResumption: elements.enableSessionResumption,
+        enableGrounding: elements.enableGrounding,
+        systemInstruction: elements.systemInstructionInput,
+        defaultGreeting: elements.defaultGreetingInput,
+      },
+      comp: avatar,
+    },
+    {
+      num: 2,
+      els: {
+        avatarName: elements.avatarName2,
+        voice: elements.voiceSelect2,
+        size: elements.size2,
+        position: elements.position2,
+        language: elements.languageSelect2,
+        saveVideo: elements.saveVideoToggle2,
+        enableChromaKey: elements.enableChromaKey2,
+        chromaKeyTolerance: elements.chromaKeyTolerance2,
+        chromaKeyToleranceVal: elements.chromaKeyToleranceVal2,
+        enableTranscript: elements.enableTranscript2,
+        enableChatInput: elements.enableChatInput2,
+        enableSessionResumption: elements.enableSessionResumption2,
+        enableGrounding: elements.enableGrounding2,
+        systemInstruction: elements.systemInstruction2,
+        defaultGreeting: elements.defaultGreeting2,
+      },
+      comp: null,
+    },
+  ];
 
-    const preset = (AVATAR_PRESETS as any)[name];
-    if (preset && preset.defaultGreeting) {
-      elements.defaultGreetingInput.value = preset.defaultGreeting;
+  avatarConfigs.forEach(config => {
+    const {num, els, comp} = config;
+    const prefix = `gemini_avatar${num}_`;
+
+    const getVal = (key: string, fallbackKey?: string) => {
+      const val = localStorage.getItem(prefix + key);
+      if (val !== null) return val;
+      if (num === 1 && fallbackKey) return localStorage.getItem(fallbackKey);
+      return null;
+    };
+
+    // Name
+    const name =
+      getVal('name', 'gemini_avatar_name') || (num === 1 ? 'Kira' : null);
+    if (name && els.avatarName) {
+      els.avatarName.value = name;
+      if (comp) comp.setAttribute('avatar-name', name);
+      if (num === 1) {
+        applyAvatarTheme(name, comp, customAvatars, elements);
+      }
+
+      const preset = (AVATAR_PRESETS as any)[name];
+      if (preset && preset.defaultGreeting && els.defaultGreeting) {
+        els.defaultGreeting.value = preset.defaultGreeting;
+      }
     }
-  } else {
-    elements.avatarNameSelect.value = 'Kira';
-    applyAvatarTheme('Kira', avatar, customAvatars, elements);
 
-    const preset = (AVATAR_PRESETS as any)['Kira'];
-    if (preset && preset.defaultGreeting) {
-      elements.defaultGreetingInput.value = preset.defaultGreeting;
+    // Size
+    const size = getVal('size', 'gemini_size');
+    if (size && els.size) {
+      els.size.value = size;
+      if (comp) comp.setAttribute('size', size);
     }
-  }
 
-  if (localStorage.getItem('gemini_size')) {
-    elements.sizeSelect.value = localStorage.getItem('gemini_size')!;
-    avatar.setAttribute('size', elements.sizeSelect.value);
-  }
-  if (localStorage.getItem('gemini_position')) {
-    elements.positionSelect.value = localStorage.getItem('gemini_position')!;
-    avatar.setAttribute('position', elements.positionSelect.value);
-  }
-  if (localStorage.getItem('gemini_voice'))
-    elements.voiceSelect.value = localStorage.getItem('gemini_voice')!;
-  if (localStorage.getItem('gemini_language'))
-    elements.languageSelect.value = localStorage.getItem('gemini_language')!;
+    // Position
+    const position = getVal('position', 'gemini_position');
+    if (position && els.position) {
+      els.position.value = position;
+      if (comp) comp.setAttribute('position', position);
+    }
 
-  elements.saveVideoToggle.checked =
-    localStorage.getItem('gemini_save_video') === 'true';
+    // Voice
+    const voice = getVal('voice', 'gemini_voice');
+    if (voice && els.voice) els.voice.value = voice;
+
+    // Language
+    const language = getVal('language', 'gemini_language');
+    if (language && els.language) els.language.value = language;
+
+    // Save Video
+    const saveVideo = getVal('save_video', 'gemini_save_video');
+    if (els.saveVideo) {
+      els.saveVideo.checked = saveVideo === 'true';
+      if (comp)
+        comp.setAttribute('record-video', els.saveVideo.checked.toString());
+    }
+
+    // Chroma Key
+    const enableChromaKey = getVal(
+      'enable_chroma_key',
+      'gemini_enable_chroma_key',
+    );
+    if (els.enableChromaKey) {
+      els.enableChromaKey.checked = enableChromaKey === 'true';
+      if (comp)
+        comp.setAttribute(
+          'enable-chroma-key',
+          els.enableChromaKey.checked.toString(),
+        );
+    }
+
+    const tolerance =
+      getVal('chroma_key_tolerance', 'gemini_chroma_key_tolerance') || '50';
+    if (els.chromaKeyTolerance) {
+      els.chromaKeyTolerance.value = tolerance;
+      if (els.chromaKeyToleranceVal)
+        els.chromaKeyToleranceVal.textContent = tolerance;
+      if (comp) comp.setAttribute('chroma-key-tolerance', tolerance);
+    }
+
+    // Transcript
+    const transcript = getVal('enable_transcript', 'gemini_enable_transcript');
+    if (els.enableTranscript) {
+      els.enableTranscript.checked = transcript === 'true';
+      if (comp)
+        comp.setAttribute(
+          'enable-transcript',
+          els.enableTranscript.checked.toString(),
+        );
+    }
+
+    // Chat Input
+    const chatInput = getVal('enable_chat_input', 'gemini_enable_chat_input');
+    if (els.enableChatInput) {
+      els.enableChatInput.checked = chatInput === 'true';
+      if (comp)
+        comp.setAttribute(
+          'enable-chat-input',
+          els.enableChatInput.checked.toString(),
+        );
+    }
+
+    // Session Resumption
+    const resumption = getVal(
+      'enable_session_resumption',
+      'gemini_enable_session_resumption',
+    );
+    if (els.enableSessionResumption) {
+      els.enableSessionResumption.checked = resumption === 'true';
+      if (comp)
+        comp.setAttribute(
+          'enable-session-resumption',
+          els.enableSessionResumption.checked.toString(),
+        );
+    }
+
+    // Grounding
+    const grounding = getVal('enable_grounding', 'gemini_enable_grounding');
+    if (els.enableGrounding) {
+      els.enableGrounding.checked = grounding === 'true';
+      if (comp)
+        comp.setAttribute(
+          'enable-grounding',
+          els.enableGrounding.checked.toString(),
+        );
+    }
+
+    // System Instruction
+    const systemInstruction = getVal(
+      'system_instruction',
+      'gemini_system_instruction',
+    );
+    if (systemInstruction && els.systemInstruction)
+      els.systemInstruction.value = systemInstruction;
+
+    // Default Greeting
+    const defaultGreeting = getVal(
+      'default_greeting',
+      'gemini_default_greeting',
+    );
+    if (defaultGreeting && els.defaultGreeting)
+      els.defaultGreeting.value = defaultGreeting;
+  });
+
+  // Global Settings (preserved from original code)
   elements.debugToggle.checked =
     localStorage.getItem('gemini_debug') === 'true';
   avatar.setAttribute('debug', elements.debugToggle.checked.toString());
-  avatar.setAttribute(
-    'record-video',
-    elements.saveVideoToggle.checked.toString(),
-  );
+
   if (elements.recordUserAudioCheckbox) {
     elements.recordUserAudioCheckbox.checked =
       localStorage.getItem('gemini_record_user_audio') === 'true';
@@ -146,72 +299,12 @@ export function loadSettings(
     );
   }
 
-  if (localStorage.getItem('gemini_system_instruction'))
-    elements.systemInstructionInput.value = localStorage.getItem(
-      'gemini_system_instruction',
-    )!;
-  if (localStorage.getItem('gemini_default_greeting'))
-    elements.defaultGreetingInput.value = localStorage.getItem(
-      'gemini_default_greeting',
-    )!;
   if (localStorage.getItem('gemini_image_prompt'))
     elements.imagePromptInput.value = localStorage.getItem(
       'gemini_image_prompt',
     )!;
 
-  elements.enableChromaKey.checked =
-    localStorage.getItem('gemini_enable_chroma_key') === 'true';
-  if (localStorage.getItem('gemini_chroma_key_color'))
-    elements.chromaKeyColor.value = localStorage.getItem(
-      'gemini_chroma_key_color',
-    )!;
-
-  avatar.setAttribute(
-    'enable-chroma-key',
-    elements.enableChromaKey.checked.toString(),
-  );
-  avatar.setAttribute('chroma-key-color', elements.chromaKeyColor.value);
-  avatar.setAttribute('background-color', 'transparent');
-
-  if (localStorage.getItem('gemini_chroma_key_tolerance')) {
-    elements.chromaKeyTolerance.value = localStorage.getItem(
-      'gemini_chroma_key_tolerance',
-    )!;
-    elements.chromaKeyToleranceVal.textContent =
-      elements.chromaKeyTolerance.value;
-    avatar.setAttribute(
-      'chroma-key-tolerance',
-      elements.chromaKeyTolerance.value,
-    );
-  } else {
-    elements.chromaKeyTolerance.value = '50';
-    elements.chromaKeyToleranceVal.textContent = '50';
-    avatar.setAttribute('chroma-key-tolerance', '50');
-  }
-
-  elements.enableTranscript.checked =
-    localStorage.getItem('gemini_enable_transcript') === 'true';
-  elements.enableChatInput.checked =
-    localStorage.getItem('gemini_enable_chat_input') === 'true';
-  avatar.setAttribute(
-    'enable-transcript',
-    elements.enableTranscript.checked.toString(),
-  );
-  avatar.setAttribute(
-    'enable-chat-input',
-    elements.enableChatInput.checked.toString(),
-  );
-
-  const savedResumption = localStorage.getItem(
-    'gemini_enable_session_resumption',
-  );
-  elements.enableSessionResumption.checked =
-    savedResumption !== null ? savedResumption === 'true' : false;
-  avatar.setAttribute(
-    'enable-session-resumption',
-    elements.enableSessionResumption.checked.toString(),
-  );
-
+  // Background Image (preserved from original code)
   const savedBg = localStorage.getItem('gemini_background_image');
   if (savedBg) {
     const isLocal =
@@ -250,15 +343,6 @@ export function loadSettings(
     document.body.classList.remove('animated-bg');
     if (elements.bgImageUrl) elements.bgImageUrl.value = defaultBg;
   }
-
-  if (elements.enableGrounding) {
-    elements.enableGrounding.checked =
-      localStorage.getItem('gemini_enable_grounding') === 'true';
-    avatar.setAttribute(
-      'enable-grounding',
-      elements.enableGrounding.checked.toString(),
-    );
-  }
 }
 
 export function saveSettings(
@@ -281,12 +365,7 @@ export function saveSettings(
     elements.oauthClientIdInput.value,
   );
 
-  setOrRemove('gemini_avatar_name', elements.avatarNameSelect.value, 'Kira');
-  setOrRemove('gemini_size', elements.sizeSelect.value, '300px');
-  setOrRemove('gemini_position', elements.positionSelect.value, 'top-right');
-  setOrRemove('gemini_voice', elements.voiceSelect.value, 'kore');
-  setOrRemove('gemini_language', elements.languageSelect.value, 'en-US');
-
+  // Global Settings (preserved from original code)
   const bgUrl = elements.bgImageUrl.value;
   const defaultBg =
     'https://storage.googleapis.com/gweb-cloudblog-publish/images/GCN26_102_BlogHeader_2436x1200_Opt_4_Dark.max-2500x2500.jpg';
@@ -314,11 +393,6 @@ export function saveSettings(
     localStorage.removeItem('gemini_user_avatar');
   }
 
-  setOrRemove(
-    'gemini_save_video',
-    elements.saveVideoToggle.checked.toString(),
-    'false',
-  );
   setOrRemove('gemini_debug', elements.debugToggle.checked.toString(), 'false');
 
   if (elements.recordUserAudioCheckbox) {
@@ -364,62 +438,116 @@ export function saveSettings(
     elements.audioChunkSizeSlider.value,
     '2048',
   );
-  setOrRemove(
-    'gemini_system_instruction',
-    elements.systemInstructionInput.value,
-    '',
-  );
-
-  const presetName = elements.avatarNameSelect.value;
-  const preset = (AVATAR_PRESETS as any)[presetName];
-  const defaultGreeting = preset ? preset.defaultGreeting : '';
-  setOrRemove(
-    'gemini_default_greeting',
-    elements.defaultGreetingInput.value,
-    defaultGreeting,
-  );
 
   setOrRemove('gemini_image_prompt', elements.imagePromptInput.value, '');
 
-  setOrRemove(
-    'gemini_enable_chroma_key',
-    elements.enableChromaKey.checked.toString(),
-    'false',
-  );
-  setOrRemove(
-    'gemini_chroma_key_color',
-    elements.chromaKeyColor.value,
-    'green',
-  );
-  setOrRemove(
-    'gemini_chroma_key_tolerance',
-    elements.chromaKeyTolerance.value,
-    '50',
-  );
+  // Avatar Configurations (Per-Avatar)
+  const avatarConfigs = [
+    {
+      num: 1,
+      els: {
+        avatarName: elements.avatarNameSelect,
+        voice: elements.voiceSelect,
+        size: elements.sizeSelect,
+        position: elements.positionSelect,
+        language: elements.languageSelect,
+        saveVideo: elements.saveVideoToggle,
+        enableChromaKey: elements.enableChromaKey,
+        chromaKeyTolerance: elements.chromaKeyTolerance,
+        enableTranscript: elements.enableTranscript,
+        enableChatInput: elements.enableChatInput,
+        enableSessionResumption: elements.enableSessionResumption,
+        enableGrounding: elements.enableGrounding,
+        systemInstruction: elements.systemInstructionInput,
+        defaultGreeting: elements.defaultGreetingInput,
+      },
+    },
+    {
+      num: 2,
+      els: {
+        avatarName: elements.avatarName2,
+        voice: elements.voiceSelect2,
+        size: elements.size2,
+        position: elements.position2,
+        language: elements.languageSelect2,
+        saveVideo: elements.saveVideoToggle2,
+        enableChromaKey: elements.enableChromaKey2,
+        chromaKeyTolerance: elements.chromaKeyTolerance2,
+        enableTranscript: elements.enableTranscript2,
+        enableChatInput: elements.enableChatInput2,
+        enableSessionResumption: elements.enableSessionResumption2,
+        enableGrounding: elements.enableGrounding2,
+        systemInstruction: elements.systemInstruction2,
+        defaultGreeting: elements.defaultGreeting2,
+      },
+    },
+  ];
 
-  setOrRemove(
-    'gemini_enable_transcript',
-    elements.enableTranscript.checked.toString(),
-    'false',
-  );
-  setOrRemove(
-    'gemini_enable_chat_input',
-    elements.enableChatInput.checked.toString(),
-    'false',
-  );
-  setOrRemove(
-    'gemini_enable_session_resumption',
-    elements.enableSessionResumption.checked.toString(),
-    'false',
-  );
+  avatarConfigs.forEach(config => {
+    const {num, els} = config;
+    const prefix = `gemini_avatar${num}_`;
 
-  if (elements.enableGrounding) {
-    setOrRemove(
-      'gemini_enable_grounding',
-      elements.enableGrounding.checked.toString(),
-      'false',
-    );
-  }
+    const saveVal = (key: string, value: string, defaultValue: string) => {
+      setOrRemove(prefix + key, value, defaultValue);
+    };
+
+    if (els.avatarName) saveVal('name', els.avatarName.value, 'Kira');
+    if (els.size) saveVal('size', els.size.value, '300px');
+    if (els.position)
+      saveVal(
+        'position',
+        els.position.value,
+        num === 1 ? 'top-right' : 'top-left',
+      );
+    if (els.voice) saveVal('voice', els.voice.value, 'kore');
+    if (els.language) saveVal('language', els.language.value, 'en-US');
+
+    if (els.saveVideo)
+      saveVal('save_video', els.saveVideo.checked.toString(), 'false');
+    if (els.enableChromaKey)
+      saveVal(
+        'enable_chroma_key',
+        els.enableChromaKey.checked.toString(),
+        'false',
+      );
+    if (els.chromaKeyTolerance)
+      saveVal('chroma_key_tolerance', els.chromaKeyTolerance.value, '50');
+
+    if (els.enableTranscript)
+      saveVal(
+        'enable_transcript',
+        els.enableTranscript.checked.toString(),
+        'false',
+      );
+    if (els.enableChatInput)
+      saveVal(
+        'enable_chat_input',
+        els.enableChatInput.checked.toString(),
+        'false',
+      );
+    if (els.enableSessionResumption)
+      saveVal(
+        'enable_session_resumption',
+        els.enableSessionResumption.checked.toString(),
+        'false',
+      );
+
+    if (els.enableGrounding)
+      saveVal(
+        'enable_grounding',
+        els.enableGrounding.checked.toString(),
+        'false',
+      );
+
+    if (els.systemInstruction)
+      saveVal('system_instruction', els.systemInstruction.value, '');
+
+    const presetName = els.avatarName ? els.avatarName.value : 'Kira';
+    const preset = (AVATAR_PRESETS as any)[presetName];
+    const defaultGreeting = preset ? preset.defaultGreeting : '';
+    if (els.defaultGreeting)
+      saveVal('default_greeting', els.defaultGreeting.value, defaultGreeting);
+  });
 
   localStorage.setItem('gemini_custom_avatars', JSON.stringify(customAvatars));
 }
