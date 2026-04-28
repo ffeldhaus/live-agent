@@ -104,8 +104,10 @@ export class GeminiAvatar extends HTMLElement {
     this.updatePosition(this.getAttribute('position') || 'top-right');
     this.setPreview(this.getAttribute('avatar-name') || 'Kira');
 
-    this.resizeListener = () =>
+    this.resizeListener = () => {
       this.updateSize(this.getAttribute('size') || '300px');
+      this.updatePosition(this.getAttribute('position') || 'top-right');
+    };
     window.addEventListener('resize', this.resizeListener);
   }
 
@@ -533,17 +535,30 @@ export class GeminiAvatar extends HTMLElement {
 
     const maxH = window.innerHeight - 40;
     const maxW = window.innerWidth - 40;
+    const aspectRatio = 1280 / 704;
 
-    let w = parseFloat(size) || 300;
-    let h = w * (1280 / 704);
+    let w: number;
+    let h: number;
 
-    if (h > maxH) {
-      h = maxH;
-      w = h * (704 / 1280);
-    }
-    if (w > maxW) {
+    if (size === 'fill') {
       w = maxW;
-      h = w * (1280 / 704);
+      h = w * aspectRatio;
+      if (h > maxH) {
+        h = maxH;
+        w = h / aspectRatio;
+      }
+    } else {
+      w = parseFloat(size) || 300;
+      h = w * aspectRatio;
+
+      if (h > maxH) {
+        h = maxH;
+        w = h / aspectRatio;
+      }
+      if (w > maxW) {
+        w = maxW;
+        h = w * aspectRatio;
+      }
     }
 
     this.style.width = `${w}px`;

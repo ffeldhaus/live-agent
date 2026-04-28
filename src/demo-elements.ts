@@ -47,6 +47,7 @@ export function queryElements() {
   ) as HTMLInputElement;
 
   const expandBtn = document.getElementById('expandBtn') as HTMLButtonElement;
+  const burgerBtn = document.getElementById('burgerBtn') as HTMLButtonElement;
   const configContainer = document.getElementById(
     'configContainer',
   ) as HTMLDivElement;
@@ -423,6 +424,7 @@ export function queryElements() {
     copyHtmlBtn,
     expandBtn,
     configContainer,
+    burgerBtn,
     statSetupDuration,
     statLatency,
     statPacketsReceived,

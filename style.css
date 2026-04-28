@@ -24,9 +24,13 @@
   to { --angle: 360deg; }
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     margin: 0;
-    scrollbar-gutter: stable both-edges;
+    scrollbar-gutter: stable;
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg-color);
     background-image: 
@@ -298,3 +302,55 @@ details[open] summary {
 [data-tooltip]:hover::before {
     visibility: visible;
 }
+
+/* Burger Button & Portrait Styles */
+.burger-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100; /* High z-index to be above everything */
+    padding: 10px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: none; /* Hidden in landscape */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.burger-btn:hover {
+    background: rgba(30, 41, 59, 0.9);
+    transform: scale(1.05);
+}
+
+@media (orientation: portrait) {
+    .burger-btn {
+        display: flex; /* Show in portrait */
+    }
+    
+    #expandBtn {
+        display: none !important; /* Hide top-center button in portrait */
+    }
+    
+    /* Ensure avatar is behind burger bar and configuration if they overlap */
+    gemini-avatar {
+        z-index: 5 !important; /* Lower than config (10) and burger-btn (100) */
+    }
+    
+    /* Make configuration elements responsive */
+    #configContainer {
+        width: 95% !important;
+        padding: 15px !important;
+    }
+    
+    .grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+

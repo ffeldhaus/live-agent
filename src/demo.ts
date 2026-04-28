@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     copyHtmlBtn,
     expandBtn,
     configContainer,
+    burgerBtn,
   } = elements;
 
   let avatar2: GeminiAvatar | null = null;
@@ -465,6 +466,12 @@ document.addEventListener('DOMContentLoaded', () => {
           '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>';
         expandBtn.title = 'Collapse Configuration';
       }
+    };
+  }
+
+  if (burgerBtn) {
+    burgerBtn.onclick = () => {
+      configContainer.classList.toggle('hidden');
     };
   }
   // setupAvatar2 moved to demo-avatar2.ts
