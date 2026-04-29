@@ -626,6 +626,7 @@ export class GeminiAvatar extends HTMLElement {
     this.mediaManager?.stopVideoStreaming();
     this.mediaManager?.resetMediaSource();
     this.receivedFirstVideoFrame = false;
+    this.isRecording = false;
     this.updateChromaKeyState();
     this.disconnect();
   }

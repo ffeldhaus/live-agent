@@ -259,6 +259,7 @@ export class MediaManager {
     this.nextPlaybackTime = 0;
     this.receivedFirstVideoFrame = false;
     this.sentFirstAudio = false;
+    this.isSetupComplete = false;
 
     if (this.speakingInterval) {
       clearInterval(this.speakingInterval);
