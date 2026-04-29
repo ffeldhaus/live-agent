@@ -211,6 +211,10 @@ export function queryElements() {
     'enableGrounding',
   ) as HTMLInputElement;
 
+  const enableLocation = document.getElementById(
+    'enableLocation',
+  ) as HTMLInputElement;
+
   const cameraModal = document.getElementById('cameraModal') as HTMLDivElement;
   const cameraVideo = document.getElementById(
     'cameraVideo',
@@ -318,6 +322,10 @@ export function queryElements() {
   ) as HTMLInputElement;
   const enableGrounding2 = document.getElementById(
     'enableGrounding2',
+  ) as HTMLInputElement;
+
+  const enableLocation2 = document.getElementById(
+    'enableLocation2',
   ) as HTMLInputElement;
   const systemInstruction2 = document.getElementById(
     'systemInstruction2',
@@ -447,6 +455,7 @@ export function queryElements() {
     cameraBtn,
     uploadBtn,
     enableGrounding,
+    enableLocation,
     cameraModal,
     cameraVideo,
     cameraVideoContainer,
@@ -521,6 +530,7 @@ export function queryElements() {
     enableChatInput2,
     enableSessionResumption2,
     enableGrounding2,
+    enableLocation2,
     systemInstruction2,
     luckyPersonaBtn2,
     defaultGreeting2,

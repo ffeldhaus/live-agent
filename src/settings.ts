@@ -85,6 +85,7 @@ export function loadSettings(
         enableChatInput: elements.enableChatInput,
         enableSessionResumption: elements.enableSessionResumption,
         enableGrounding: elements.enableGrounding,
+        enableLocation: elements.enableLocation,
         systemInstruction: elements.systemInstructionInput,
         defaultGreeting: elements.defaultGreetingInput,
       },
@@ -106,6 +107,7 @@ export function loadSettings(
         enableChatInput: elements.enableChatInput2,
         enableSessionResumption: elements.enableSessionResumption2,
         enableGrounding: elements.enableGrounding2,
+        enableLocation: elements.enableLocation2,
         systemInstruction: elements.systemInstruction2,
         defaultGreeting: elements.defaultGreeting2,
       },
@@ -238,6 +240,12 @@ export function loadSettings(
           'enable-grounding',
           els.enableGrounding.checked.toString(),
         );
+    }
+
+    // Location
+    const location = getVal('enable_location', 'gemini_enable_location');
+    if (els.enableLocation) {
+      els.enableLocation.checked = location === 'true';
     }
 
     // System Instruction
@@ -458,6 +466,7 @@ export function saveSettings(
         enableChatInput: elements.enableChatInput,
         enableSessionResumption: elements.enableSessionResumption,
         enableGrounding: elements.enableGrounding,
+        enableLocation: elements.enableLocation,
         systemInstruction: elements.systemInstructionInput,
         defaultGreeting: elements.defaultGreetingInput,
       },
@@ -477,6 +486,7 @@ export function saveSettings(
         enableChatInput: elements.enableChatInput2,
         enableSessionResumption: elements.enableSessionResumption2,
         enableGrounding: elements.enableGrounding2,
+        enableLocation: elements.enableLocation2,
         systemInstruction: elements.systemInstruction2,
         defaultGreeting: elements.defaultGreeting2,
       },
@@ -536,6 +546,13 @@ export function saveSettings(
       saveVal(
         'enable_grounding',
         els.enableGrounding.checked.toString(),
+        'false',
+      );
+
+    if (els.enableLocation)
+      saveVal(
+        'enable_location',
+        els.enableLocation.checked.toString(),
         'false',
       );
 

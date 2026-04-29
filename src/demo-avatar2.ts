@@ -1,5 +1,6 @@
 import {GeminiAvatar} from './gemini-avatar';
 import {AVATAR_PRESETS, VOICE_PRESETS} from './constants';
+import {showMessageModal} from './ui-helpers';
 
 export function setupAvatar2(
   avatar2: GeminiAvatar | null,
@@ -135,6 +136,57 @@ export function setupAvatar2(
         'enable-grounding',
         elements.enableGrounding2.checked.toString(),
       );
+
+  if (elements.enableLocation2) {
+    elements.enableLocation2.onchange = async () => {
+      if (elements.enableLocation2.checked) {
+        try {
+          const permission = await navigator.permissions.query({
+            name: 'geolocation' as PermissionName,
+          });
+          if (permission.state === 'prompt') {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                store.currentPosition = pos;
+                console.log('Location fetched (Avatar 2):', pos);
+              },
+              err => {
+                console.error('Error fetching location (Avatar 2):', err);
+                elements.enableLocation2.checked = false;
+              },
+            );
+          } else if (permission.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                store.currentPosition = pos;
+              },
+              err => {
+                console.error('Error fetching location (Avatar 2):', err);
+              },
+            );
+          } else {
+            showMessageModal(
+              'Permission Denied',
+              'Location permission was denied. Please enable it in your browser settings.',
+            );
+            elements.enableLocation2.checked = false;
+          }
+        } catch (e) {
+          console.error('Error checking permissions (Avatar 2):', e);
+          // Fallback
+          navigator.geolocation.getCurrentPosition(
+            pos => {
+              store.currentPosition = pos;
+            },
+            err => {
+              console.error('Error fetching location (Avatar 2):', err);
+              elements.enableLocation2.checked = false;
+            },
+          );
+        }
+      }
+    };
+  }
 
   // Initial state for attributes for Avatar 2 based on UI (loaded from settings)
   if (elements.avatarName2) {

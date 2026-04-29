@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraBtn,
     uploadBtn,
     enableGrounding,
+    enableLocation,
     cameraModal,
     cameraVideo,
     captureBtn,
@@ -984,6 +985,58 @@ document.addEventListener('DOMContentLoaded', () => {
       );
   }
 
+  // Location Listener
+  if (enableLocation) {
+    enableLocation.onchange = async () => {
+      if (enableLocation.checked) {
+        try {
+          const permission = await navigator.permissions.query({
+            name: 'geolocation' as PermissionName,
+          });
+          if (permission.state === 'prompt') {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                store.currentPosition = pos;
+                console.log('Location fetched:', pos);
+              },
+              err => {
+                console.error('Error fetching location:', err);
+                enableLocation.checked = false;
+              },
+            );
+          } else if (permission.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              pos => {
+                store.currentPosition = pos;
+              },
+              err => {
+                console.error('Error fetching location:', err);
+              },
+            );
+          } else {
+            showMessageModal(
+              'Permission Denied',
+              'Location permission was denied. Please enable it in your browser settings.',
+            );
+            enableLocation.checked = false;
+          }
+        } catch (e) {
+          console.error('Error checking permissions:', e);
+          // Fallback
+          navigator.geolocation.getCurrentPosition(
+            pos => {
+              store.currentPosition = pos;
+            },
+            err => {
+              console.error('Error fetching location:', err);
+              enableLocation.checked = false;
+            },
+          );
+        }
+      }
+    };
+  }
+
   // Background Listeners
   if (bgImageUrl) {
     bgImageUrl.onchange = () => {
@@ -1615,7 +1668,13 @@ document.addEventListener('DOMContentLoaded', () => {
         avatar.setAttribute('avatar-name', avatarNameSelect.value);
         avatar.setAttribute('voice', voiceSelect.value);
         avatar.setAttribute('language', languageSelect.value);
-        avatar.setAttribute('system-instruction', systemInstructionInput.value);
+
+        let systemInstruction = systemInstructionInput.value;
+        if (enableLocation && enableLocation.checked && store.currentPosition) {
+          systemInstruction += `\nUser location: Lat ${store.currentPosition.coords.latitude}, Lon ${store.currentPosition.coords.longitude}`;
+        }
+        avatar.setAttribute('system-instruction', systemInstruction);
+
         avatar.setAttribute('default-greeting', defaultGreetingInput.value);
         avatar.setAttribute('record-video', saveVideoToggle.checked.toString());
         avatar.setAttribute('debug', debugToggle.checked.toString());
@@ -1647,10 +1706,17 @@ document.addEventListener('DOMContentLoaded', () => {
             avatar2.setAttribute('avatar-name', elements.avatarName2.value);
             avatar2.setAttribute('voice', elements.voiceSelect2.value);
             avatar2.setAttribute('language', elements.languageSelect2.value);
-            avatar2.setAttribute(
-              'system-instruction',
-              elements.systemInstruction2.value,
-            );
+
+            let systemInstruction2 = elements.systemInstruction2.value;
+            if (
+              elements.enableLocation2 &&
+              elements.enableLocation2.checked &&
+              store.currentPosition
+            ) {
+              systemInstruction2 += `\nUser location: Lat ${store.currentPosition.coords.latitude}, Lon ${store.currentPosition.coords.longitude}`;
+            }
+            avatar2.setAttribute('system-instruction', systemInstruction2);
+
             avatar2.setAttribute(
               'default-greeting',
               elements.defaultGreeting2.value,
