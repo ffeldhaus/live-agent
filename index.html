@@ -452,9 +452,19 @@
                         </div>
                         <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
                     </div>
+                    <!-- Video Gen Latency Visualizer -->
+                    <div class="col-span-2 sm:col-span-4 flex items-center gap-3 mt-2">
+                        <div class="font-medium text-slate-300 whitespace-nowrap">Video Gen Latency:</div>
+                        <div id="videoLatencyBar" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden relative">
+                            <div id="barP50" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barP95" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barP99" class="bg-purple-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="currentLatencyLine" class="absolute top-0 bottom-0 w-0.5 bg-red-500 hidden"></div>
+                        </div>
+                        <div class="text-xs text-slate-400 whitespace-nowrap">Current: <span id="statVideoLatency" class="font-medium text-slate-200">-</span> ms</div>
+                    </div>
                     <div title="Duration of the current session">Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
-                    <div title="Time spent calculating transparency (chroma key)">Transparency Calc: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> ms</div>
-                    <div title="Time between transcription starting and agent starting to speak">Video Gen Latency: <span id="statVideoLatency" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Time spent calculating transparency (chroma key)">Transparency Delay: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> ms</div>
                     <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter" class="font-medium text-slate-200">-</span> ms</div>
                     
                 </div>
@@ -504,9 +514,19 @@
                         </div>
                         <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency2" class="font-medium text-slate-200">-</span> ms</div>
                     </div>
+                    <!-- Video Gen Latency Visualizer -->
+                    <div class="col-span-2 sm:col-span-4 flex items-center gap-3 mt-2">
+                        <div class="font-medium text-slate-300 whitespace-nowrap">Video Gen Latency:</div>
+                        <div id="videoLatencyBar2" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden relative">
+                            <div id="barP502" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barP952" class="bg-emerald-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="barP992" class="bg-purple-500 w-0 text-center text-white text-xs leading-5"></div>
+                            <div id="currentLatencyLine2" class="absolute top-0 bottom-0 w-0.5 bg-red-500 hidden"></div>
+                        </div>
+                        <div class="text-xs text-slate-400 whitespace-nowrap">Current: <span id="statVideoLatency2" class="font-medium text-slate-200">-</span> ms</div>
+                    </div>
                     <div title="Duration of the current session">Session Duration: <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
-                    <div title="Time spent calculating transparency (chroma key)">Transparency Calc: <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
-                    <div title="Time between transcription starting and agent starting to speak">Video Gen Latency: <span id="statVideoLatency2" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Time spent calculating transparency (chroma key)">Transparency Delay: <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
                     <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter2" class="font-medium text-slate-200">-</span> ms</div>
                     
                 </div>

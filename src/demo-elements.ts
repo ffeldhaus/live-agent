@@ -195,6 +195,15 @@ export function queryElements() {
   const statTotalLatency = document.getElementById(
     'statTotalLatency',
   ) as HTMLSpanElement;
+  const videoLatencyBar = document.getElementById(
+    'videoLatencyBar',
+  ) as HTMLDivElement;
+  const barP50 = document.getElementById('barP50') as HTMLDivElement;
+  const barP95 = document.getElementById('barP95') as HTMLDivElement;
+  const barP99 = document.getElementById('barP99') as HTMLDivElement;
+  const currentLatencyLine = document.getElementById(
+    'currentLatencyLine',
+  ) as HTMLDivElement;
   const cameraBtn = document.getElementById('cameraBtn') as HTMLButtonElement;
   const uploadBtn = document.getElementById('uploadBtn') as HTMLButtonElement;
 
@@ -332,6 +341,15 @@ export function queryElements() {
   const statTotalLatency2 = document.getElementById(
     'statTotalLatency2',
   ) as HTMLSpanElement;
+  const videoLatencyBar2 = document.getElementById(
+    'videoLatencyBar2',
+  ) as HTMLDivElement;
+  const barP502 = document.getElementById('barP502') as HTMLDivElement;
+  const barP952 = document.getElementById('barP952') as HTMLDivElement;
+  const barP992 = document.getElementById('barP992') as HTMLDivElement;
+  const currentLatencyLine2 = document.getElementById(
+    'currentLatencyLine2',
+  ) as HTMLDivElement;
 
   const statPacketsReceived2 = document.getElementById(
     'statPacketsReceived2',
@@ -421,6 +439,11 @@ export function queryElements() {
     barSetup,
     barLatency,
     statTotalLatency,
+    videoLatencyBar,
+    barP50,
+    barP95,
+    barP99,
+    currentLatencyLine,
     cameraBtn,
     uploadBtn,
     enableGrounding,
@@ -507,6 +530,11 @@ export function queryElements() {
     barSetup2,
     barLatency2,
     statTotalLatency2,
+    videoLatencyBar2,
+    barP502,
+    barP952,
+    barP992,
+    currentLatencyLine2,
     statPacketsReceived2,
     statAudioSent2,
     statVideoSent2,

@@ -303,4 +303,39 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
     barLatencyEl.style.width = `${latencyPct}%`;
     barLatencyEl.textContent = latency > 0 ? `${latency}ms` : '';
   }
+
+  const barP50El = elements['barP50' + suffix];
+  const barP95El = elements['barP95' + suffix];
+  const barP99El = elements['barP99' + suffix];
+  const currentLatencyLineEl = elements['currentLatencyLine' + suffix];
+
+  if (barP50El && barP95El && barP99El && currentLatencyLineEl) {
+    const p50 = stats.p50 || 0;
+    const p95 = stats.p95 || 0;
+    const p99 = stats.p99 || 0;
+    const current = stats.videoGenerationLatency || 0;
+
+    const maxScale = Math.max(p99, current, 1000); // Minimum scale of 1000ms
+
+    const p50Pct = (p50 / maxScale) * 100;
+    const p95Pct = ((p95 - p50) / maxScale) * 100;
+    const p99Pct = ((p99 - p95) / maxScale) * 100;
+    const currentPct = (current / maxScale) * 100;
+
+    barP50El.style.width = `${p50Pct}%`;
+    barP50El.textContent = p50 > 0 ? `${p50}ms` : '';
+
+    barP95El.style.width = `${p95Pct}%`;
+    barP95El.textContent = p95 > p50 ? `${p95}ms` : '';
+
+    barP99El.style.width = `${p99Pct}%`;
+    barP99El.textContent = p99 > p95 ? `${p99}ms` : '';
+
+    currentLatencyLineEl.style.left = `${currentPct}%`;
+    if (current > 0) {
+      currentLatencyLineEl.classList.remove('hidden');
+    } else {
+      currentLatencyLineEl.classList.add('hidden');
+    }
+  }
 }

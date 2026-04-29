@@ -27,6 +27,7 @@ export class GeminiAvatar extends HTMLElement {
 
   private transcriptionStartTime: number | null = null;
   private videoGenerationLatency: number | null = null;
+  private videoGenerationLatencies: number[] = [];
   private lastPacketTime = 0;
   private averageInterval = 0;
   private packetJitter = 0;
@@ -709,6 +710,16 @@ export class GeminiAvatar extends HTMLElement {
 
     const clientStats = this.client ? this.client.getStats() : null;
 
+    const sorted = [...this.videoGenerationLatencies].sort((a, b) => a - b);
+    const getPercentile = (p: number) => {
+      if (sorted.length === 0) return null;
+      const idx = Math.floor((p / 100) * sorted.length);
+      return sorted[idx];
+    };
+    const p50 = getPercentile(50);
+    const p95 = getPercentile(95);
+    const p99 = getPercentile(99);
+
     return {
       setupDurationMs,
       setupToFirstFrameDurationMs,
@@ -716,6 +727,9 @@ export class GeminiAvatar extends HTMLElement {
       networkInfo,
       chromaKeyDurationMs: this.chromaKeyDurationMs,
       videoGenerationLatency: this.videoGenerationLatency,
+      p50,
+      p95,
+      p99,
       packetJitter: this.packetJitter,
 
       // Packet stats from client
@@ -962,6 +976,7 @@ export class GeminiAvatar extends HTMLElement {
         if (isSpeaking && this.transcriptionStartTime) {
           const latency = Date.now() - this.transcriptionStartTime;
           this.videoGenerationLatency = latency;
+          this.videoGenerationLatencies.push(latency);
           this.transcriptionStartTime = null; // Reset for next time
           console.log(`[GeminiAvatar] Video generation latency: ${latency}ms`);
         }
