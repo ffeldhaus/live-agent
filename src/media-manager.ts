@@ -413,7 +413,7 @@ export class MediaManager {
         if (this.isSpeaking) {
           if (silenceStart === 0) {
             silenceStart = Date.now();
-          } else if (Date.now() - silenceStart > 1000) {
+          } else if (Date.now() - silenceStart > 600) {
             this.isSpeaking = false;
             console.log('[MediaManager] Speaking stopped');
             if (this.onSpeakingChange) this.onSpeakingChange(false);

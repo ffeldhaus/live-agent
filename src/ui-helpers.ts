@@ -27,7 +27,12 @@ export async function populateDevices(
         audioSelect.appendChild(opt);
       });
     if (!selectedAudioDeviceId && audioSelect.options.length > 0) {
-      selectedAudioDeviceId = audioSelect.options[0].value;
+      const hasDefault = Array.from(audioSelect.options).some(
+        opt => opt.value === 'default',
+      );
+      selectedAudioDeviceId = hasDefault
+        ? 'default'
+        : audioSelect.options[0].value;
     }
     audioSelect.value = selectedAudioDeviceId;
     audioSelect.onchange = () => {
@@ -46,7 +51,12 @@ export async function populateDevices(
         videoSelect.appendChild(opt);
       });
     if (!selectedVideoDeviceId && videoSelect.options.length > 0) {
-      selectedVideoDeviceId = videoSelect.options[0].value;
+      const hasDefault = Array.from(videoSelect.options).some(
+        opt => opt.value === 'default',
+      );
+      selectedVideoDeviceId = hasDefault
+        ? 'default'
+        : videoSelect.options[0].value;
     }
     videoSelect.value = selectedVideoDeviceId;
     videoSelect.onchange = () => {
@@ -66,7 +76,12 @@ export async function populateDevices(
         speakerSelect.appendChild(opt);
       });
     if (!selectedSpeakerDeviceId && speakerSelect.options.length > 0) {
-      selectedSpeakerDeviceId = speakerSelect.options[0].value;
+      const hasDefault = Array.from(speakerSelect.options).some(
+        opt => opt.value === 'default',
+      );
+      selectedSpeakerDeviceId = hasDefault
+        ? 'default'
+        : speakerSelect.options[0].value;
     }
     speakerSelect.value = selectedSpeakerDeviceId;
     speakerSelect.onchange = async () => {
