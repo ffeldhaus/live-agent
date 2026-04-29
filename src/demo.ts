@@ -1069,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         luckyPersonaBtn.disabled = true;
         const originalText = luckyPersonaBtn.textContent;
-        luckyPersonaBtn.textContent = 'Thinking...';
+        luckyPersonaBtn.textContent = 'Generating...';
         const data = await generateContent(
           'gemini-3-flash-preview',
           prompt,
@@ -1110,7 +1110,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         luckyGreetingBtn.disabled = true;
         const originalText = luckyGreetingBtn.textContent;
-        luckyGreetingBtn.textContent = 'Thinking...';
+        luckyGreetingBtn.textContent = 'Generating...';
         const data = await generateContent(
           'gemini-3-flash-preview',
           prompt,
@@ -1151,7 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         luckyImageBtn.disabled = true;
         const originalText = luckyImageBtn.textContent;
-        luckyImageBtn.textContent = 'Thinking...';
+        luckyImageBtn.textContent = 'Generating...';
         const data = await generateContent(
           'gemini-3-flash-preview',
           prompt,
@@ -1172,6 +1172,83 @@ document.addEventListener('DOMContentLoaded', () => {
         luckyImageBtn.textContent = "I'm feeling lucky";
       } finally {
         luckyImageBtn.disabled = false;
+      }
+    };
+  }
+
+  if (elements.luckyPersonaBtn2) {
+    elements.luckyPersonaBtn2.onclick = async () => {
+      if (!(await ensureValidToken(store, tokenClient, elements))) return;
+      const name = elements.avatarName2.value;
+      const voice = elements.voiceSelect2.value;
+      const preset = (AVATAR_PRESETS as any)[name];
+      const texture = preset ? preset.texture : 'nice and random';
+      const mood = preset ? preset.mood : 'pleasant and engaging';
+
+      const prompt = `Generate a nice, funny, earnest random persona for an AI avatar named ${name} with voice ${voice}. The avatar has style ${preset ? preset.style : 'custom'}, visual texture "${texture}" and mood "${mood}". Return only the persona description.`;
+
+      try {
+        elements.luckyPersonaBtn2.disabled = true;
+        const originalText = elements.luckyPersonaBtn2.textContent;
+        elements.luckyPersonaBtn2.textContent = 'Generating...';
+        const data = await generateContent(
+          'gemini-3-flash-preview',
+          prompt,
+          elements.projectIdInput.value,
+          elements.locationInput.value || 'us-central1',
+          elements.tokenInput.value,
+          undefined,
+          'Lucky Persona Generation',
+        );
+        const text = data.candidates[0].content.parts[0].text;
+        elements.systemInstruction2.value = text.trim();
+        elements.luckyPersonaBtn2.textContent = originalText;
+      } catch (e: any) {
+        showMessageModal('Error', `Failed to generate persona: ${e.message}`);
+        elements.luckyPersonaBtn2.textContent = "I'm feeling lucky";
+      } finally {
+        elements.luckyPersonaBtn2.disabled = false;
+      }
+    };
+  }
+
+  if (elements.luckyGreetingBtn2) {
+    elements.luckyGreetingBtn2.onclick = async () => {
+      if (!(await ensureValidToken(store, tokenClient, elements))) return;
+      const persona = elements.systemInstruction2.value;
+      const name = elements.avatarName2.value;
+      const preset = (AVATAR_PRESETS as any)[name];
+      const texture = preset ? preset.texture : 'custom';
+      const mood = preset ? preset.mood : 'pleasant';
+
+      let prompt = '';
+      if (persona) {
+        prompt = `Generate a default greeting for an AI avatar with this persona: "${persona}". Return only the greeting text.`;
+      } else {
+        prompt = `Generate a default greeting for an AI avatar named ${name} with visual texture "${texture}" and mood "${mood}". Return only the greeting text.`;
+      }
+
+      try {
+        elements.luckyGreetingBtn2.disabled = true;
+        const originalText = elements.luckyGreetingBtn2.textContent;
+        elements.luckyGreetingBtn2.textContent = 'Generating...';
+        const data = await generateContent(
+          'gemini-3-flash-preview',
+          prompt,
+          elements.projectIdInput.value,
+          elements.locationInput.value || 'us-central1',
+          elements.tokenInput.value,
+          undefined,
+          'Lucky Greeting Generation',
+        );
+        const text = data.candidates[0].content.parts[0].text;
+        elements.defaultGreeting2.value = text.trim();
+        elements.luckyGreetingBtn2.textContent = originalText;
+      } catch (e: any) {
+        showMessageModal('Error', `Failed to generate greeting: ${e.message}`);
+        elements.luckyGreetingBtn2.textContent = "I'm feeling lucky";
+      } finally {
+        elements.luckyGreetingBtn2.disabled = false;
       }
     };
   }

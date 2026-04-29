@@ -72,7 +72,7 @@
                     <label for="bgImagePrompt" class="text-sm font-medium text-slate-300">Background Prompt</label>
                     <div class="flex items-center gap-2">
                         <input type="text" id="bgImagePrompt" placeholder="Describe background..." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button id="luckyBgPromptBtn" class="bg-purple-600 hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">I'm feeling lucky</button>
+                        <button id="luckyBgPromptBtn" class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">I'm feeling lucky</button>
                         <button id="generateBgBtn" class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm">Generate Background Image</button>
                     </div>
                 </div>
@@ -158,7 +158,7 @@
                     <label for="imagePrompt" class="text-sm font-medium text-slate-300">Image Generation Prompt</label>
                     <div class="flex gap-2">
                         <input type="text" id="imagePrompt" placeholder="E.g., Professional headshot of a smiling person, corporate attire, soft studio lighting, blurred background" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
+                        <button class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyImageBtn">I'm feeling lucky</button>
                         <button class="bg-indigo-600 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="generateImageBtn">Generate Avatar Image</button>
                     </div>
                 </div>
@@ -287,7 +287,7 @@
                 <label for="systemInstruction" class="text-sm font-medium text-slate-300">System Instructions / Persona</label>
                 <div class="flex gap-2">
                     <textarea id="systemInstruction" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px]"></textarea>
-                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn">I'm feeling lucky</button>
+                    <button class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn">I'm feeling lucky</button>
                 </div>
             </div>
             
@@ -295,7 +295,7 @@
                 <label for="defaultGreeting" class="text-sm font-medium text-slate-300">Default Greeting</label>
                 <div class="flex gap-2">
                     <input type="text" id="defaultGreeting" placeholder="E.g., Hello! How can I help you today?" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn">I'm feeling lucky</button>
+                    <button class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn">I'm feeling lucky</button>
                 </div>
             </div>
 
@@ -398,7 +398,7 @@
                 <label for="systemInstruction2" class="text-sm font-medium text-slate-300">System Instructions / Persona</label>
                 <div class="flex gap-2">
                     <textarea id="systemInstruction2" placeholder="E.g., You are a helpful assistant named Kira. Speak like a pirate." class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[60px]"></textarea>
-                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn2">I'm feeling lucky</button>
+                    <button class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyPersonaBtn2">I'm feeling lucky</button>
                 </div>
             </div>
             
@@ -406,7 +406,7 @@
                 <label for="defaultGreeting2" class="text-sm font-medium text-slate-300">Default Greeting</label>
                 <div class="flex gap-2">
                     <input type="text" id="defaultGreeting2" placeholder="E.g., Hello! How can I help you today?" class="flex-1 bg-slate-900 text-slate-100 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <button class="bg-fuchsia-600 hover:bg-fuchsia-700 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn2">I'm feeling lucky</button>
+                    <button class="btn-lucky disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-2 px-4 rounded-lg transition-all text-sm" id="luckyGreetingBtn2">I'm feeling lucky</button>
                 </div>
             </div>
         </details>
@@ -458,7 +458,7 @@
                     <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter" class="font-medium text-slate-200">-</span> ms</div>
                     
                 </div>
-                <table class="min-w-full text-sm text-slate-300 mt-2">
+                <table class="min-w-80 text-sm text-slate-300 mt-2">
                   <thead>
                     <tr>
                       <th class="text-left" title="Type of packet">Metric</th>
@@ -510,7 +510,7 @@
                     <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter2" class="font-medium text-slate-200">-</span> ms</div>
                     
                 </div>
-                <table class="min-w-full text-sm text-slate-300 mt-2">
+                <table class="min-w-80 text-sm text-slate-300 mt-2">
                   <thead>
                     <tr>
                       <th class="text-left" title="Type of packet">Metric</th>

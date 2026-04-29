@@ -1,6 +1,7 @@
 import {GeminiAvatar} from './gemini-avatar';
 import {generateContent, updateBackground, applyTheme} from './demo-helpers';
 import {showMessageModal} from './ui-helpers';
+import {ensureValidToken} from './auth';
 
 export async function handleImageGeneration(
   name: string,
@@ -664,7 +665,7 @@ export async function handleLuckyBgPrompt(
   try {
     elements.luckyBgPromptBtn.disabled = true;
     const originalText = elements.luckyBgPromptBtn.textContent;
-    elements.luckyBgPromptBtn.textContent = 'Thinking...';
+    elements.luckyBgPromptBtn.textContent = 'Generating...';
     const data = await generateContent(
       'gemini-3-flash-preview',
       prompt,

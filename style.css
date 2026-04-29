@@ -86,6 +86,7 @@ p.subtitle {
 }
 .grid {
     display: grid;
+    gap: 10px;
 }
 .form-group {
     display: flex;
@@ -342,8 +343,5 @@ details[open] summary {
         padding: 15px !important;
     }
     
-    .grid {
-        grid-template-columns: 1fr !important;
-    }
 }
 
