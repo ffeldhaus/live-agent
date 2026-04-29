@@ -265,14 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
     option.textContent = `${preset.displayName} (${preset.description})`;
     voiceSelect.appendChild(option);
   });
-  // Show connection type on load
-  const conn =
-    (navigator as any).connection ||
-    (navigator as any).mozConnection ||
-    (navigator as any).webkitConnection;
-  if (conn && statConnType) {
-    statConnType.textContent = conn.type || '-';
-  }
   // Load from localStorage
   loadSettings(elements, store, customAvatars, avatar);
   if (localStorage.getItem('gemini_oauth_client_id')) {

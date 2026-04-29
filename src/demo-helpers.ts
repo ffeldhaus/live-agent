@@ -230,19 +230,36 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
       ? stats.setupToFirstFrameDurationMs.toString()
       : '-',
   );
-  set('statPacketsReceived', stats.packetsReceived.toString());
-  set('statAudioSent', stats.audioChunksSent.toString());
-  set('statVideoSent', stats.videoFramesSent.toString());
+  // Packet stats
+  set('statAudioSent', stats.audioPacketsSent.toString());
+  set('statAudioReceived', stats.audioPacketsReceived.toString());
+  set('statVideoSent', stats.videoPacketsSent.toString());
   set('statVideoPackets', stats.videoPacketsReceived.toString());
-  set('statTotalFrames', stats.totalVideoFrames.toString());
+  set('statTextSent', stats.textPacketsSent.toString());
+  set('statTextReceived', stats.textPacketsReceived.toString());
+  set('statTotalSent', stats.totalPacketsSent.toString());
+  set('statTotalReceived', stats.packetsReceived.toString());
+
   set(
     'statSessionDuration',
     stats.sessionDurationMs ? (stats.sessionDurationMs / 1000).toFixed(1) : '-',
   );
-  set('statFps', stats.averageFps ? stats.averageFps.toString() : '-');
   set(
     'statChromaKeyDuration',
     stats.chromaKeyDurationMs ? stats.chromaKeyDurationMs.toFixed(1) : '-',
+  );
+  set(
+    'statVideoLatency',
+    stats.videoGenerationLatency !== null &&
+      stats.videoGenerationLatency !== undefined
+      ? stats.videoGenerationLatency.toFixed(0)
+      : '-',
+  );
+  set(
+    'statJitter',
+    stats.packetJitter !== null && stats.packetJitter !== undefined
+      ? stats.packetJitter.toFixed(1)
+      : '-',
   );
 
   const chromaEl = elements['statChromaKeyDuration' + suffix];
@@ -255,15 +272,18 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
       chromaEl.style.color = '';
     }
   }
-  set(
-    'statDownlink',
-    stats.networkInfo?.downlink ? stats.networkInfo.downlink.toString() : '-',
-  );
-  set(
-    'statRtt',
-    stats.networkInfo?.rtt ? stats.networkInfo.rtt.toString() : '-',
-  );
-  set('statConnType', stats.networkInfo?.type || '-');
+
+  // Network stats (preserve last value if missing)
+  if (stats.networkInfo?.downlink) {
+    if (stats.networkInfo.downlink < 10) {
+      set('statDownlink', stats.networkInfo.downlink);
+    } else {
+      set('statDownlink', '>= 10');
+    }
+  }
+  if (stats.networkInfo?.rtt) {
+    set('statRtt', `${stats.networkInfo.rtt}`);
+  }
 
   const setup = stats.setupDurationMs || 0;
   const latency = stats.setupToFirstFrameDurationMs || 0;

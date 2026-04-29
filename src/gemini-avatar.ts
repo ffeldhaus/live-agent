@@ -25,6 +25,13 @@ export class GeminiAvatar extends HTMLElement {
   private chromaKeyLoopId: number | null = null;
   private resizeListener: (() => void) | null = null;
 
+  private transcriptionStartTime: number | null = null;
+  private videoGenerationLatency: number | null = null;
+  private lastPacketTime = 0;
+  private averageInterval = 0;
+  private packetJitter = 0;
+  private packetCount = 0;
+
   // UI Elements
   private container!: HTMLDivElement;
   private videoEl!: HTMLVideoElement;
@@ -688,16 +695,6 @@ export class GeminiAvatar extends HTMLElement {
     const sessionStart = this.firstFrameTime || this.setupCompleteTime;
     const sessionDurationMs = sessionStart ? now - sessionStart : null;
 
-    // Use frames received from media manager as fallback or primary for stats
-    const totalFrames = this.mediaManager
-      ? this.mediaManager.videoFramesReceived
-      : 0;
-
-    const averageFps =
-      sessionDurationMs && sessionDurationMs > 0 && totalFrames > 0
-        ? totalFrames / (sessionDurationMs / 1000)
-        : null;
-
     const conn =
       (navigator as any).connection ||
       (navigator as any).mozConnection ||
@@ -710,24 +707,26 @@ export class GeminiAvatar extends HTMLElement {
         }
       : null;
 
+    const clientStats = this.client ? this.client.getStats() : null;
+
     return {
       setupDurationMs,
       setupToFirstFrameDurationMs,
-      packetsReceived: this.packetsReceived,
-      audioChunksSent: this.mediaManager
-        ? this.mediaManager.audioChunksSent
-        : 0,
-      videoFramesSent: this.mediaManager
-        ? this.mediaManager.videoFramesSent
-        : 0,
-      videoPacketsReceived: this.mediaManager
-        ? this.mediaManager.videoFramesReceived
-        : 0,
-      totalVideoFrames: totalFrames,
       sessionDurationMs,
-      averageFps: averageFps ? parseFloat(averageFps.toFixed(1)) : null,
       networkInfo,
       chromaKeyDurationMs: this.chromaKeyDurationMs,
+      videoGenerationLatency: this.videoGenerationLatency,
+      packetJitter: this.packetJitter,
+
+      // Packet stats from client
+      packetsReceived: clientStats ? clientStats.totalPacketsReceived : 0,
+      audioPacketsReceived: clientStats ? clientStats.audioPacketsReceived : 0,
+      videoPacketsReceived: clientStats ? clientStats.videoPacketsReceived : 0,
+      textPacketsReceived: clientStats ? clientStats.textPacketsReceived : 0,
+      totalPacketsSent: clientStats ? clientStats.totalPacketsSent : 0,
+      audioPacketsSent: clientStats ? clientStats.audioPacketsSent : 0,
+      videoPacketsSent: clientStats ? clientStats.videoPacketsSent : 0,
+      textPacketsSent: clientStats ? clientStats.textPacketsSent : 0,
     };
   }
 
@@ -855,6 +854,7 @@ export class GeminiAvatar extends HTMLElement {
     if (this.client) return;
 
     this.mediaManager?.resetMediaSource();
+    this.mediaManager?.ensurePlaybackAudioSetup();
 
     this.packetsReceived = 0;
     this.audioChunksSent = 0;
@@ -920,13 +920,62 @@ export class GeminiAvatar extends HTMLElement {
       this.setupCompleteTime = new Date().getTime();
       this.mediaManager?.setSetupComplete(true);
     };
-    this.client.onUserTranscript = text => this.appendTranscript('User', text);
-    this.client.onModelTranscript = text =>
-      this.appendTranscript('Agent', text);
-    this.client.onAudioData = base64 =>
+    this.client.onUserTranscript = text => {
+      if (this.getAttribute('enable-transcript') === 'true') {
+        this.appendTranscript('User', text);
+      }
+    };
+    this.client.onModelTranscript = text => {
+      if (!this.transcriptionStartTime) {
+        this.transcriptionStartTime = Date.now();
+      }
+      if (this.getAttribute('enable-transcript') === 'true') {
+        this.appendTranscript('Agent', text);
+      }
+    };
+
+    const handlePacket = () => {
+      const now = Date.now();
+      if (this.lastPacketTime > 0) {
+        const interval = now - this.lastPacketTime;
+        this.packetCount++;
+        if (this.packetCount === 1) {
+          this.averageInterval = interval;
+        } else {
+          this.averageInterval = this.averageInterval * 0.9 + interval * 0.1;
+          this.packetJitter =
+            this.packetJitter * 0.9 +
+            Math.abs(interval - this.averageInterval) * 0.1;
+        }
+      }
+      this.lastPacketTime = now;
+    };
+
+    this.client.onAudioData = base64 => {
+      handlePacket();
       this.mediaManager?.playAudioChunk(base64);
-    this.client.onVideoData = (base64, mime) =>
+    };
+
+    if (this.mediaManager) {
+      this.mediaManager.onSpeakingChange = isSpeaking => {
+        console.log(`[GeminiAvatar] Speaking state change: ${isSpeaking}`);
+        if (isSpeaking && this.transcriptionStartTime) {
+          const latency = Date.now() - this.transcriptionStartTime;
+          this.videoGenerationLatency = latency;
+          this.transcriptionStartTime = null; // Reset for next time
+          console.log(`[GeminiAvatar] Video generation latency: ${latency}ms`);
+        }
+        if (!isSpeaking) {
+          this.transcriptionStartTime = null;
+        }
+        this.classList.toggle('speaking', isSpeaking);
+      };
+    }
+
+    this.client.onVideoData = (base64, mime) => {
+      handlePacket();
       this.mediaManager?.handleVideoDataChunk(base64, mime);
+    };
     this.client.onVideoChunk = blob =>
       this.mediaManager?.handleVideoChunk(blob);
     this.client.onLog = (msg, data, imp) => this._log(msg, data, imp);

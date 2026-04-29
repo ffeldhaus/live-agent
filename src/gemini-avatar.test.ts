@@ -147,8 +147,8 @@ describe('GeminiAvatar', () => {
   it('should return stats with default values', () => {
     const stats = element.getStats();
     expect(stats.packetsReceived).toBe(0);
-    expect(stats.audioChunksSent).toBe(0);
-    expect(stats.videoFramesSent).toBe(0);
+    expect(stats.audioPacketsSent).toBe(0);
+    expect(stats.videoPacketsSent).toBe(0);
     expect(stats.setupDurationMs).toBeNull();
   });
 
@@ -157,21 +157,31 @@ describe('GeminiAvatar', () => {
     anyEl.startTime = 1000;
     anyEl.setupCompleteTime = 2000;
     anyEl.firstFrameTime = 2500;
-    anyEl.packetsReceived = 10;
-    anyEl.mediaManager.audioChunksSent = 5;
-    anyEl.mediaManager.videoFramesReceived = 48;
 
-    anyEl.videoEl = document.createElement('video');
-    anyEl.videoEl.getVideoPlaybackQuality = vi
-      .fn()
-      .mockReturnValue({totalVideoFrames: 48});
+    anyEl.client = {
+      getStats: vi.fn().mockReturnValue({
+        totalPacketsReceived: 10,
+        audioPacketsReceived: 2,
+        videoPacketsReceived: 3,
+        textPacketsReceived: 5,
+        totalPacketsSent: 20,
+        audioPacketsSent: 5,
+        videoPacketsSent: 10,
+        textPacketsSent: 5,
+      }),
+      disconnect: vi.fn(),
+    };
 
     const stats = element.getStats();
     expect(stats.setupDurationMs).toBe(1000);
     expect(stats.setupToFirstFrameDurationMs).toBe(500);
     expect(stats.packetsReceived).toBe(10);
-    expect(stats.audioChunksSent).toBe(5);
-    expect(stats.totalVideoFrames).toBe(48);
+    expect(stats.audioPacketsSent).toBe(5);
+    expect(stats.videoPacketsSent).toBe(10);
+    expect(stats.textPacketsSent).toBe(5);
+    expect(stats.audioPacketsReceived).toBe(2);
+    expect(stats.videoPacketsReceived).toBe(3);
+    expect(stats.textPacketsReceived).toBe(5);
   });
 
   it('should show/hide controls based on visible-controls attribute', () => {

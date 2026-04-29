@@ -266,7 +266,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="enableTranscript" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
-                    <label for="enableTranscript" class="text-sm text-slate-300 font-normal">Enable Transcript</label>
+                    <label for="enableTranscript" class="text-sm text-slate-300 font-normal">Show Transcript</label>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -377,7 +377,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="checkbox" id="enableTranscript2" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-800">
-                    <label for="enableTranscript2" class="text-sm text-slate-300 font-normal">Enable Transcript</label>
+                    <label for="enableTranscript2" class="text-sm text-slate-300 font-normal">Show Transcript</label>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -432,20 +432,19 @@
             <!-- General Section -->
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-slate-200 mb-2">General</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
-                    <div>Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
-                    <div>RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
-                    <div>Connection Type: <span id="statConnType" class="font-medium text-slate-200">-</span></div>
-                    <div>CPU Pressure: <span id="statCpuPressure" class="font-medium text-slate-200">-</span></div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-sm text-slate-300">
+                    <div title="Estimated download speed of the network">Downlink: <span id="statDownlink" class="font-medium text-slate-200">-</span> Mbps</div>
+                    <div title="Round-trip time for network packets">RTT: <span id="statRtt" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Estimated CPU pressure or load" class="col-span-2 sm:col-span-2">CPU Pressure: <span id="statCpuPressure" class="font-medium text-slate-200">-</span></div>
                 </div>
             </div>
 
             <!-- Avatar 1 Section -->
             <div id="statsAvatar1" class="mb-4">
                 <h3 class="text-lg font-semibold text-slate-200 mb-2">Avatar 1</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-sm text-slate-300">
                     <!-- Latency Visualizer -->
-                    <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+                    <div class="col-span-2 sm:col-span-4 flex items-center gap-3 mt-2">
                         <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
                         <div id="latencyBar" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
                             <div id="barSetup" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
@@ -453,23 +452,51 @@
                         </div>
                         <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency" class="font-medium text-slate-200">-</span> ms</div>
                     </div>
-                    <div>Total Packets Received: <span id="statPacketsReceived" class="font-medium text-slate-200">0</span></div>
-                    <div>Audio Chunks Sent: <span id="statAudioSent" class="font-medium text-slate-200">0</span></div>
-                    <div>Video Frames Sent: <span id="statVideoSent" class="font-medium text-slate-200">0</span></div>
-                    <div>Video Packets Received: <span id="statVideoPackets" class="font-medium text-slate-200">0</span></div>
-                    <div>Total Video Frames: <span id="statTotalFrames" class="font-medium text-slate-200">0</span></div>
-                    <div>Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
-                    <div>Average FPS: <span id="statFps" class="font-medium text-slate-200">-</span></div>
-                    <div>Transparency Calc: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Duration of the current session">Session Duration: <span id="statSessionDuration" class="font-medium text-slate-200">-</span> s</div>
+                    <div title="Time spent calculating transparency (chroma key)">Transparency Calc: <span id="statChromaKeyDuration" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Time between transcription starting and agent starting to speak">Video Gen Latency: <span id="statVideoLatency" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter" class="font-medium text-slate-200">-</span> ms</div>
+                    
                 </div>
+                <table class="min-w-full text-sm text-slate-300 mt-2">
+                  <thead>
+                    <tr>
+                      <th class="text-left" title="Type of packet">Metric</th>
+                      <th class="text-right" title="Number of packets sent to API">Sent</th>
+                      <th class="text-right" title="Number of packets received from API">Received</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr title="Audio data packets">
+                      <td>Audio Packets</td>
+                      <td id="statAudioSent" class="text-right">0</td>
+                      <td id="statAudioReceived" class="text-right">0</td>
+                    </tr>
+                    <tr title="Video data packets (1 frame per packet usually)">
+                      <td>Video Packets</td>
+                      <td id="statVideoSent" class="text-right">0</td>
+                      <td id="statVideoPackets" class="text-right">0</td>
+                    </tr>
+                    <tr title="Text messages (transcripts and chat input)">
+                      <td>Text Packets</td>
+                      <td id="statTextSent" class="text-right">0</td>
+                      <td id="statTextReceived" class="text-right">0</td>
+                    </tr>
+                    <tr class="font-bold" title="Total sum of all packets">
+                      <td>Total Packets</td>
+                      <td id="statTotalSent" class="text-right">0</td>
+                      <td id="statTotalReceived" class="text-right">0</td>
+                    </tr>
+                  </tbody>
+                </table>
             </div>
 
             <!-- Avatar 2 Section -->
             <div id="statsAvatar2" class="mb-4" style="display: none;">
                 <h3 class="text-lg font-semibold text-slate-200 mb-2">Avatar 2</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-slate-300">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-sm text-slate-300">
                     <!-- Latency Visualizer -->
-                    <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+                    <div class="col-span-2 sm:col-span-4 flex items-center gap-3 mt-2">
                         <div class="font-medium text-slate-300 whitespace-nowrap">Initialization:</div>
                         <div id="latencyBar2" class="flex-1 flex h-5 bg-slate-700 rounded-full overflow-hidden">
                             <div id="barSetup2" class="bg-blue-500 w-0 text-center text-white text-xs leading-5"></div>
@@ -477,15 +504,43 @@
                         </div>
                         <div class="text-xs text-slate-400 whitespace-nowrap">Total: <span id="statTotalLatency2" class="font-medium text-slate-200">-</span> ms</div>
                     </div>
-                    <div>Total Packets Received: <span id="statPacketsReceived2" class="font-medium text-slate-200">0</span></div>
-                    <div>Audio Chunks Sent: <span id="statAudioSent2" class="font-medium text-slate-200">0</span></div>
-                    <div>Video Frames Sent: <span id="statVideoSent2" class="font-medium text-slate-200">0</span></div>
-                    <div>Video Packets Received: <span id="statVideoPackets2" class="font-medium text-slate-200">0</span></div>
-                    <div>Total Video Frames: <span id="statTotalFrames2" class="font-medium text-slate-200">0</span></div>
-                    <div>Session Duration: <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
-                    <div>Average FPS: <span id="statFps2" class="font-medium text-slate-200">-</span></div>
-                    <div>Transparency Calc: <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Duration of the current session">Session Duration: <span id="statSessionDuration2" class="font-medium text-slate-200">-</span> s</div>
+                    <div title="Time spent calculating transparency (chroma key)">Transparency Calc: <span id="statChromaKeyDuration2" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Time between transcription starting and agent starting to speak">Video Gen Latency: <span id="statVideoLatency2" class="font-medium text-slate-200">-</span> ms</div>
+                    <div title="Fluctuation in time between video or audio packets">Packet Jitter: <span id="statJitter2" class="font-medium text-slate-200">-</span> ms</div>
+                    
                 </div>
+                <table class="min-w-full text-sm text-slate-300 mt-2">
+                  <thead>
+                    <tr>
+                      <th class="text-left" title="Type of packet">Metric</th>
+                      <th class="text-right" title="Number of packets sent to API">Sent</th>
+                      <th class="text-right" title="Number of packets received from API">Received</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr title="Audio data packets">
+                      <td>Audio Packets</td>
+                      <td id="statAudioSent2" class="text-right">0</td>
+                      <td id="statAudioReceived2" class="text-right">0</td>
+                    </tr>
+                    <tr title="Video data packets (1 frame per packet usually)">
+                      <td>Video Packets</td>
+                      <td id="statVideoSent2" class="text-right">0</td>
+                      <td id="statVideoPackets2" class="text-right">0</td>
+                    </tr>
+                    <tr title="Text messages (transcripts and chat input)">
+                      <td>Text Packets</td>
+                      <td id="statTextSent2" class="text-right">0</td>
+                      <td id="statTextReceived2" class="text-right">0</td>
+                    </tr>
+                    <tr class="font-bold" title="Total sum of all packets">
+                      <td>Total Packets</td>
+                      <td id="statTotalSent2" class="text-right">0</td>
+                      <td id="statTotalReceived2" class="text-right">0</td>
+                    </tr>
+                  </tbody>
+                </table>
             </div>
         </details>
 

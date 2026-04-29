@@ -94,6 +94,13 @@ describe('Demo App', () => {
             connect: vi.fn(),
             disconnect: vi.fn(),
           }),
+          createAnalyser: vi.fn().mockReturnValue({
+            fftSize: 256,
+            frequencyBinCount: 128,
+            getByteTimeDomainData: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+          }),
           createMediaElementSource: vi
             .fn()
             .mockReturnValue({connect: vi.fn(), disconnect: vi.fn()}),

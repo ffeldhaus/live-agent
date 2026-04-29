@@ -30,6 +30,16 @@ export class GeminiLiveClient {
   private currentMessageIndex = 0;
   private explicitDisconnect = false;
 
+  // Counters
+  public totalPacketsReceived = 0;
+  public audioPacketsReceived = 0;
+  public videoPacketsReceived = 0;
+  public textPacketsReceived = 0;
+  public totalPacketsSent = 0;
+  public audioPacketsSent = 0;
+  public videoPacketsSent = 0;
+  public textPacketsSent = 0;
+
   // Callbacks
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -151,7 +161,6 @@ export class GeminiLiveClient {
     const language = this.options.language || 'en-US';
     const systemInstruction = this.options.systemInstruction;
     const enableGrounding = this.options.enableGrounding;
-    const enableTranscript = this.options.enableTranscript;
 
     const setupMessage = {
       setup: {
@@ -189,12 +198,8 @@ export class GeminiLiveClient {
           ? {systemInstruction: {parts: [{text: systemInstruction}]}}
           : {}),
         ...(enableGrounding ? {tools: [{googleSearch: {}}]} : {}),
-        ...(enableTranscript
-          ? {
-              inputAudioTranscription: {},
-              outputAudioTranscription: {},
-            }
-          : {}),
+        inputAudioTranscription: {},
+        outputAudioTranscription: {},
       },
     };
 
@@ -213,6 +218,9 @@ export class GeminiLiveClient {
     this.currentMessageIndex++;
     this.sentMessages.push({index: this.currentMessageIndex, message});
 
+    this.textPacketsSent++;
+    this.totalPacketsSent++;
+
     this.ws.send(JSON.stringify(message));
   }
 
@@ -227,6 +235,9 @@ export class GeminiLiveClient {
     this.currentMessageIndex++;
     this.sentMessages.push({index: this.currentMessageIndex, message});
 
+    this.audioPacketsSent++;
+    this.totalPacketsSent++;
+
     this.ws.send(JSON.stringify(message));
   }
 
@@ -239,10 +250,27 @@ export class GeminiLiveClient {
     this.currentMessageIndex++;
     this.sentMessages.push({index: this.currentMessageIndex, message});
 
+    this.videoPacketsSent++;
+    this.totalPacketsSent++;
+
     this.ws.send(JSON.stringify(message));
   }
 
+  public getStats() {
+    return {
+      totalPacketsReceived: this.totalPacketsReceived,
+      audioPacketsReceived: this.audioPacketsReceived,
+      videoPacketsReceived: this.videoPacketsReceived,
+      textPacketsReceived: this.textPacketsReceived,
+      totalPacketsSent: this.totalPacketsSent,
+      audioPacketsSent: this.audioPacketsSent,
+      videoPacketsSent: this.videoPacketsSent,
+      textPacketsSent: this.textPacketsSent,
+    };
+  }
+
   private handleMessage(event: MessageEvent) {
+    this.totalPacketsReceived++;
     this.messageQueue.push(event.data);
     this.processQueue();
   }
@@ -371,12 +399,14 @@ export class GeminiLiveClient {
       }
 
       if (response.serverContent.outputTranscription) {
+        this.textPacketsReceived++;
         const text = response.serverContent.outputTranscription.text;
         this._log('Received output transcription:', text);
         if (this.onModelTranscript) this.onModelTranscript(text);
       }
 
       if (response.serverContent.inputTranscription) {
+        this.textPacketsReceived++;
         const text = response.serverContent.inputTranscription.text;
         this._log('Received input transcription:', text);
         if (this.onUserTranscript) this.onUserTranscript(text);
@@ -386,6 +416,7 @@ export class GeminiLiveClient {
         const parts = response.serverContent.userTurn.parts;
         for (const part of parts) {
           if (part.text) {
+            this.textPacketsReceived++;
             this._log('Received user transcript in JSON', part.text);
             if (this.onUserTranscript) this.onUserTranscript(part.text);
           }
@@ -396,6 +427,7 @@ export class GeminiLiveClient {
         const parts = response.serverContent.modelTurn.parts;
         for (const part of parts) {
           if (part.text) {
+            this.textPacketsReceived++;
             this._log('Received text data in JSON', part.text);
             if (this.onModelTranscript) this.onModelTranscript(part.text);
           }
@@ -403,6 +435,7 @@ export class GeminiLiveClient {
             part.inlineData &&
             part.inlineData.mimeType.startsWith('audio/')
           ) {
+            this.audioPacketsReceived++;
             this._log('Received audio data in JSON', {
               size: part.inlineData.data.length,
             });
@@ -412,6 +445,7 @@ export class GeminiLiveClient {
             part.inlineData &&
             part.inlineData.mimeType.startsWith('video/')
           ) {
+            this.videoPacketsReceived++;
             if (this.onVideoData)
               this.onVideoData(part.inlineData.data, part.inlineData.mimeType);
           }

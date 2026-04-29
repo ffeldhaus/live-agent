@@ -106,6 +106,25 @@ export function queryElements() {
   const statConnType = document.getElementById(
     'statConnType',
   ) as HTMLSpanElement;
+  const statVideoLatency = document.getElementById(
+    'statVideoLatency',
+  ) as HTMLSpanElement;
+  const statJitter = document.getElementById('statJitter') as HTMLSpanElement;
+  const statAudioReceived = document.getElementById(
+    'statAudioReceived',
+  ) as HTMLSpanElement;
+  const statTextSent = document.getElementById(
+    'statTextSent',
+  ) as HTMLSpanElement;
+  const statTextReceived = document.getElementById(
+    'statTextReceived',
+  ) as HTMLSpanElement;
+  const statTotalSent = document.getElementById(
+    'statTotalSent',
+  ) as HTMLSpanElement;
+  const statTotalReceived = document.getElementById(
+    'statTotalReceived',
+  ) as HTMLSpanElement;
 
   const systemInstructionInput = document.getElementById(
     'systemInstruction',
@@ -339,6 +358,25 @@ export function queryElements() {
   const statCpuPressure = document.getElementById(
     'statCpuPressure',
   ) as HTMLSpanElement;
+  const statVideoLatency2 = document.getElementById(
+    'statVideoLatency2',
+  ) as HTMLSpanElement;
+  const statJitter2 = document.getElementById('statJitter2') as HTMLSpanElement;
+  const statAudioReceived2 = document.getElementById(
+    'statAudioReceived2',
+  ) as HTMLSpanElement;
+  const statTextSent2 = document.getElementById(
+    'statTextSent2',
+  ) as HTMLSpanElement;
+  const statTextReceived2 = document.getElementById(
+    'statTextReceived2',
+  ) as HTMLSpanElement;
+  const statTotalSent2 = document.getElementById(
+    'statTotalSent2',
+  ) as HTMLSpanElement;
+  const statTotalReceived2 = document.getElementById(
+    'statTotalReceived2',
+  ) as HTMLSpanElement;
 
   const elements = {
     avatar,
@@ -438,6 +476,13 @@ export function queryElements() {
     statDownlink,
     statRtt,
     statConnType,
+    statVideoLatency,
+    statJitter,
+    statAudioReceived,
+    statTextSent,
+    statTextReceived,
+    statTotalSent,
+    statTotalReceived,
     addAvatarBtn,
     avatar2Config,
     resetAvatarBtn2,
@@ -471,6 +516,13 @@ export function queryElements() {
     statFps2,
     statChromaKeyDuration2,
     statCpuPressure,
+    statVideoLatency2,
+    statJitter2,
+    statAudioReceived2,
+    statTextSent2,
+    statTextReceived2,
+    statTotalSent2,
+    statTotalReceived2,
   };
 
   return elements;

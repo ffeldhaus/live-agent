@@ -18,6 +18,9 @@ export class MediaManager {
   private customVideoLoader: any = null;
   private receivedBytes = 0;
   private feedVideoData: ((arrayBuffer: ArrayBuffer) => void) | null = null;
+  private analyser: AnalyserNode | null = null;
+  private speakingInterval: any = null;
+  private isSpeaking = false;
 
   // Input (Mic/Cam/Screen)
   private micStream: MediaStream | null = null;
@@ -55,6 +58,7 @@ export class MediaManager {
   onVideoFrame?: (base64Data: string) => void;
   onFirstFrame?: () => void;
   onLog?: (message: string, data?: any, isImportant?: boolean) => void;
+  onSpeakingChange?: (isSpeaking: boolean) => void;
 
   constructor(videoEl: HTMLVideoElement) {
     this.videoEl = videoEl;
@@ -112,7 +116,7 @@ export class MediaManager {
     }
   }
 
-  public getAudioOutputStream(): MediaStream {
+  public ensurePlaybackAudioSetup() {
     if (!this.playbackAudioContext) {
       this.playbackAudioContext =
         this.audioContext ||
@@ -125,6 +129,41 @@ export class MediaManager {
       this.audioGainNode = this.playbackAudioContext.createGain();
       this.audioGainNode.connect(this.playbackAudioContext.destination);
     }
+
+    if (!this.videoAudioSource && this.videoEl) {
+      try {
+        this._log(
+          'Creating MediaElementSource from video element in setup',
+          null,
+          true,
+        );
+        this.videoAudioSource =
+          this.playbackAudioContext.createMediaElementSource(this.videoEl);
+        this.videoAudioSource.connect(this.playbackAudioContext.destination);
+      } catch (e: any) {
+        console.error('Failed to create MediaElementSource in setup:', e);
+        this._log(
+          'Failed to create MediaElementSource in setup',
+          {error: e.message},
+          true,
+        );
+      }
+    }
+
+    if (!this.analyser) {
+      this.analyser = this.playbackAudioContext.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.audioGainNode.connect(this.analyser);
+
+      if (this.videoAudioSource) {
+        this.videoAudioSource.connect(this.analyser);
+      }
+    }
+    this.startSpeakingDetection();
+  }
+
+  public getAudioOutputStream(): MediaStream {
+    this.ensurePlaybackAudioSetup();
     if (this.playbackAudioContext.state === 'suspended') {
       this.playbackAudioContext.resume();
       this._log('Resumed playbackAudioContext in getAudioOutputStream');
@@ -135,15 +174,22 @@ export class MediaManager {
       this.audioGainNode.connect(this.audioDestination);
 
       try {
-        this._log('Creating MediaElementSource from video element', null, true);
-        this.videoAudioSource =
-          this.playbackAudioContext.createMediaElementSource(this.videoEl);
-        this.videoAudioSource.connect(this.playbackAudioContext.destination);
-        this.videoAudioSource.connect(this.audioDestination);
+        if (this.videoAudioSource) {
+          this.videoAudioSource.connect(this.audioDestination);
+        } else {
+          this._log(
+            'videoAudioSource is null in getAudioOutputStream',
+            null,
+            true,
+          );
+        }
       } catch (e: any) {
-        console.error('Failed to create MediaElementSource:', e);
+        console.error(
+          'Failed to connect videoAudioSource to audioDestination:',
+          e,
+        );
         this._log(
-          'Failed to create MediaElementSource',
+          'Failed to connect videoAudioSource to audioDestination',
           {error: e.message},
           true,
         );
@@ -216,6 +262,12 @@ export class MediaManager {
     this.processingQueue = false;
     this.nextPlaybackTime = 0;
     this.receivedFirstVideoFrame = false;
+
+    if (this.speakingInterval) {
+      clearInterval(this.speakingInterval);
+      this.speakingInterval = null;
+    }
+    this.isSpeaking = false;
   }
 
   private initMpegts() {
@@ -291,18 +343,7 @@ export class MediaManager {
         {isMuted: this.isMuted, size: base64Data.length},
         true,
       );
-      if (!this.playbackAudioContext) {
-        this.playbackAudioContext =
-          this.audioContext ||
-          new (window.AudioContext || (window as any).webkitAudioContext)({
-            sampleRate: 16000,
-          });
-        this.nextPlaybackTime = this.playbackAudioContext.currentTime;
-      }
-      if (!this.audioGainNode) {
-        this.audioGainNode = this.playbackAudioContext.createGain();
-        this.audioGainNode.connect(this.playbackAudioContext.destination);
-      }
+      this.ensurePlaybackAudioSetup();
 
       this.audioGainNode.gain.value = this.isMuted ? 0 : 1;
 
@@ -338,6 +379,51 @@ export class MediaManager {
       console.error('Failed to play audio chunk:', e);
       this._log('Failed to play audio chunk', {error: e.message}, true);
     }
+  }
+
+  private startSpeakingDetection() {
+    if (this.speakingInterval) return;
+    if (!this.analyser) return;
+
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    let silenceStart = 0;
+
+    this.speakingInterval = setInterval(() => {
+      this.analyser!.getByteTimeDomainData(dataArray);
+
+      // Calculate RMS
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        const v = (dataArray[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / bufferLength);
+
+      const threshold = 0.01; // Close to zero
+
+      if (rms > threshold) {
+        if (!this.isSpeaking) {
+          this.isSpeaking = true;
+          console.log(
+            `[MediaManager] Speaking started (rms: ${rms.toFixed(4)})`,
+          );
+          if (this.onSpeakingChange) this.onSpeakingChange(true);
+        }
+        silenceStart = 0;
+      } else {
+        if (this.isSpeaking) {
+          if (silenceStart === 0) {
+            silenceStart = Date.now();
+          } else if (Date.now() - silenceStart > 1000) {
+            this.isSpeaking = false;
+            console.log('[MediaManager] Speaking stopped');
+            if (this.onSpeakingChange) this.onSpeakingChange(false);
+            silenceStart = 0;
+          }
+        }
+      }
+    }, 100);
   }
 
   public async handleVideoDataChunk(base64Data: string, mimeType: string) {
