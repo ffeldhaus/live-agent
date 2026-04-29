@@ -121,18 +121,6 @@ export async function processAndDownloadVideo(
 
     downloadBlob(outputBlob, filename);
     console.log('Download triggered');
-
-    // Debug: Download mic.pcm as well
-    try {
-      const micData = await ffmpeg.readFile(micFilename);
-      const micDownloadBlob = new Blob([micData], {
-        type: 'application/octet-stream',
-      });
-      downloadBlob(micDownloadBlob, `debug_${micFilename}`);
-      console.log('Mic download triggered');
-    } catch (e) {
-      console.error('Failed to read or download mic file:', e);
-    }
   } catch (error) {
     console.error('Error processing video:', error);
     alert('Failed to process video download with FFmpeg.');
