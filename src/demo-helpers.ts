@@ -323,13 +323,13 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
     const currentPct = (current / maxScale) * 100;
 
     barP50El.style.width = `${p50Pct}%`;
-    barP50El.textContent = p50 > 0 ? `${p50}ms` : '';
+    barP50El.textContent = p50 > 0 ? `P50: ${p50}ms` : '';
 
     barP95El.style.width = `${p95Pct}%`;
-    barP95El.textContent = p95 > p50 ? `${p95}ms` : '';
+    barP95El.textContent = p95 > p50 ? `P95: ${p95}ms` : '';
 
     barP99El.style.width = `${p99Pct}%`;
-    barP99El.textContent = p99 > p95 ? `${p99}ms` : '';
+    barP99El.textContent = p99 > p95 ? `P99: ${p99}ms` : '';
 
     currentLatencyLineEl.style.left = `${currentPct}%`;
     if (current > 0) {

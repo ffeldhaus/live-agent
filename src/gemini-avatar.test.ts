@@ -51,6 +51,11 @@ describe('GeminiAvatar', () => {
         disconnect: vi.fn(),
         gain: {value: 1},
       });
+      createAnalyser = vi.fn().mockReturnValue({
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        fftSize: 256,
+      });
       destination = {};
       currentTime = 0;
       close = vi.fn().mockResolvedValue(undefined);
@@ -182,6 +187,20 @@ describe('GeminiAvatar', () => {
     expect(stats.audioPacketsReceived).toBe(2);
     expect(stats.videoPacketsReceived).toBe(3);
     expect(stats.textPacketsReceived).toBe(5);
+  });
+
+  it('should reset latency counters on tryConnect', async () => {
+    const anyEl = element as any;
+    anyEl.videoGenerationLatency = 500;
+    anyEl.videoGenerationLatencies = [100, 200, 300];
+    anyEl.accessToken = 'test-token';
+
+    // We call tryConnect directly. It will return early because project-id is missing,
+    // but it should have reset the counters by then.
+    await anyEl.tryConnect();
+
+    expect(anyEl.videoGenerationLatency).toBeNull();
+    expect(anyEl.videoGenerationLatencies).toEqual([]);
   });
 
   it('should show/hide controls based on visible-controls attribute', () => {

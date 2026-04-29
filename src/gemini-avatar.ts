@@ -878,6 +878,8 @@ export class GeminiAvatar extends HTMLElement {
     this.setupCompleteTime = null;
     this.firstFrameTime = null;
     this.receivedFirstVideoFrame = false;
+    this.videoGenerationLatency = null;
+    this.videoGenerationLatencies = [];
 
     if (this.transcriptArea) {
       this.transcriptArea.innerHTML = '';
