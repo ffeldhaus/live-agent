@@ -615,7 +615,6 @@ export class GeminiAvatar extends HTMLElement {
     }
 
     this.mediaManager?.setRecordingVideo(this.isRecordingVideo);
-    this.mediaManager?.setupMicRecorder();
 
     await this.tryConnect();
   }

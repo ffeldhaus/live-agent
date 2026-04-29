@@ -31,7 +31,6 @@ export class MediaManager {
   private micGain: GainNode | null = null;
   private videoInputStream: MediaStream | null = null;
   private videoInputInterval: any = null;
-  private micRecorder: MediaRecorder | null = null;
   private micChunks: Blob[] = [];
 
   // State
@@ -46,6 +45,8 @@ export class MediaManager {
   private outputProcessor: AudioWorkletNode | null = null;
   private pendingExternalStream: MediaStream | null = null;
   private receivedFirstVideoFrame = false;
+  private sentFirstAudio = false;
+  private isStartingMic = false;
 
   // Stats counters
   public audioChunksSent = 0;
@@ -80,12 +81,6 @@ export class MediaManager {
 
   public setSetupComplete(value: boolean) {
     this.isSetupComplete = value;
-    if (value && this.micRecorder && this.micRecorder.state === 'inactive') {
-      this.micRecorder.start(1000);
-      this._log(
-        'Microphone recording started (Setup Complete) with 1000ms slice',
-      );
-    }
   }
 
   public setReceivedFirstVideoFrame(value: boolean) {
@@ -260,8 +255,10 @@ export class MediaManager {
     this.videoChunkQueue = [];
     this.messageQueue = [];
     this.processingQueue = false;
+    this.micChunks = [];
     this.nextPlaybackTime = 0;
     this.receivedFirstVideoFrame = false;
+    this.sentFirstAudio = false;
 
     if (this.speakingInterval) {
       clearInterval(this.speakingInterval);
@@ -490,6 +487,16 @@ export class MediaManager {
     externalStream: MediaStream | null = null,
     micStream: MediaStream | null = null,
   ) {
+    if (this.isStartingMic) {
+      this._log('Mic is already starting, ignoring');
+      return false;
+    }
+    if (this.processor) {
+      this._log('Mic already started, stopping first');
+      this.processor.port.onmessage = null;
+      this.stopMic();
+    }
+    this.isStartingMic = true;
     try {
       if (micStream) {
         this.micStream = micStream;
@@ -598,9 +605,21 @@ export class MediaManager {
 
         const base64Data = this.arrayBufferToBase64(pcmData.buffer);
 
-        if (this.isSetupComplete) {
-          if (this.onAudioChunk) this.onAudioChunk(base64Data);
+        let didSendAudio = false;
+        if (this.isSetupComplete && this.receivedFirstVideoFrame) {
+          if (this.onAudioChunk) {
+            this.onAudioChunk(base64Data);
+            didSendAudio = true;
+            this.sentFirstAudio = true;
+          }
           this.audioChunksSent++;
+        }
+
+        if (this.isRecordingVideo && (this.sentFirstAudio || didSendAudio)) {
+          this.micChunks.push(new Blob([pcmData.buffer], {type: 'audio/pcm'}));
+          this._log(
+            `[MediaManager] Pushed mic chunk. Total: ${this.micChunks.length}`,
+          );
         }
       };
 
@@ -610,6 +629,8 @@ export class MediaManager {
       console.error('Failed to start mic error caught:', e);
       this._log('Failed to start mic', e, true);
       return false;
+    } finally {
+      this.isStartingMic = false;
     }
   }
 
@@ -638,29 +659,6 @@ export class MediaManager {
       this.extSource = this.audioContext.createMediaStreamSource(stream);
       this.extSource.connect(this.mixer);
       this._log('Connected new external source to mixer');
-    }
-  }
-
-  public setupMicRecorder() {
-    if (this.isRecordingVideo && this.micStream && this.audioContext) {
-      this.micChunks = [];
-
-      const micDestination = this.audioContext.createMediaStreamDestination();
-      this.micGain?.connect(micDestination);
-
-      this.micRecorder = new MediaRecorder(micDestination.stream);
-      this.micRecorder.ondataavailable = e => {
-        if (e.data.size > 0) {
-          this.micChunks.push(e.data);
-        }
-      };
-
-      if (this.isSetupComplete && this.micRecorder.state === 'inactive') {
-        this.micRecorder.start(1000);
-        this._log(
-          'Microphone recording started (Setup Complete) with 1000ms slice',
-        );
-      }
     }
   }
 
@@ -733,15 +731,8 @@ export class MediaManager {
     return this.micStream;
   }
 
-  public setMicRecorder(recorder: MediaRecorder | null) {
-    this.micRecorder = recorder;
-  }
-
   public stopRecording() {
-    if (this.micRecorder && this.micRecorder.state !== 'inactive') {
-      this.micRecorder.stop();
-      this._log('Microphone recording stopped');
-    }
+    this._log('Microphone recording stopped (no-op)');
   }
 
   public getMicChunks() {

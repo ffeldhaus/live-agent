@@ -18,8 +18,17 @@ export async function processAndDownloadVideo(
 
   const micMimeType = micChunks.length > 0 ? micChunks[0].type : 'audio/webm';
   console.log(`[Recorder] Mic Blob type: ${micMimeType}`);
+  console.log(`[Recorder] Mic chunks count: ${micChunks.length}`);
+  const totalMicSize = micChunks.reduce((acc, chunk) => acc + chunk.size, 0);
+  console.log(`[Recorder] Mic total size: ${totalMicSize} bytes`);
+
   const micBlob = new Blob(micChunks, {type: micMimeType});
-  const micExt = micMimeType.includes('mp4') ? 'mp4' : 'webm';
+  let micExt = 'webm';
+  if (micMimeType.includes('mp4')) {
+    micExt = 'mp4';
+  } else if (micMimeType === 'audio/pcm') {
+    micExt = 'pcm';
+  }
   const micFilename = `mic.${micExt}`;
 
   const ffmpeg = new FFmpeg();
@@ -54,7 +63,11 @@ export async function processAndDownloadVideo(
       avatarPosition.includes('right') || avatarPosition.includes('middle');
 
     let filterComplex = '';
-    const execArgs = ['-i', 'video.mp4', '-i', micFilename];
+    const execArgs = ['-i', 'video.mp4'];
+    if (micExt === 'pcm') {
+      execArgs.push('-f', 's16le', '-ar', '16000', '-ac', '1');
+    }
+    execArgs.push('-i', micFilename);
 
     if (hasAvatar2) {
       execArgs.push('-i', 'video2.mp4');
@@ -108,6 +121,18 @@ export async function processAndDownloadVideo(
 
     downloadBlob(outputBlob, filename);
     console.log('Download triggered');
+
+    // Debug: Download mic.pcm as well
+    try {
+      const micData = await ffmpeg.readFile(micFilename);
+      const micDownloadBlob = new Blob([micData], {
+        type: 'application/octet-stream',
+      });
+      downloadBlob(micDownloadBlob, `debug_${micFilename}`);
+      console.log('Mic download triggered');
+    } catch (e) {
+      console.error('Failed to read or download mic file:', e);
+    }
   } catch (error) {
     console.error('Error processing video:', error);
     alert('Failed to process video download with FFmpeg.');
