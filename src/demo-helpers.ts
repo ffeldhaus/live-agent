@@ -1,5 +1,6 @@
 import {AVATAR_PRESETS} from './constants';
 import {GeminiAvatar} from './gemini-avatar';
+import {showMessageModal} from './ui-helpers';
 
 // REST API Helper
 export async function generateContent(
@@ -337,5 +338,58 @@ export function updateStats(avatar: any, elements: any, suffix: string = '') {
     } else {
       currentLatencyLineEl.classList.add('hidden');
     }
+  }
+}
+
+export async function updateLocation(
+  enableLocationEl: HTMLInputElement,
+  store: any,
+) {
+  if (!enableLocationEl.checked) return;
+
+  try {
+    const permission = await navigator.permissions.query({
+      name: 'geolocation' as PermissionName,
+    });
+
+    if (permission.state === 'denied') {
+      showMessageModal(
+        'Permission Denied',
+        'Location permission was denied. Please enable it in your browser settings.',
+      );
+      enableLocationEl.checked = false;
+      return;
+    }
+
+    return new Promise<void>(resolve => {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          store.currentPosition = pos;
+          console.log('Location fetched:', pos);
+          resolve();
+        },
+        err => {
+          console.error('Error fetching location:', err);
+          enableLocationEl.checked = false;
+          resolve();
+        },
+      );
+    });
+  } catch (e) {
+    console.error('Error checking permissions:', e);
+    // Fallback
+    return new Promise<void>(resolve => {
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          store.currentPosition = pos;
+          resolve();
+        },
+        err => {
+          console.error('Error fetching location:', err);
+          enableLocationEl.checked = false;
+          resolve();
+        },
+      );
+    });
   }
 }

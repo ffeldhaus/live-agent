@@ -1,7 +1,12 @@
 import {GeminiAvatar} from './gemini-avatar';
 import {AVATAR_PRESETS, VOICE_PRESETS} from './constants';
 import {qaScenarios} from './walkthrough-data';
-import {generateContent, applyAvatarTheme, updateStats} from './demo-helpers';
+import {
+  generateContent,
+  applyAvatarTheme,
+  updateStats,
+  updateLocation,
+} from './demo-helpers';
 import {showMessageModal} from './ui-helpers';
 import {
   handleImageGeneration,
@@ -271,6 +276,11 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSettings(elements, store, customAvatars, avatar);
   if (localStorage.getItem('gemini_oauth_client_id')) {
     initGoogleAuth();
+  }
+
+  // Initial location check
+  if (elements.enableLocation && elements.enableLocation.checked) {
+    updateLocation(elements.enableLocation, store);
   }
 
   // Initial state for transparency checkbox
@@ -988,52 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Location Listener
   if (enableLocation) {
     enableLocation.onchange = async () => {
-      if (enableLocation.checked) {
-        try {
-          const permission = await navigator.permissions.query({
-            name: 'geolocation' as PermissionName,
-          });
-          if (permission.state === 'prompt') {
-            navigator.geolocation.getCurrentPosition(
-              pos => {
-                store.currentPosition = pos;
-                console.log('Location fetched:', pos);
-              },
-              err => {
-                console.error('Error fetching location:', err);
-                enableLocation.checked = false;
-              },
-            );
-          } else if (permission.state === 'granted') {
-            navigator.geolocation.getCurrentPosition(
-              pos => {
-                store.currentPosition = pos;
-              },
-              err => {
-                console.error('Error fetching location:', err);
-              },
-            );
-          } else {
-            showMessageModal(
-              'Permission Denied',
-              'Location permission was denied. Please enable it in your browser settings.',
-            );
-            enableLocation.checked = false;
-          }
-        } catch (e) {
-          console.error('Error checking permissions:', e);
-          // Fallback
-          navigator.geolocation.getCurrentPosition(
-            pos => {
-              store.currentPosition = pos;
-            },
-            err => {
-              console.error('Error fetching location:', err);
-              enableLocation.checked = false;
-            },
-          );
-        }
-      }
+      await updateLocation(enableLocation, store);
     };
   }
 
@@ -1661,6 +1626,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         if (!(await ensureValidToken(store, tokenClient, elements))) return;
 
+        // Update location if enabled
+        if (enableLocation && enableLocation.checked) {
+          await updateLocation(enableLocation, store);
+        } else if (
+          elements.enableLocation2 &&
+          elements.enableLocation2.checked
+        ) {
+          await updateLocation(elements.enableLocation2, store);
+        }
+
         // Update attributes for Avatar 1
         avatar.setAttribute('access-token', tokenInput.value);
         avatar.setAttribute('project-id', projectIdInput.value);
@@ -1671,7 +1646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let systemInstruction = systemInstructionInput.value;
         if (enableLocation && enableLocation.checked && store.currentPosition) {
-          systemInstruction += `\nUser location: Lat ${store.currentPosition.coords.latitude}, Lon ${store.currentPosition.coords.longitude}`;
+          systemInstruction += `\nUser location: Latitude ${store.currentPosition.coords.latitude}, Longitude ${store.currentPosition.coords.longitude}`;
         }
         avatar.setAttribute('system-instruction', systemInstruction);
 
@@ -1713,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', () => {
               elements.enableLocation2.checked &&
               store.currentPosition
             ) {
-              systemInstruction2 += `\nUser location: Lat ${store.currentPosition.coords.latitude}, Lon ${store.currentPosition.coords.longitude}`;
+              systemInstruction2 += `\nUser location: Latitude ${store.currentPosition.coords.latitude}, Longitude ${store.currentPosition.coords.longitude}`;
             }
             avatar2.setAttribute('system-instruction', systemInstruction2);
 
