@@ -87,6 +87,26 @@ export async function fetchUserProfile(
   }
 }
 
+export function clearAuthData(store: any, elements?: any) {
+  store.accessToken = '';
+  store.tokenExpiry = 0;
+  store.userName = '';
+  store.userAvatar = '';
+
+  if (elements) {
+    if (elements.tokenInput) elements.tokenInput.value = '';
+    if (elements.userProfile) elements.userProfile.classList.add('hidden');
+    if (elements.userName) elements.userName.textContent = '';
+    if (elements.userAvatar) elements.userAvatar.src = '';
+  }
+
+  localStorage.removeItem('gemini_access_token');
+  localStorage.removeItem('gemini_token_time');
+  localStorage.removeItem('gemini_token_expiry');
+  localStorage.removeItem('gemini_user_name');
+  localStorage.removeItem('gemini_user_avatar');
+}
+
 export async function ensureValidToken(
   store: any,
   tokenClient: any,
@@ -99,10 +119,7 @@ export async function ensureValidToken(
   if (!token || now >= expiry) {
     console.log('Token missing or expired, requesting new one...');
 
-    if (elements && elements.tokenInput) {
-      elements.tokenInput.value = '';
-    }
-    store.accessToken = '';
+    clearAuthData(store, elements);
 
     if (tokenClient) {
       tokenClient.requestAccessToken();

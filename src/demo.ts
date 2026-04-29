@@ -18,6 +18,7 @@ import {
   fetchUserProfile,
   ensureValidToken,
   displayUserProfile,
+  clearAuthData,
 } from './auth';
 import {loadSettings, saveSettings} from './settings';
 import {queryElements} from './demo-elements';
@@ -291,6 +292,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const now = new Date().getTime();
     const isTokenValid = token.length > 0 && store.tokenExpiry > now;
+
+    if (token.length > 0 && store.tokenExpiry > 0 && now >= store.tokenExpiry) {
+      console.log('Token expired, clearing UI...');
+      clearAuthData(store, elements);
+      validateForm();
+      return;
+    }
 
     // Show/hide Google Sign-in button based on OAuth Client ID or Token availability
     if (googleSignInBtn) {
@@ -594,28 +602,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       // Token cleared!
-      store.accessToken = '';
-      store.tokenExpiry = 0;
-      store.userName = '';
-      store.userAvatar = '';
-
-      // Hide user profile
-      if (elements.userProfile) elements.userProfile.classList.add('hidden');
-      if (elements.userName) elements.userName.textContent = '';
-      if (elements.userAvatar) elements.userAvatar.src = '';
+      clearAuthData(store, elements);
 
       // Show Google Sign-in btn if OAuth ID is present
       const oauth = store.oauthClientId.trim();
       if (elements.googleSignInBtn) {
         elements.googleSignInBtn.classList.toggle('hidden', oauth.length === 0);
       }
-
-      // Clear local storage
-      localStorage.removeItem('gemini_access_token');
-      localStorage.removeItem('gemini_token_time');
-      localStorage.removeItem('gemini_token_expiry');
-      localStorage.removeItem('gemini_user_name');
-      localStorage.removeItem('gemini_user_avatar');
 
       validateForm();
     }

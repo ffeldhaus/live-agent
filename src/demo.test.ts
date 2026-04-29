@@ -313,4 +313,24 @@ describe('Demo App', () => {
       expect.stringContaining('Something went wrong. Likely causes:'),
     );
   });
+
+  it('should clear expired token on load', async () => {
+    const now = new Date().getTime();
+    vi.mocked(localStorage.getItem).mockImplementation(key => {
+      if (key === 'gemini_access_token') return 'expired-token';
+      if (key === 'gemini_token_expiry') return (now - 1000).toString(); // Expired 1s ago
+      if (key === 'gemini_oauth_client_id') return 'test-client-id';
+      return null;
+    });
+
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    const tokenInput = document.getElementById(
+      'accessToken',
+    ) as HTMLInputElement;
+
+    await vi.waitFor(() => {
+      expect(tokenInput.value).toBe('');
+    });
+  });
 });
